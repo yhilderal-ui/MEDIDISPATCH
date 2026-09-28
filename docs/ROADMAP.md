@@ -22,7 +22,7 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [x] **0. Préparation** — comptes GitHub (ok), Supabase, Vercel ; récupération du lien Figma Make
 - [x] **1a. Import du code Figma Make** dans ce dépôt (compilation vérifiée)
 - [ ] **1b. Premier déploiement Vercel** (maquette en ligne, encore sans données réelles)
-- [ ] **2. Modèle de données** — tables Supabase : `profiles`, `demandes`, `documents`, `notes`, `historique_statuts`, `messages`, `lectures` (vu / non vu) ; numéro de ticket auto ; règles d'accès (RLS)
+- [x] **2. Modèle de données** — tables Supabase : `profiles`, `demandes`, `documents`, `notes`, `historique_statuts`, `messages`, `lectures` (vu / non vu) ; numéro de ticket auto ; règles d'accès (RLS)
 - [ ] **3. Authentification réelle** — 2 comptes (Dispatcheur, Société de livraison), inscription publique désactivée, badge de rôle
 - [ ] **4. Création de demande** — formulaire, pièces jointes, sélecteur de date (ni passé, ni dimanche ; jour même autorisé)
 - [ ] **5. Tableau hebdomadaire** — colonnes lundi → samedi, recherche (patient / ticket), filtres (statut, criticité, date)
