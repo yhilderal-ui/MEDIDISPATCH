@@ -19,7 +19,7 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 
 ## Étapes
 
-- [ ] **0. Préparation** — comptes GitHub (ok), Supabase, Vercel ; récupération du lien Figma Make
+- [x] **0. Préparation** — comptes GitHub (ok), Supabase, Vercel ; récupération du lien Figma Make
 - [x] **1a. Import du code Figma Make** dans ce dépôt (compilation vérifiée)
 - [ ] **1b. Premier déploiement Vercel** (maquette en ligne, encore sans données réelles)
 - [ ] **2. Modèle de données** — tables Supabase : `profiles`, `demandes`, `documents`, `notes`, `historique_statuts`, `messages`, `lectures` (vu / non vu) ; numéro de ticket auto ; règles d'accès (RLS)
