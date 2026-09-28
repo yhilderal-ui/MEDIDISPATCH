@@ -20,7 +20,8 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 ## Étapes
 
 - [ ] **0. Préparation** — comptes GitHub (ok), Supabase, Vercel ; récupération du lien Figma Make
-- [ ] **1. Import du code Figma Make** dans ce dépôt, lancement en local, premier déploiement Vercel (maquette en ligne, encore sans données réelles)
+- [x] **1a. Import du code Figma Make** dans ce dépôt (compilation vérifiée)
+- [ ] **1b. Premier déploiement Vercel** (maquette en ligne, encore sans données réelles)
 - [ ] **2. Modèle de données** — tables Supabase : `profiles`, `demandes`, `documents`, `notes`, `historique_statuts`, `messages`, `lectures` (vu / non vu) ; numéro de ticket auto ; règles d'accès (RLS)
 - [ ] **3. Authentification réelle** — 2 comptes (Dispatcheur, Société de livraison), inscription publique désactivée, badge de rôle
 - [ ] **4. Création de demande** — formulaire, pièces jointes, sélecteur de date (ni passé, ni jour même, ni dimanche)
@@ -32,6 +33,29 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [ ] **10. Notifications in-app** — nouvelles demandes, nouveaux messages
 - [ ] **11. Archives** — demandes livrées sorties du tableau actif après un délai, accès séparé
 - [ ] **12. Mise en ligne** — nom de domaine, variables d'environnement, recette complète sur mobile et ordinateur
+
+## Écarts entre la maquette et le cahier des charges
+
+La maquette Figma Make est une bonne base visuelle, mais c'est un prototype : toutes les données
+vivent dans la mémoire du navigateur et disparaissent au rechargement. Voici ce qui diffère du
+cahier des charges, et à quelle étape on le corrige.
+
+| Sujet | Maquette actuelle | Cahier des charges | Étape |
+|---|---|---|---|
+| Connexion | Nom tapé, sans mot de passe | Vrai compte sécurisé, 2 comptes | 3 |
+| Persistance | Perdue au rechargement | Base de données, rien ne se perd | 2 |
+| Statuts | 6 statuts + un 2ᵉ statut « pharmacie » (nouveau / validé / archivé…) | 3 statuts : Nouvelle → En cours → Livrée (+ Annulée) | 2 et 7 |
+| Criticité | Urgent / Standard / Faible | 🔴 Urgent / 🟠 Standard prioritaire / 🟢 Standard | 4 |
+| Formulaire | Adresse de collecte, client, poids, produits | Patient, adresse, téléphone, médicaments, ordonnance, bon de livraison | 4 |
+| Date de livraison | Accepte le jour même et le dimanche | Lendemain minimum, jamais le dimanche | 4 |
+| Pièces jointes | Noms de fichiers seulement (non envoyés), Word accepté, 20 Mo | Fichiers réellement stockés, PDF/JPEG/PNG, 10 Mo | 4 |
+| Vue semaine | Jours calculés en heure UTC : une carte peut tomber dans la colonne de la veille en France | Colonne = jour prévu en heure française | 5 |
+| Recherche / filtres | Recherche côté pharmacie uniquement, pas de filtres | Recherche + filtres statut / criticité / date pour les deux rôles | 5 |
+| Notes | Auteur saisi librement | Auteur = compte connecté, horodaté | 6 |
+| Historique | Absent | Historique des statuts et des reports | 6 |
+| Preuve de livraison | Absente | Photo obligatoire au passage à « Livrée » | 7 |
+| Vu / non vu | Uniquement un compteur local sur le chat | Sur chaque carte et chaque message, partagé entre les deux rôles | 8 et 9 |
+| Chat | Local au navigateur, invisible pour l'autre rôle | Partagé en temps réel | 9 |
 
 ## Méthode de travail
 
