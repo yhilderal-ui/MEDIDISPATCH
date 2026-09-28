@@ -172,7 +172,8 @@ create table lectures_chat (
 -- 8. Règles métier appliquées par la base elle-même (déclencheurs / triggers).
 -- -----------------------------------------------------------------------------
 
--- 8a. Date de livraison : toujours le lendemain ou plus tard, heure de Paris.
+-- 8a. Date de livraison : aujourd'hui ou plus tard (jamais un jour passé), heure de Paris.
+--     Le jour même est autorisé : Florence crée souvent le matin les demandes du jour.
 --     Vérifiée à la création et à chaque report, pas quand on change seulement
 --     le statut (sinon une demande d'hier ne pourrait plus passer « Livrée »).
 create function verifier_jour_livraison()
@@ -181,8 +182,8 @@ language plpgsql
 as $$
 begin
   if (tg_op = 'INSERT' or new.jour_livraison is distinct from old.jour_livraison)
-     and new.jour_livraison <= (now() at time zone 'Europe/Paris')::date then
-    raise exception 'La date de livraison doit être au plus tôt demain (reçu : %).', new.jour_livraison
+     and new.jour_livraison < (now() at time zone 'Europe/Paris')::date then
+    raise exception 'La date de livraison ne peut pas être dans le passé (reçu : %).', new.jour_livraison
       using errcode = 'check_violation';
   end if;
   return new;

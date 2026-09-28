@@ -24,7 +24,7 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [ ] **1b. Premier déploiement Vercel** (maquette en ligne, encore sans données réelles)
 - [ ] **2. Modèle de données** — tables Supabase : `profiles`, `demandes`, `documents`, `notes`, `historique_statuts`, `messages`, `lectures` (vu / non vu) ; numéro de ticket auto ; règles d'accès (RLS)
 - [ ] **3. Authentification réelle** — 2 comptes (Dispatcheur, Société de livraison), inscription publique désactivée, badge de rôle
-- [ ] **4. Création de demande** — formulaire, pièces jointes, sélecteur de date (ni passé, ni jour même, ni dimanche)
+- [ ] **4. Création de demande** — formulaire, pièces jointes, sélecteur de date (ni passé, ni dimanche ; jour même autorisé)
 - [ ] **5. Tableau hebdomadaire** — colonnes lundi → samedi, recherche (patient / ticket), filtres (statut, criticité, date)
 - [ ] **6. Détail de la carte** — infos patient, criticité mise en avant, documents, fil de notes, historique, modification / report / annulation
 - [ ] **7. Statuts et preuve de livraison** — Nouvelle → En cours → Livrée, photo obligatoire au passage à « Livrée »
@@ -47,7 +47,7 @@ cahier des charges, et à quelle étape on le corrige.
 | Statuts | 6 statuts + un 2ᵉ statut « pharmacie » (nouveau / validé / archivé…) | 3 statuts : Nouvelle → En cours → Livrée (+ Annulée) | 2 et 7 |
 | Criticité | Urgent / Standard / Faible | 🔴 Urgent / 🟠 Standard prioritaire / 🟢 Standard | 4 |
 | Formulaire | Adresse de collecte, client, poids, produits | Patient, adresse, téléphone, médicaments, ordonnance, bon de livraison | 4 |
-| Date de livraison | Accepte le jour même et le dimanche | Lendemain minimum, jamais le dimanche | 4 |
+| Date de livraison | Accepte les jours passés et le dimanche | Aujourd'hui ou plus tard, jamais le dimanche (jour même autorisé : décision du 28/09, remplace « jamais le jour même » du cahier des charges) | 4 |
 | Pièces jointes | Noms de fichiers seulement (non envoyés), Word accepté, 20 Mo | Fichiers réellement stockés, PDF/JPEG/PNG, 10 Mo | 4 |
 | Vue semaine | Jours calculés en heure UTC : une carte peut tomber dans la colonne de la veille en France | Colonne = jour prévu en heure française | 5 |
 | Recherche / filtres | Recherche côté pharmacie uniquement, pas de filtres | Recherche + filtres statut / criticité / date pour les deux rôles | 5 |
