@@ -50,7 +50,7 @@ export function useAuth() {
         if (cancelled) return;
         const role = data ? ROLE_FROM_DB[data.role] : undefined;
         if (error || !data || !role) {
-          supabase.auth.signOut();
+          supabase.auth.signOut({ scope: 'local' });
           setState({
             status: 'signed_out',
             error: "Ce compte n'est pas autorisé sur MediDispatch. Contactez l'administrateur.",
@@ -73,7 +73,10 @@ export function useAuth() {
     return `Connexion impossible : ${error.message}`;
   };
 
-  const signOut = () => supabase.auth.signOut();
+  // « local » : ne déconnecte QUE cet appareil. Par défaut, Supabase
+  // déconnecterait le compte partout — gênant pour le compte Pharmacie, utilisé
+  // en même temps au comptoir et sur le téléphone du livreur.
+  const signOut = () => supabase.auth.signOut({ scope: 'local' });
 
   return { state, signIn, signOut };
 }
