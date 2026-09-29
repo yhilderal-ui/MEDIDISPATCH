@@ -36,7 +36,7 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [x] **10. Notifications in-app** — bandeau cliquable, son (plus insistant pour une demande urgente, coupable avec le bouton cloche), compteur dans le titre de l'onglet qui clignote en arrière-plan, notification du navigateur optionnelle ; uniquement pour les actions de l'autre compte
 - [x] **11. Archives** — demandes livrées sorties du tableau actif **30 jours** après la livraison (décision du 29/09), vue « Archives » séparée avec recherche
 - [x] **12a. Affichage mobile** — en-tête compact, onglets de statut, filtres repliables, vue semaine verticale, chat plein écran, alertes en bas d'écran, installation sur l'écran d'accueil ; icônes Lucide à la place des émoticônes
-- [ ] **12b. Recette** — à dérouler avec Florence et la pharmacie : voir `docs/RECETTE.md`
+- [ ] **12b. Recette** — à dérouler avec Florence et la pharmacie, puis remise à zéro des données de test : voir `docs/RECETTE.md` (section 9) et `supabase/scripts/nettoyer_donnees_test.sql`
 - [ ] **12c. Nom de domaine** (optionnel) — à acheter puis relier à Vercel
 
 ## Écarts entre la maquette et le cahier des charges
