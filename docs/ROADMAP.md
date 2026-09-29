@@ -24,10 +24,10 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [x] **1b. Premier déploiement Vercel** — production : https://medidispatch.vercel.app
 - [x] **2. Modèle de données** — tables Supabase : `profiles`, `demandes`, `documents`, `notes`, `historique_statuts`, `messages`, `lectures` (vu / non vu) ; numéro de ticket auto ; règles d'accès (RLS)
 - [x] **3. Authentification réelle** — 2 comptes (Dispatcheur, Société de livraison), inscription publique désactivée, badge de rôle
-- [ ] **4. Création de demande** — formulaire, pièces jointes, sélecteur de date (ni passé, ni dimanche ; jour même autorisé)
+- [x] **4. Création de demande** — formulaire, liste de médicaments, bon de livraison (seule pièce jointe en V1, l'ordonnance viendra plus tard), sélecteur de date (ni passé, ni dimanche ; jour même autorisé)
 - [ ] **5. Tableau hebdomadaire** — colonnes lundi → samedi, recherche (patient / ticket), filtres (statut, criticité, date)
-- [ ] **6. Détail de la carte** — infos patient, criticité mise en avant, documents, fil de notes, historique, modification / report / annulation
-- [ ] **7. Statuts et preuve de livraison** — Nouvelle → En cours → Livrée, photo obligatoire au passage à « Livrée »
+- [ ] **6. Détail de la carte** — ✅ fait à l'étape 4 : infos patient, criticité mise en avant, documents, fil de notes, report, annulation. Reste : affichage de l'historique, modification des informations
+- [x] **7. Statuts et preuve de livraison** — Nouvelle → En cours → Livrée, photo obligatoire au passage à « Livrée » (fait avec l'étape 4)
 - [ ] **8. Vu / non vu** sur les cartes
 - [ ] **9. Chat global** — messages horodatés avec auteur, vu / non vu, temps réel
 - [ ] **10. Notifications in-app** — nouvelles demandes, nouveaux messages

@@ -1,78 +1,123 @@
-import { useState, useRef } from 'react';
-import type { DeliveryCard, Priority, Attachment, Product } from '../types';
+import { useState, useRef, useEffect } from 'react';
+import type { Criticite, Medicament, NouvelleDemande } from '../types';
+import { CRITICITE_CONFIG } from '../data';
+import { aujourdhuiParis, erreurJourLivraison } from '../lib/dates';
+import { erreurFichier } from '../lib/demandes';
 
 interface Props {
   onClose: () => void;
-  onSubmit: (card: Omit<DeliveryCard, 'id' | 'createdAt' | 'status' | 'isNew' | 'livreurStatus'>) => void;
+  onSubmit: (demande: NouvelleDemande, bonLivraison: File) => Promise<string | null>;
 }
 
-function mimeCategory(file: File): Attachment['mimeCategory'] {
-  if (file.type === 'application/pdf') return 'pdf';
-  if (file.type.startsWith('image/')) return 'image';
-  if (file.type.includes('word') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) return 'word';
-  return 'other';
+interface LigneMedicament extends Medicament {
+  cle: number;
 }
 
-function fileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} o`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+function tailleLisible(octets: number): string {
+  if (octets < 1024) return `${octets} o`;
+  if (octets < 1024 * 1024) return `${(octets / 1024).toFixed(0)} Ko`;
+  return `${(octets / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
-const MIME_ICONS: Record<Attachment['mimeCategory'], string> = {
-  pdf: '📄',
-  image: '🖼️',
-  word: '📝',
-  other: '📎',
-};
+const CHAMP =
+  'w-full text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all placeholder:text-gray-300';
+const ETIQUETTE = 'text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-1';
+
+let prochaineCle = 1;
 
 export default function CreateCardModal({ onClose, onSubmit }: Props) {
   const [form, setForm] = useState({
-    pickup: '',
-    dropoff: '',
-    client: '',
-    phone: '',
-    weight: '',
-    notes: '',
-    priority: 'standard' as Priority,
-    patient: '',
-    scheduledDate: '',
+    patient_nom: '',
+    patient_telephone: '',
+    patient_adresse: '',
+    jour_livraison: '',
+    criticite: 'standard' as Criticite,
+    notes_initiales: '',
   });
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [products, setProducts] = useState<Product[]>([{ id: 'p-1', name: '', quantity: '' }]);
-  const productRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const [dragging, setDragging] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [medicaments, setMedicaments] = useState<LigneMedicament[]>([{ cle: prochaineCle++, nom: '', quantite: '' }]);
+  const [bon, setBon] = useState<File | null>(null);
+  const [glisse, setGlisse] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [envoi, setEnvoi] = useState(false);
+  const fichierRef = useRef<HTMLInputElement>(null);
+  const nomRefs = useRef<(HTMLInputElement | null)[]>([]);
+  // Ligne à placer sous le curseur après le prochain affichage.
+  const [aFocaliser, setAFocaliser] = useState<number | null>(null);
 
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+  useEffect(() => {
+    if (aFocaliser === null) return;
+    nomRefs.current[aFocaliser]?.focus();
+    setAFocaliser(null);
+  }, [aFocaliser, medicaments]);
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
 
-  const addFiles = (files: FileList | null) => {
-    if (!files) return;
-    const added: Attachment[] = Array.from(files).map(f => ({
-      id: `att-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      name: f.name,
-      size: fileSize(f.size),
-      type: f.type || 'application/octet-stream',
-      mimeCategory: mimeCategory(f),
-    }));
-    setAttachments(a => [...a, ...added]);
+  const choisirFichier = (fichiers: FileList | null) => {
+    const f = fichiers?.[0];
+    if (!f) return;
+    const refus = erreurFichier(f);
+    if (refus) {
+      setErreur(refus);
+      return;
+    }
+    setErreur(null);
+    setBon(f);
   };
 
-  const removeAttachment = (id: string) => setAttachments(a => a.filter(x => x.id !== id));
+  const ajouterLigne = (apres: number) => {
+    setMedicaments(ls => {
+      const suite = [...ls];
+      suite.splice(apres + 1, 0, { cle: prochaineCle++, nom: '', quantite: '' });
+      return suite;
+    });
+    setAFocaliser(apres + 1);
+  };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const retirerLigne = (i: number) => setMedicaments(ls => ls.filter((_, j) => j !== i));
+
+  const majLigne = (i: number, champ: keyof Medicament, valeur: string) =>
+    setMedicaments(ls => ls.map((l, j) => (j === i ? { ...l, [champ]: valeur } : l)));
+
+  const soumettre = async (e: React.FormEvent) => {
     e.preventDefault();
-    setDragging(false);
-    addFiles(e.dataTransfer.files);
+    const lignes = medicaments
+      .map(l => ({ nom: l.nom.trim(), quantite: l.quantite.trim() }))
+      .filter(l => l.nom);
+
+    const probleme =
+      (!form.patient_nom.trim() && 'Indiquez le nom du patient.') ||
+      (!form.patient_telephone.trim() && 'Indiquez le téléphone du patient.') ||
+      (!form.patient_adresse.trim() && "Indiquez l'adresse de livraison.") ||
+      erreurJourLivraison(form.jour_livraison) ||
+      (lignes.length === 0 && 'Ajoutez au moins un médicament.') ||
+      (!bon && 'Joignez le bon de livraison.') ||
+      null;
+    if (probleme) {
+      setErreur(probleme);
+      return;
+    }
+
+    setEnvoi(true);
+    setErreur(null);
+    const echec = await onSubmit(
+      {
+        patient_nom: form.patient_nom.trim(),
+        patient_telephone: form.patient_telephone.trim(),
+        patient_adresse: form.patient_adresse.trim(),
+        jour_livraison: form.jour_livraison,
+        criticite: form.criticite,
+        medicaments: lignes,
+        notes_initiales: form.notes_initiales.trim() || null,
+      },
+      bon!,
+    );
+    setEnvoi(false);
+    if (echec) setErreur(echec);
+    else onClose();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.pickup || !form.dropoff || !form.client) return;
-    onSubmit({ ...form, attachments, documents: [], cardNotes: [], products: products.filter(p => p.name.trim()) });
-    onClose();
-  };
+  const nbMedicaments = medicaments.filter(l => l.nom.trim()).length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -84,172 +129,115 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 shrink-0">
           <div>
             <h2 className="text-lg font-700 text-gray-900">Nouvelle demande</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Créer une carte de livraison médicale</p>
+            <p className="text-xs text-gray-400 mt-0.5">Un numéro de ticket sera attribué automatiquement</p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-500 text-lg leading-none"
+            aria-label="Fermer"
           >
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
-          {/* Client + patient */}
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={soumettre} noValidate className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+          {/* Patient */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-1">Établissement / Client</label>
-              <input
-                value={form.client}
-                onChange={set('client')}
-                placeholder="CHU Lariboisière"
-                required
-                className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all placeholder:text-gray-300"
-              />
+              <label className={ETIQUETTE} htmlFor="patient_nom">Nom du patient</label>
+              <input id="patient_nom" value={form.patient_nom} onChange={set('patient_nom')} placeholder="M. Bernard Fontaine" className={CHAMP} />
             </div>
             <div>
-              <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-1">Téléphone</label>
-              <input
-                value={form.phone}
-                onChange={set('phone')}
-                placeholder="01 49 95 65 65"
-                className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all placeholder:text-gray-300"
-              />
+              <label className={ETIQUETTE} htmlFor="patient_telephone">Téléphone</label>
+              <input id="patient_telephone" type="tel" value={form.patient_telephone} onChange={set('patient_telephone')} placeholder="06 12 34 56 78" className={CHAMP} />
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-1">Patient</label>
-            <input
-              value={form.patient}
-              onChange={set('patient')}
-              placeholder="M. Bernard Fontaine"
-              className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all placeholder:text-gray-300"
-            />
-          </div>
-
-          {/* Route */}
-          <div>
-            <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-1">Adresse de collecte</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-emerald-400" />
-              <input
-                value={form.pickup}
-                onChange={set('pickup')}
-                placeholder="Pharmacie Centrale — 14 rue de Rivoli, Paris 1er"
-                required
-                className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl pl-7 pr-3 py-2.5 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all placeholder:text-gray-300"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-1">Adresse de livraison</label>
+            <label className={ETIQUETTE} htmlFor="patient_adresse">Adresse de livraison</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-red-400" />
               <input
-                value={form.dropoff}
-                onChange={set('dropoff')}
-                placeholder="Dr. Élise Morin — 88 avenue Kléber, Paris 16e"
-                required
-                className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl pl-7 pr-3 py-2.5 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all placeholder:text-gray-300"
+                id="patient_adresse"
+                value={form.patient_adresse}
+                onChange={set('patient_adresse')}
+                placeholder="88 avenue Kléber, 75016 Paris"
+                className={`${CHAMP} pl-7`}
               />
             </div>
           </div>
 
-          {/* Scheduled date */}
-          <div>
-            <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-1">Date de livraison prévue</label>
-            <input
-              type="date"
-              value={form.scheduledDate}
-              onChange={set('scheduledDate')}
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all"
-            />
-          </div>
-
-          {/* Weight + Priority */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Date + criticité */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-1">Poids</label>
+              <label className={ETIQUETTE} htmlFor="jour_livraison">Jour de livraison</label>
               <input
-                value={form.weight}
-                onChange={set('weight')}
-                placeholder="ex : 0.8 kg"
-                className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all placeholder:text-gray-300"
+                id="jour_livraison"
+                type="date"
+                value={form.jour_livraison}
+                onChange={set('jour_livraison')}
+                min={aujourdhuiParis()}
+                className={CHAMP}
               />
+              <p className="text-[10px] text-gray-400 mt-1">Aujourd'hui ou plus tard, hors dimanche</p>
             </div>
             <div>
-              <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-1">Priorité</label>
-              <select
-                value={form.priority}
-                onChange={set('priority')}
-                className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all appearance-none"
-              >
-                <option value="urgent">🔴 Urgent</option>
-                <option value="standard">🔵 Standard</option>
-                <option value="low">⚪ Faible</option>
+              <label className={ETIQUETTE} htmlFor="criticite">Criticité</label>
+              <select id="criticite" value={form.criticite} onChange={set('criticite')} className={`${CHAMP} appearance-none`}>
+                {(Object.keys(CRITICITE_CONFIG) as Criticite[]).map(c => (
+                  <option key={c} value={c}>
+                    {CRITICITE_CONFIG[c].emoji} {CRITICITE_CONFIG[c].label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
-          {/* Notes */}
-          <div>
-            <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-1">Instructions spéciales</label>
-            <textarea
-              value={form.notes}
-              onChange={set('notes')}
-              placeholder="Température contrôlée, fragilité, accès restreint…"
-              rows={2}
-              className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all resize-none placeholder:text-gray-300"
-            />
-          </div>
-
-          {/* Products */}
+          {/* Médicaments */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400">Produits</label>
-              <span className="text-[10px] text-gray-400 font-mono">{products.filter(p => p.name.trim()).length} article{products.filter(p => p.name.trim()).length !== 1 ? 's' : ''}</span>
+              <span className={ETIQUETTE.replace(' block mb-1', '')}>Médicaments</span>
+              <span className="text-[10px] text-gray-400 font-mono">
+                {nbMedicaments} article{nbMedicaments !== 1 ? 's' : ''}
+              </span>
             </div>
             <div className="border border-gray-200 rounded-2xl overflow-hidden">
-              {products.map((product, i) => (
-                <div key={product.id} className="flex items-center gap-0 border-b border-gray-100 last:border-b-0 group">
+              {medicaments.map((ligne, i) => (
+                <div key={ligne.cle} className="flex items-center border-b border-gray-100 last:border-b-0 group">
                   <span className="pl-3 text-[11px] text-gray-300 font-mono w-6 shrink-0">{i + 1}</span>
                   <input
-                    ref={el => { productRefs.current[i] = el; }}
-                    value={product.name}
-                    onChange={e => setProducts(ps => ps.map((p, j) => j === i ? { ...p, name: e.target.value } : p))}
+                    ref={el => { nomRefs.current[i] = el; }}
+                    value={ligne.nom}
+                    onChange={e => majLigne(i, 'nom', e.target.value)}
                     onKeyDown={e => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        const newId = `p-${Date.now()}`;
-                        setProducts(ps => {
-                          const next = [...ps];
-                          next.splice(i + 1, 0, { id: newId, name: '', quantity: '' });
-                          return next;
-                        });
-                        setTimeout(() => productRefs.current[i + 1]?.focus(), 30);
+                        ajouterLigne(i);
                       }
-                      if (e.key === 'Backspace' && product.name === '' && products.length > 1) {
+                      if (e.key === 'Backspace' && ligne.nom === '' && medicaments.length > 1) {
                         e.preventDefault();
-                        setProducts(ps => ps.filter((_, j) => j !== i));
-                        setTimeout(() => productRefs.current[Math.max(0, i - 1)]?.focus(), 30);
+                        retirerLigne(i);
+                        setAFocaliser(Math.max(0, i - 1));
                       }
                     }}
-                    placeholder="Nom du produit…"
-                    className="flex-1 text-sm px-3 py-2.5 outline-none bg-transparent placeholder:text-gray-300"
+                    placeholder="Nom du médicament…"
+                    aria-label={`Médicament ${i + 1}`}
+                    className="flex-1 min-w-0 text-sm px-3 py-2.5 outline-none bg-transparent placeholder:text-gray-300"
                   />
                   <input
-                    value={product.quantity}
-                    onChange={e => setProducts(ps => ps.map((p, j) => j === i ? { ...p, quantity: e.target.value } : p))}
+                    value={ligne.quantite}
+                    onChange={e => majLigne(i, 'quantite', e.target.value)}
                     placeholder="Qté"
-                    className="w-16 text-sm px-2 py-2.5 outline-none bg-transparent text-gray-500 placeholder:text-gray-300 text-right"
+                    aria-label={`Quantité ${i + 1}`}
+                    className="w-20 text-sm px-2 py-2.5 outline-none bg-transparent text-gray-500 placeholder:text-gray-300 text-right"
                   />
-                  {products.length > 1 && (
+                  {medicaments.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => setProducts(ps => ps.filter((_, j) => j !== i))}
-                      className="w-8 h-full flex items-center justify-center text-gray-200 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                      onClick={() => retirerLigne(i)}
+                      aria-label={`Retirer le médicament ${i + 1}`}
+                      className="w-8 self-stretch flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors"
                     >
                       ×
                     </button>
@@ -258,76 +246,85 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
               ))}
               <button
                 type="button"
-                onClick={() => {
-                  const newId = `p-${Date.now()}`;
-                  setProducts(ps => [...ps, { id: newId, name: '', quantity: '' }]);
-                  setTimeout(() => productRefs.current[products.length]?.focus(), 30);
-                }}
+                onClick={() => ajouterLigne(medicaments.length - 1)}
                 className="w-full text-left text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors px-4 py-2.5 flex items-center gap-2"
               >
-                <span className="text-base leading-none">+</span> Ajouter un produit
+                <span className="text-base leading-none">+</span> Ajouter un médicament
               </button>
             </div>
           </div>
 
-          {/* Attachments */}
+          {/* Notes */}
           <div>
-            <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-2">Pièces jointes</label>
+            <label className={ETIQUETTE} htmlFor="notes_initiales">Notes (optionnel)</label>
+            <textarea
+              id="notes_initiales"
+              value={form.notes_initiales}
+              onChange={set('notes_initiales')}
+              placeholder="Digicode, étage, horaires de présence…"
+              rows={2}
+              className={`${CHAMP} resize-none`}
+            />
+          </div>
 
-            {/* Drop zone */}
-            <div
-              onDragOver={e => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={handleDrop}
-              onClick={() => fileRef.current?.click()}
-              className="relative cursor-pointer border-2 border-dashed rounded-2xl px-4 py-5 text-center transition-colors"
-              style={{
-                borderColor: dragging ? '#7c3aed' : '#e5e7eb',
-                background: dragging ? '#f5f3ff' : '#fafafa',
-              }}
-            >
-              <input
-                ref={fileRef}
-                type="file"
-                multiple
-                className="hidden"
-                onChange={e => addFiles(e.target.files)}
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
-              />
-              <p className="text-sm text-gray-400">
-                <span className="font-600 text-gray-600">Cliquez</span> ou glissez-déposez vos fichiers ici
-              </p>
-              <p className="text-[11px] text-gray-300 mt-1">PDF, Word, images — jusqu'à 20 Mo par fichier</p>
-            </div>
-
-            {/* File list */}
-            {attachments.length > 0 && (
-              <div className="mt-2 space-y-1.5">
-                {attachments.map(att => (
-                  <div key={att.id} className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 slide-in">
-                    <span className="text-base shrink-0">{MIME_ICONS[att.mimeCategory]}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-600 text-gray-700 truncate">{att.name}</p>
-                      <p className="text-[10px] text-gray-400 font-mono">{att.size}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeAttachment(att.id)}
-                      className="w-5 h-5 rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-500 flex items-center justify-center text-gray-400 text-xs transition-colors shrink-0"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+          {/* Bon de livraison */}
+          <div>
+            <span className={ETIQUETTE}>Bon de livraison</span>
+            {bon ? (
+              <div className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 slide-in">
+                <span className="text-base shrink-0">{bon.type === 'application/pdf' ? '📄' : '🖼️'}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-600 text-gray-700 truncate">{bon.name}</p>
+                  <p className="text-[10px] text-gray-400 font-mono">{tailleLisible(bon.size)}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBon(null)}
+                  aria-label="Retirer le fichier"
+                  className="w-5 h-5 rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-500 flex items-center justify-center text-gray-400 text-xs transition-colors shrink-0"
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <div
+                role="button"
+                tabIndex={0}
+                onDragOver={e => { e.preventDefault(); setGlisse(true); }}
+                onDragLeave={() => setGlisse(false)}
+                onDrop={e => { e.preventDefault(); setGlisse(false); choisirFichier(e.dataTransfer.files); }}
+                onClick={() => fichierRef.current?.click()}
+                onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && fichierRef.current?.click()}
+                className="cursor-pointer border-2 border-dashed rounded-2xl px-4 py-5 text-center transition-colors"
+                style={{ borderColor: glisse ? '#7c3aed' : '#e5e7eb', background: glisse ? '#f5f3ff' : '#fafafa' }}
+              >
+                <p className="text-sm text-gray-400">
+                  <span className="font-600 text-gray-600">Cliquez</span> ou glissez-déposez le bon de livraison
+                </p>
+                <p className="text-[11px] text-gray-300 mt-1">PDF, JPEG ou PNG — 10 Mo maximum</p>
               </div>
             )}
+            <input
+              ref={fichierRef}
+              type="file"
+              className="hidden"
+              accept="application/pdf,image/jpeg,image/png"
+              onChange={e => { choisirFichier(e.target.files); e.target.value = ''; }}
+            />
           </div>
+
+          {erreur && (
+            <p role="alert" className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+              {erreur}
+            </p>
+          )}
 
           <button
             type="submit"
-            className="w-full bg-gray-900 hover:bg-gray-800 text-white font-600 text-sm py-3 rounded-xl transition-colors"
+            disabled={envoi}
+            className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white font-600 text-sm py-3 rounded-xl transition-colors"
           >
-            Créer la demande →
+            {envoi ? 'Enregistrement…' : 'Créer la demande →'}
           </button>
         </form>
       </div>
