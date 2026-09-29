@@ -178,7 +178,7 @@ export function useNotifications({ utilisateurId, demandes, chargement, messages
     if (!dernier) return;
     emettre([{
       id: `chat-${dernier.id}`,
-      titre: `💬 Message de ${dernier.auteur_role === 'dispatcheur' ? 'Florence' : 'la société de livraison'}`,
+      titre: `💬 Message de ${dernier.auteur_role === 'dispatcheur' ? 'Florence' : 'la pharmacie'}`,
       detail: dernier.contenu.length > 90 ? `${dernier.contenu.slice(0, 90)}…` : dernier.contenu,
       urgente: false,
       chat: true,

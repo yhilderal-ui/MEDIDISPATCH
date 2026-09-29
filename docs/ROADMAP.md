@@ -23,7 +23,7 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [x] **1a. Import du code Figma Make** dans ce dépôt (compilation vérifiée)
 - [x] **1b. Premier déploiement Vercel** — production : https://medidispatch.vercel.app
 - [x] **2. Modèle de données** — tables Supabase : `profiles`, `demandes`, `documents`, `notes`, `historique_statuts`, `messages`, `lectures` (vu / non vu) ; numéro de ticket auto ; règles d'accès (RLS)
-- [x] **3. Authentification réelle** — 2 comptes (Dispatcheur, Société de livraison), inscription publique désactivée, badge de rôle
+- [x] **3. Authentification réelle** — 2 comptes (Dispatcheur, Pharmacie), inscription publique désactivée, badge de rôle
 - [x] **4. Création de demande** — formulaire, liste de médicaments, pièces jointes, sélecteur de date (ni passé, ni dimanche ; jour même autorisé)
 - [x] **5. Tableau hebdomadaire** — colonnes lundi → samedi, recherche (patient / ticket, sans tenir compte des accents), filtres (statut, criticité, date) pour les deux rôles
 - [x] **6. Détail de la carte** — infos patient, criticité mise en avant, documents, fil de notes, report, annulation, **historique détaillé** (qui, quoi, quand, champs modifiés) et **modification des informations** par les deux rôles

@@ -195,7 +195,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
   };
 
   // L'autre compte a-t-il consulté la carte depuis sa dernière modification ?
-  const autre = role === 'dispatcher' ? 'la société de livraison' : 'le dispatcheur';
+  const autre = role === 'dispatcher' ? 'la pharmacie' : 'le dispatcheur';
   const lectureAutre = demande.lectures_demandes.find(l => l.utilisateur_id !== utilisateurId);
   const autreAJour = lectureAutre && lectureAutre.vu_le >= demande.derniere_activite_le;
 
