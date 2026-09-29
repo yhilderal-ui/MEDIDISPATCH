@@ -1,33 +1,27 @@
 import { useState } from 'react';
 import logo from '../assets/logo.png';
 
-type Role = 'dispatcher' | 'livreur';
-
 interface Props {
-  onLogin: (role: Role, name: string) => void;
+  onSignIn: (email: string, password: string) => Promise<string | null>;
+  initialError?: string;
+  configMissing?: boolean;
 }
 
-const ROLES = [
-  {
-    key: 'dispatcher' as Role,
-    emoji: '🎛',
-    title: 'Dispatcheur',
-    description: 'Créez et gérez les demandes de livraison. Suivez l\'état de chaque course en temps réel.',
-    color: '#111827',
-    placeholder: 'ex : Marie Dupont',
-  },
-  {
-    key: 'livreur' as Role,
-    emoji: '🚚',
-    title: 'Pharmacie',
-    description: 'Consultez les nouvelles demandes, accédez aux documents médicaux et validez vos prises en charge.',
-    color: '#7c3aed',
-    placeholder: 'ex : Pharmacie Centrale Paris',
-  },
-];
+export default function LoginScreen({ onSignIn, initialError, configMissing }: Props) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(initialError ?? null);
+  const [submitting, setSubmitting] = useState(false);
 
-export default function LoginScreen({ onLogin }: Props) {
-  const [names, setNames] = useState({ dispatcher: '', livreur: '' });
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password) return;
+    setSubmitting(true);
+    setError(null);
+    const err = await onSignIn(email.trim(), password);
+    setSubmitting(false);
+    if (err) setError(err);
+  };
 
   return (
     <div className="min-h-screen bg-[#f5f4f0] flex flex-col items-center justify-center p-6">
@@ -41,32 +35,59 @@ export default function LoginScreen({ onLogin }: Props) {
         </div>
       </div>
 
-      <p className="text-sm text-gray-500 mb-8 font-500">Connectez-vous en tant que :</p>
+      <form
+        onSubmit={submit}
+        className="w-full max-w-sm bg-white rounded-3xl border border-black/5 shadow-sm p-6 flex flex-col"
+      >
+        <p className="font-700 text-gray-900 text-base mb-1">Connexion</p>
+        <p className="text-sm text-gray-400 leading-relaxed mb-5">
+          Votre rôle (Dispatcheur ou Société de livraison) est associé à votre compte.
+        </p>
 
-      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl">
-        {ROLES.map(r => (
-          <div key={r.key} className="flex-1 bg-white rounded-3xl border border-black/5 shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col">
-            <p className="font-700 text-gray-900 text-base mb-2">{r.title}</p>
-            <p className="text-sm text-gray-400 leading-relaxed mb-5 flex-1">{r.description}</p>
+        {configMissing && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-3">
+            Configuration Supabase manquante : ajoutez VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY.
+          </p>
+        )}
 
-            <input
-              value={names[r.key]}
-              onChange={e => setNames(n => ({ ...n, [r.key]: e.target.value }))}
-              onKeyDown={e => e.key === 'Enter' && onLogin(r.key, names[r.key] || r.title)}
-              placeholder={r.placeholder}
-              className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 outline-none mb-3 placeholder:text-gray-300 focus:border-gray-400 transition-colors"
-            />
+        <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-1" htmlFor="email">
+          E-mail
+        </label>
+        <input
+          id="email"
+          type="email"
+          autoComplete="username"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 outline-none mb-3 focus:border-gray-400 transition-colors"
+        />
 
-            <button
-              onClick={() => onLogin(r.key, names[r.key] || r.title)}
-              className="w-full text-sm font-600 py-2.5 rounded-xl transition-colors text-white"
-              style={{ background: r.color }}
-            >
-              Se connecter →
-            </button>
-          </div>
-        ))}
-      </div>
+        <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400 block mb-1" htmlFor="password">
+          Mot de passe
+        </label>
+        <input
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 outline-none mb-4 focus:border-gray-400 transition-colors"
+        />
+
+        {error && (
+          <p role="alert" className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2 mb-3">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={submitting || configMissing || !email.trim() || !password}
+          className="w-full text-sm font-600 py-2.5 rounded-xl transition-colors text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-40"
+        >
+          {submitting ? 'Connexion…' : 'Se connecter →'}
+        </button>
+      </form>
 
       <p className="mt-10 text-[11px] text-gray-300 font-mono">Accès sécurisé — données de santé protégées</p>
     </div>

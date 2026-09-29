@@ -9,10 +9,10 @@ import LoginScreen from './components/LoginScreen';
 import WeekView from './components/WeekView';
 import DeliveryCardComponent from './components/DeliveryCardComponent';
 import logo from './assets/logo.png';
+import { useAuth, type Role } from './lib/useAuth';
+import { supabaseConfigured } from './lib/supabase';
 
 type DispatcherView = 'kanban' | 'week';
-
-type Role = 'dispatcher' | 'livreur';
 
 interface ChatMessage {
   id: string;
@@ -24,8 +24,9 @@ interface ChatMessage {
 let idCounter = 9;
 
 export default function App() {
-  const [role, setRole] = useState<Role | null>(null);
-  const [userName, setUserName] = useState('');
+  const { state: auth, signIn, signOut } = useAuth();
+  const role: Role | null = auth.status === 'signed_in' ? auth.user.role : null;
+  const userName = auth.status === 'signed_in' ? auth.user.name : '';
   const [cards, setCards] = useState<DeliveryCard[]>(INITIAL_CARDS);
   const [showModal, setShowModal] = useState(false);
   const [dispatcherView, setDispatcherView] = useState<DispatcherView>('kanban');
@@ -53,12 +54,7 @@ export default function App() {
     return () => clearTimeout(t);
   }, [cards]);
 
-  const handleLogin = (r: Role, name: string) => {
-    setRole(r);
-    setUserName(name);
-  };
-
-  const handleLogout = () => setRole(null);
+  const handleLogout = () => signOut();
 
   const handleCreate = (data: Omit<DeliveryCard, 'id' | 'createdAt' | 'status' | 'isNew' | 'livreurStatus'>) => {
     const newCard: DeliveryCard = {
@@ -125,7 +121,23 @@ export default function App() {
     }]);
   };
 
-  if (!role) return <LoginScreen onLogin={handleLogin} />;
+  if (auth.status === 'loading') {
+    return (
+      <div className="min-h-screen bg-[#f5f4f0] flex items-center justify-center">
+        <p className="text-xs text-gray-400 font-mono">Chargement…</p>
+      </div>
+    );
+  }
+
+  if (!role) {
+    return (
+      <LoginScreen
+        onSignIn={signIn}
+        initialError={auth.status === 'signed_out' ? auth.error : undefined}
+        configMissing={!supabaseConfigured}
+      />
+    );
+  }
 
   const nouveauCount = cards.filter(c => c.status === 'nouveau').length;
   const newLivreurCount = cards.filter(c => c.livreurStatus === 'nouveau').length;
@@ -152,7 +164,7 @@ export default function App() {
             : { background: '#f5f3ff', color: '#7c3aed' }}
         >
           <span>{role === 'dispatcher' ? '🎛' : '🚚'}</span>
-          <span>{role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie'}</span>
+          <span>{role === 'dispatcher' ? 'Dispatcheur' : 'Société de livraison'}</span>
           {userName && userName !== (role === 'dispatcher' ? 'Dispatcheur' : 'Société de livraison') && (
             <span className="opacity-60">— {userName}</span>
           )}

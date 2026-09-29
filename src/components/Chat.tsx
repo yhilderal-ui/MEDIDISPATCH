@@ -17,7 +17,7 @@ interface Props {
 
 const AUTHOR_LABEL: Record<Author, string> = {
   dispatcher: 'Dispatcheur',
-  livreur: 'Pharmacie',
+  livreur: 'Société de livraison',
 };
 
 const AUTHOR_COLOR: Record<Author, { bg: string; text: string; bubble: string; bubbleText: string }> = {
