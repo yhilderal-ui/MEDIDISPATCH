@@ -21,7 +21,7 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 
 - [x] **0. Préparation** — comptes GitHub (ok), Supabase, Vercel ; récupération du lien Figma Make
 - [x] **1a. Import du code Figma Make** dans ce dépôt (compilation vérifiée)
-- [x] **1b. Premier déploiement Vercel** — production : https://medidispatch.vercel.app
+- [x] **1b. Premier déploiement Vercel** — production : **https://www.medi-dispatch.fr** (adresse technique : https://medidispatch.vercel.app)
 - [x] **2. Modèle de données** — tables Supabase : `profiles`, `demandes`, `documents`, `notes`, `historique_statuts`, `messages`, `lectures` (vu / non vu) ; numéro de ticket auto ; règles d'accès (RLS)
 - [x] **3. Authentification réelle** — 2 comptes (Dispatcheur, Pharmacie), inscription publique désactivée, badge de rôle
 - [x] **4. Création de demande** — formulaire, liste de médicaments, pièces jointes, sélecteur de date (ni passé, ni dimanche ; jour même autorisé)
@@ -37,7 +37,7 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [x] **11. Archives** — une demande livrée reste dans le tableau **le jour de sa livraison** et bascule dans les Archives **à minuit** (heure de Paris), ou tout de suite avec le bouton « Archiver maintenant » (décision du 29/09, remplace le délai de 30 jours) ; vue « Archives » séparée avec recherche. la vue Archives affiche les **30 derniers jours**, les plus anciennes se retrouvent par la **recherche** (option B, décision du 29/09) ; **aucune suppression automatique** tant que la durée légale de conservation n'est pas fixée
 - [x] **12a. Affichage mobile** — en-tête compact, onglets de statut, filtres repliables, vue semaine verticale, chat plein écran, alertes en bas d'écran, installation sur l'écran d'accueil ; icônes Lucide à la place des émoticônes
 - [ ] **12b. Recette** — à dérouler avec Florence et la pharmacie, puis remise à zéro des données de test : voir `docs/RECETTE.md` (section 9) et `supabase/scripts/nettoyer_donnees_test.sql`
-- [ ] **12c. Nom de domaine** (optionnel) — à acheter puis relier à Vercel
+- [x] **12c. Nom de domaine** — `medi-dispatch.fr` acheté chez OVH ; zone DNS : `@` A `216.198.79.1` et `www` CNAME vers Vercel ; `medi-dispatch.fr` redirige vers `www.medi-dispatch.fr` ; HTTPS automatique (Vercel). Renouvellement annuel chez OVH
 
 ## Écarts entre la maquette et le cahier des charges
 
