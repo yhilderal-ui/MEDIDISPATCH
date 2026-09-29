@@ -27,7 +27,7 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [x] **4. Création de demande** — formulaire, liste de médicaments, bon de livraison (seule pièce jointe en V1, l'ordonnance viendra plus tard), sélecteur de date (ni passé, ni dimanche ; jour même autorisé)
 - [ ] **5. Tableau hebdomadaire** — colonnes lundi → samedi, recherche (patient / ticket), filtres (statut, criticité, date)
 - [ ] **6. Détail de la carte** — ✅ fait à l'étape 4 : infos patient, criticité mise en avant, documents, fil de notes, report, annulation. Reste : affichage de l'historique, modification des informations
-- [x] **7. Statuts et preuve de livraison** — Nouvelle → En cours → Livrée, photo obligatoire au passage à « Livrée » (fait avec l'étape 4)
+- [x] **7. Statuts et preuve de livraison** — Nouvelle → En cours → Livrée ; photo de preuve **optionnelle** en V1 (décision du 29/09, le cahier des charges la prévoyait obligatoire)
 - [ ] **8. Vu / non vu** sur les cartes
 - [ ] **9. Chat global** — messages horodatés avec auteur, vu / non vu, temps réel
 - [ ] **10. Notifications in-app** — nouvelles demandes, nouveaux messages
@@ -53,7 +53,7 @@ cahier des charges, et à quelle étape on le corrige.
 | Recherche / filtres | Recherche côté pharmacie uniquement, pas de filtres | Recherche + filtres statut / criticité / date pour les deux rôles | 5 |
 | Notes | Auteur saisi librement | Auteur = compte connecté, horodaté | 6 |
 | Historique | Absent | Historique des statuts et des reports | 6 |
-| Preuve de livraison | Absente | Photo obligatoire au passage à « Livrée » | 7 |
+| Preuve de livraison | Absente | Photo optionnelle en V1 (décision du 29/09 ; obligatoire dans le cahier des charges) | 7 |
 | Vu / non vu | Uniquement un compteur local sur le chat | Sur chaque carte et chaque message, partagé entre les deux rôles | 8 et 9 |
 | Chat | Local au navigateur, invisible pour l'autre rôle | Partagé en temps réel | 9 |
 

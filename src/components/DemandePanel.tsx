@@ -318,41 +318,40 @@ export default function DemandePanel({ demande, onClose, onChangerStatut, onRepo
             </button>
           )}
 
-          {demande.statut === 'en_cours' && (
+          {/* Photo de preuve : optionnelle en V1, ajoutable pendant ou après la livraison. */}
+          {(demande.statut === 'en_cours' || demande.statut === 'livree') && !aPreuve && (
             <>
-              {!aPreuve && (
-                <>
-                  <button
-                    type="button"
-                    disabled={occupe}
-                    onClick={() => preuveRef.current?.click()}
-                    className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-600 text-sm py-2.5 rounded-xl transition-colors disabled:opacity-50"
-                  >
-                    📷 Ajouter la photo de preuve de livraison
-                  </button>
-                  <input
-                    ref={preuveRef}
-                    type="file"
-                    className="hidden"
-                    accept="image/jpeg,image/png"
-                    onChange={e => {
-                      const f = e.target.files?.[0];
-                      e.target.value = '';
-                      if (f) executer(() => onDeposer('preuve_livraison', f));
-                    }}
-                  />
-                </>
-              )}
               <button
                 type="button"
-                disabled={occupe || !aPreuve}
-                title={aPreuve ? undefined : "Ajoutez d'abord la photo de preuve"}
-                onClick={() => executer(() => onChangerStatut('livree'))}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-600 text-sm py-2.5 rounded-xl transition-colors"
+                disabled={occupe}
+                onClick={() => preuveRef.current?.click()}
+                className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-600 text-sm py-2.5 rounded-xl transition-colors disabled:opacity-50"
               >
-                ✓ Marquer comme livrée
+                📷 Ajouter une photo de preuve <span className="font-400 opacity-70">(optionnel)</span>
               </button>
+              <input
+                ref={preuveRef}
+                type="file"
+                className="hidden"
+                accept="image/jpeg,image/png"
+                onChange={e => {
+                  const f = e.target.files?.[0];
+                  e.target.value = '';
+                  if (f) executer(() => onDeposer('preuve_livraison', f));
+                }}
+              />
             </>
+          )}
+
+          {demande.statut === 'en_cours' && (
+            <button
+              type="button"
+              disabled={occupe}
+              onClick={() => executer(() => onChangerStatut('livree'))}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-600 text-sm py-2.5 rounded-xl transition-colors"
+            >
+              ✓ Marquer comme livrée
+            </button>
           )}
 
           {demande.statut === 'livree' && (
