@@ -324,13 +324,24 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
                 📄 Générer le bon de livraison
               </button>
             )}
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {PIECES.filter(type => !demande.documents.some(d => d.type === type && !d.genere)).map(type => (
+            {/* Les deux rôles peuvent ajouter des pièces, à tout moment : le
+                livreur se voit souvent remettre les documents manquants sur place.
+                Plusieurs fichiers par type sont possibles (recto / verso, pages). */}
+            <div className="mt-3 rounded-2xl border border-violet-100 bg-violet-50/40 p-3">
+              <p className="text-[11px] font-600 text-violet-800 mb-2">
+                📎 Ajouter un document {role === 'livreur' ? 'remis sur place' : ''}
+                <span className="block font-400 text-[10px] text-violet-500">Photo ou PDF — sur téléphone, l'appareil photo est proposé</span>
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+              {PIECES.map(type => {
+                const nb = demande.documents.filter(d => d.type === type && !d.genere).length;
+                return (
                 <label
                   key={type}
-                  className="text-center text-[11px] font-600 text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-xl px-2 py-2 cursor-pointer transition-colors"
+                  className="text-center text-[11px] font-600 text-violet-700 bg-white hover:bg-violet-100 border border-violet-200 rounded-xl px-2 py-2.5 cursor-pointer transition-colors"
                 >
                   + {LIBELLE_PIECE[type]}
+                  {nb > 0 && <span className="block text-[9px] font-400 text-violet-400">déjà {nb} — en ajouter</span>}
                   <input
                     type="file"
                     className="hidden"
@@ -342,7 +353,9 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
                     }}
                   />
                 </label>
-              ))}
+                );
+              })}
+              </div>
             </div>
           </section>
 
