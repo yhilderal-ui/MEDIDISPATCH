@@ -184,20 +184,20 @@ export default function Chat({ utilisateurId, role, messages, nonLus, autreVuJus
         type="button"
         onClick={() => setOuvert(o => !o)}
         aria-label={ouvert ? 'Fermer la messagerie' : `Ouvrir la messagerie${nonLus ? ` (${nonLus} non lus)` : ''}`}
-        className={`relative w-12 h-12 rounded-2xl shadow-lg items-center justify-center transition-all hover:scale-105 active:scale-95 ${ouvert ? 'hidden sm:flex' : 'flex'}`}
+        className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl shadow-lg items-center justify-center transition-all hover:scale-105 active:scale-95 ${ouvert ? 'hidden sm:flex' : 'flex'}`}
         style={{ background: ouvert ? '#374151' : '#111827' }}
       >
         {ouvert ? (
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden>
             <path d="M4 4l8 8M12 4l-8 8" stroke="white" strokeWidth="2" strokeLinecap="round" />
           </svg>
         ) : (
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+          <svg width="24" height="24" viewBox="0 0 18 18" fill="none" aria-hidden>
             <path d="M2 2h14a1 1 0 011 1v9a1 1 0 01-1 1H5l-4 3V3a1 1 0 011-1z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
         {!ouvert && nonLus > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-violet-500 text-white text-[10px] font-700 rounded-full flex items-center justify-center pulse-dot">
+          <span className="absolute -top-1.5 -right-1.5 min-w-6 h-6 px-1.5 bg-violet-500 text-white text-xs font-700 rounded-full flex items-center justify-center pulse-dot">
             {nonLus}
           </span>
         )}
