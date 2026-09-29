@@ -4,7 +4,7 @@ Deux bases Supabase distinctes, le même code.
 
 | | Production | Test |
 |---|---|---|
-| Adresse | https://www.medi-dispatch.fr | Prévisualisations Vercel (`medidispatch-git-…vercel.app`) |
+| Adresse | https://www.medi-dispatch.fr | https://medidispatch-git-claude-busy-noether-naiyom-yy-66ed.vercel.app (dernière version de la branche de travail) |
 | Branche | `main` | toutes les autres branches |
 | Base Supabase | projet **medidispatch** | projet **medidispatch-test** |
 | Données | vraies demandes | données **fictives** uniquement |
