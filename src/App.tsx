@@ -29,6 +29,8 @@ import {
   surveillerDemandes,
 } from './lib/demandes';
 import { useChat } from './lib/chat';
+import { useNotifications } from './lib/notifications';
+import Alertes from './components/Alertes';
 import { ajouterJours, lundiDeLaSemaine, moisCourt } from './lib/dates';
 
 type DispatcherView = 'kanban' | 'week';
@@ -92,6 +94,21 @@ export default function App() {
     if (!ouverteId || !ouverteNonVue) return;
     marquerVue(ouverteId).then(recharger).catch(e => setErreur(messageErreur(e)));
   }, [ouverteId, ouverteNonVue, recharger]);
+
+  // Étape 10 : alertes quand l'autre compte crée, modifie ou écrit.
+  const [chatSignal, setChatSignal] = useState(0);
+  const [chatOuvert, setChatOuvert] = useState(false);
+  const ouvrirChat = useCallback(() => setChatSignal(n => n + 1), []);
+  const notif = useNotifications({
+    utilisateurId: userId,
+    demandes,
+    chargement,
+    messages: chat.messages,
+    nonLusChat: chat.nonLus,
+    chatOuvert,
+    onOuvrirDemande: setOuverteId,
+    onOuvrirChat: ouvrirChat,
+  });
 
   useEffect(() => {
     if (!info) return;
@@ -228,6 +245,24 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={notif.basculerSon}
+            title={notif.son ? 'Son des alertes activé (cliquer pour couper)' : 'Son des alertes coupé (cliquer pour activer)'}
+            aria-label={notif.son ? 'Couper le son des alertes' : 'Activer le son des alertes'}
+            className="text-base leading-none opacity-70 hover:opacity-100"
+          >
+            {notif.son ? '🔔' : '🔕'}
+          </button>
+          {notif.permission === 'default' && (
+            <button
+              type="button"
+              onClick={notif.autoriserNavigateur}
+              className="hidden md:inline text-[11px] font-600 text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-2.5 py-1 rounded-full"
+            >
+              Recevoir les alertes même fenêtre réduite
+            </button>
+          )}
           {nbNonVues > 0 && (
             <span className="flex items-center gap-1.5 text-xs font-600 text-violet-700 bg-violet-100 px-2.5 py-1 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-violet-500 pulse-dot" aria-hidden />
@@ -380,6 +415,8 @@ export default function App() {
 
       {showModal && <CreateCardModal onClose={() => setShowModal(false)} onSubmit={handleCreate} />}
 
+      <Alertes alertes={notif.alertes} onActiver={notif.activer} onFermer={notif.fermer} />
+
       <Chat
         utilisateurId={userId}
         role={role}
@@ -389,6 +426,8 @@ export default function App() {
         erreur={chat.erreur}
         onSend={chat.envoyer}
         onMarquerLu={chat.marquerLu}
+        ouvrirSignal={chatSignal}
+        onOuvertChange={setChatOuvert}
       />
     </div>
   );

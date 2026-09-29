@@ -33,7 +33,7 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [x] **8. Vu / non vu** sur les cartes — pastilles « Non vue » / « Mise à jour », compteur dans l'en-tête, « Vue par … » dans le détail
 - [x] **9. Chat global** — messages horodatés avec auteur, compteur de non lus, « Vu ✓ », temps réel
 - [x] **Suppression de cartes** (ajout du 29/09) — Dispatcheur uniquement, demande annulée uniquement, confirmation par le n° de ticket, trace dans `journal_suppressions`
-- [ ] **10. Notifications in-app** — nouvelles demandes, nouveaux messages
+- [x] **10. Notifications in-app** — bandeau cliquable, son (plus insistant pour une demande urgente, coupable avec 🔔/🔕), compteur dans le titre de l'onglet qui clignote en arrière-plan, notification du navigateur optionnelle ; uniquement pour les actions de l'autre compte
 - [x] **11. Archives** — demandes livrées sorties du tableau actif **30 jours** après la livraison (décision du 29/09), vue « Archives » séparée avec recherche
 - [ ] **12. Mise en ligne** — nom de domaine, variables d'environnement, recette complète sur mobile et ordinateur
 
