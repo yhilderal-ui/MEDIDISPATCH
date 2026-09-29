@@ -79,7 +79,7 @@ export default function ModificationDemande({ demande, onAnnuler, onEnregistrer 
         <label className={ETIQUETTE} htmlFor="mod_crit">Criticité</label>
         <select id="mod_crit" value={form.criticite} onChange={set('criticite')} className={CHAMP}>
           {(Object.keys(CRITICITE_CONFIG) as Criticite[]).map(c => (
-            <option key={c} value={c}>{CRITICITE_CONFIG[c].emoji} {CRITICITE_CONFIG[c].label}</option>
+            <option key={c} value={c}>{CRITICITE_CONFIG[c].label}</option>
           ))}
         </select>
       </div>

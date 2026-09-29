@@ -13,6 +13,7 @@ import { CRITICITE_CONFIG } from '../data';
 
 export interface Alerte {
   id: string;
+  genre: 'nouvelle' | 'maj' | 'message';
   titre: string;
   detail: string;
   urgente: boolean;
@@ -158,7 +159,8 @@ export function useNotifications({ utilisateurId, demandes, chargement, messages
       const crit = CRITICITE_CONFIG[d.criticite];
       nouvelles.push({
         id: `${id}-${d.derniere_activite_le}`,
-        titre: etat === 'nouvelle' ? `${crit.emoji} Nouvelle demande ${d.numero_ticket}` : `✏️ Demande ${d.numero_ticket} mise à jour`,
+        genre: etat === 'nouvelle' ? 'nouvelle' : 'maj',
+        titre: etat === 'nouvelle' ? `Nouvelle demande ${d.numero_ticket}` : `Demande ${d.numero_ticket} mise à jour`,
         detail: `${d.patient_nom} — ${crit.label}`,
         urgente: d.criticite === 'urgent',
         demandeId: id,
@@ -178,7 +180,8 @@ export function useNotifications({ utilisateurId, demandes, chargement, messages
     if (!dernier) return;
     emettre([{
       id: `chat-${dernier.id}`,
-      titre: `💬 Message de ${dernier.auteur_role === 'dispatcheur' ? 'Florence' : 'la pharmacie'}`,
+      genre: 'message',
+      titre: `Message de ${dernier.auteur_role === 'dispatcheur' ? 'Florence' : 'la pharmacie'}`,
       detail: dernier.contenu.length > 90 ? `${dernier.contenu.slice(0, 90)}…` : dernier.contenu,
       urgente: false,
       chat: true,
@@ -201,7 +204,7 @@ export function useNotifications({ utilisateurId, demandes, chargement, messages
         return;
       }
       bascule = !bascule;
-      document.title = bascule ? `🔔 ${total} nouveauté${total > 1 ? 's' : ''}` : titreBase;
+      document.title = bascule ? `● ${total} nouveauté${total > 1 ? 's' : ''}` : titreBase;
     }, 1200);
     return () => {
       clearInterval(minuteur);

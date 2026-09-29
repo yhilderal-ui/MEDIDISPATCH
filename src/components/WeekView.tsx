@@ -1,4 +1,5 @@
 import type { Demande, EtatVu } from '../types';
+import BadgeCriticite from './BadgeCriticite';
 import BadgeVu from './BadgeVu';
 import { CRITICITE_CONFIG, STATUT_CONFIG } from '../data';
 import { ajouterJours, aujourdhuiParis, moisCourt, versJour } from '../lib/dates';
@@ -37,9 +38,9 @@ function WeekCard({ demande, onClick, etatVu }: { demande: Demande; onClick: () 
         {etatVu && <div className="mb-1"><BadgeVu etat={etatVu} compact /></div>}
         <p className="font-600 text-gray-900 text-[11px] leading-tight truncate">{demande.patient_nom}</p>
         <p className="text-[10px] text-gray-400 truncate mt-0.5">{demande.patient_adresse}</p>
-        <p className="text-[9px] font-600 truncate mt-1.5" style={{ color: criticite.color }}>
-          {criticite.emoji} {criticite.label}
-        </p>
+        <div className="mt-1.5 flex">
+          <BadgeCriticite criticite={demande.criticite} className="text-[9px]" />
+        </div>
       </div>
     </button>
   );

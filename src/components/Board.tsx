@@ -23,7 +23,7 @@ export default function Board({ demandes, onOpen, etats }: Props) {
             <div key={statut} className="flex flex-col min-w-[240px] w-[240px]">
               <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">{cfg.emoji}</span>
+                  <cfg.Icone size={15} style={{ color: cfg.color }} aria-hidden />
                   <span className="text-xs font-700 uppercase tracking-widest" style={{ color: cfg.color }}>
                     {cfg.court}
                   </span>

@@ -1,5 +1,5 @@
 import type { Demande } from '../types';
-import { CRITICITE_CONFIG } from '../data';
+import BadgeCriticite from './BadgeCriticite';
 import { formatHorodatage, formatJour } from '../lib/dates';
 
 interface Props {
@@ -26,7 +26,6 @@ export default function ArchivesView({ demandes, chargement, onOpen }: Props) {
     <div className="h-full overflow-y-auto pb-4">
       <div className="bg-white rounded-2xl border border-black/5 shadow-sm divide-y divide-gray-100">
         {demandes.map(d => {
-          const c = CRITICITE_CONFIG[d.criticite];
           return (
             <button
               key={d.id}
@@ -39,8 +38,8 @@ export default function ArchivesView({ demandes, chargement, onOpen }: Props) {
                 <span className="block text-sm font-600 text-gray-900 truncate">{d.patient_nom}</span>
                 <span className="block text-[11px] text-gray-400 truncate">{d.patient_adresse}</span>
               </span>
-              <span className="text-xs font-600 col-start-2 sm:col-start-auto" style={{ color: c.color }}>
-                {c.emoji} {c.label}
+              <span className="col-start-2 sm:col-start-auto">
+                <BadgeCriticite criticite={d.criticite} />
               </span>
               <span className="text-[11px] text-gray-500 col-start-2 sm:col-start-auto">
                 Prévue {formatJour(d.jour_livraison)}

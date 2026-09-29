@@ -1,4 +1,5 @@
 import type { Demande, EtatVu } from '../types';
+import BadgeCriticite from './BadgeCriticite';
 import BadgeVu from './BadgeVu';
 import { CRITICITE_CONFIG, STATUT_CONFIG } from '../data';
 import { formatJour } from '../lib/dates';
@@ -41,9 +42,7 @@ export default function DeliveryCardComponent({ demande, onOpen, etatVu = null }
         </div>
 
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-600 truncate" style={{ color: criticite.color }}>
-            {criticite.emoji} {criticite.label}
-          </span>
+          <BadgeCriticite criticite={demande.criticite} />
           <span
             className="text-[10px] font-600 uppercase tracking-wide px-2 py-0.5 rounded-full shrink-0"
             style={{ color: statut.color, background: statut.color + '18' }}

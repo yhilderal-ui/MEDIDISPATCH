@@ -1,10 +1,12 @@
+import type { LucideIcon } from 'lucide-react';
+import { Camera, CircleCheck, CircleX, ClipboardList, CreditCard, FileText, ShieldCheck, Truck } from 'lucide-react';
 import type { Criticite, Statut, TypeDocument, TypePiece } from './types';
 
 // Section 7 du cahier des charges.
-export const CRITICITE_CONFIG: Record<Criticite, { label: string; emoji: string; color: string; bg: string }> = {
-  urgent: { label: 'Urgent', emoji: '🔴', color: '#dc2626', bg: '#fef2f2' },
-  standard_prioritaire: { label: 'Standard prioritaire', emoji: '🟠', color: '#ea580c', bg: '#fff7ed' },
-  standard: { label: 'Standard', emoji: '🟢', color: '#16a34a', bg: '#f0fdf4' },
+export const CRITICITE_CONFIG: Record<Criticite, { label: string; color: string; bg: string }> = {
+  urgent: { label: 'Urgent', color: '#dc2626', bg: '#fef2f2' },
+  standard_prioritaire: { label: 'Standard prioritaire', color: '#ea580c', bg: '#fff7ed' },
+  standard: { label: 'Standard', color: '#16a34a', bg: '#f0fdf4' },
 };
 
 export const CRITICITE_ORDRE: Record<Criticite, number> = {
@@ -14,19 +16,19 @@ export const CRITICITE_ORDRE: Record<Criticite, number> = {
 };
 
 // Section 5 : Nouvelle demande → En cours de livraison → Livrée (+ Annulée).
-export const STATUT_CONFIG: Record<Statut, { label: string; court: string; color: string; emoji: string }> = {
-  nouvelle: { label: 'Nouvelle demande', court: 'Nouvelle', color: '#7c3aed', emoji: '📋' },
-  en_cours: { label: 'En cours de livraison', court: 'En cours', color: '#0891b2', emoji: '🚚' },
-  livree: { label: 'Livrée', court: 'Livrée', color: '#059669', emoji: '✅' },
-  annulee: { label: 'Annulée', court: 'Annulée', color: '#ef4444', emoji: '✕' },
+export const STATUT_CONFIG: Record<Statut, { label: string; court: string; color: string; Icone: LucideIcon }> = {
+  nouvelle: { label: 'Nouvelle demande', court: 'Nouvelle', color: '#7c3aed', Icone: ClipboardList },
+  en_cours: { label: 'En cours de livraison', court: 'En cours', color: '#0891b2', Icone: Truck },
+  livree: { label: 'Livrée', court: 'Livrée', color: '#059669', Icone: CircleCheck },
+  annulee: { label: 'Annulée', court: 'Annulée', color: '#ef4444', Icone: CircleX },
 };
 
-export const DOC_CONFIG: Record<TypeDocument, { icon: string; color: string; bg: string; label: string }> = {
-  ordonnance: { icon: '📄', color: '#7c3aed', bg: '#f5f3ff', label: 'Ordonnance' },
-  bon_livraison: { icon: '📋', color: '#0891b2', bg: '#ecfeff', label: 'Bon de livraison' },
-  preuve_livraison: { icon: '📷', color: '#059669', bg: '#f0fdf4', label: 'Preuve de livraison' },
-  carte_vitale: { icon: '💳', color: '#16a34a', bg: '#f0fdf4', label: 'Carte Vitale' },
-  mutuelle: { icon: '🛡️', color: '#2563eb', bg: '#eff6ff', label: 'Mutuelle' },
+export const DOC_CONFIG: Record<TypeDocument, { Icone: LucideIcon; color: string; bg: string; label: string }> = {
+  ordonnance: { Icone: FileText, color: '#7c3aed', bg: '#f5f3ff', label: 'Ordonnance' },
+  bon_livraison: { Icone: ClipboardList, color: '#0891b2', bg: '#ecfeff', label: 'Bon de livraison' },
+  preuve_livraison: { Icone: Camera, color: '#059669', bg: '#f0fdf4', label: 'Preuve de livraison' },
+  carte_vitale: { Icone: CreditCard, color: '#16a34a', bg: '#f0fdf4', label: 'Carte Vitale' },
+  mutuelle: { Icone: ShieldCheck, color: '#2563eb', bg: '#eff6ff', label: 'Mutuelle' },
 };
 
 export const PIECES: TypePiece[] = ['ordonnance', 'carte_vitale', 'mutuelle', 'bon_livraison'];

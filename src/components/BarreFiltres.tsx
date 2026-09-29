@@ -61,7 +61,7 @@ export default function BarreFiltres({ filtres, onChange, nbResultats, nbTotal, 
       <select aria-label="Filtrer par criticité" value={filtres.criticite} onChange={e => set('criticite', e.target.value as Criticite | 'toutes')} className={SELECT}>
         <option value="toutes">Toutes criticités</option>
         {(Object.keys(CRITICITE_CONFIG) as Criticite[]).map(c => (
-          <option key={c} value={c}>{CRITICITE_CONFIG[c].emoji} {CRITICITE_CONFIG[c].label}</option>
+          <option key={c} value={c}>{CRITICITE_CONFIG[c].label}</option>
         ))}
       </select>
 

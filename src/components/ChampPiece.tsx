@@ -3,7 +3,7 @@ import { erreurFichier } from '../lib/demandes';
 
 interface Props {
   libelle: string;
-  icone: string;
+  icone: React.ReactNode;
   fichier: File | undefined;
   onChange: (f: File | undefined) => void;
   onErreur: (message: string | null) => void;

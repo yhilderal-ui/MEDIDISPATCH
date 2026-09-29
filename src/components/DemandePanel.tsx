@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
 import type { Demande, DocumentJoint, ModificationDemande as Champs, Note, Statut, TypeDocument } from '../types';
 import ModificationDemande from './ModificationDemande';
 import HistoriqueDemande from './HistoriqueDemande';
@@ -50,7 +51,7 @@ function LigneDocument({ doc }: { doc: DocumentJoint }) {
         className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors text-left group"
       >
         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-lg" style={{ background: cfg.bg }}>
-          {cfg.icon}
+          <cfg.Icone size={18} style={{ color: cfg.color }} aria-hidden />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-600 text-gray-800 leading-tight">
@@ -237,7 +238,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
             className="rounded-xl px-3 py-2 mb-3 text-sm font-700 flex items-center gap-2"
             style={{ color: criticite.color, background: criticite.bg }}
           >
-            <span>{criticite.emoji}</span> {criticite.label}
+            <span className="w-2.5 h-2.5 rounded-full" style={{ background: criticite.color }} aria-hidden /> {criticite.label}
           </div>
 
           <h2 className="text-base font-700 text-gray-900 mb-2">{demande.patient_nom}</h2>
@@ -247,13 +248,13 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
               <span>{demande.patient_adresse}</span>
             </p>
             <p className="flex items-center gap-2">
-              <span aria-hidden>📞</span>
+              <Phone size={13} className="text-gray-400 shrink-0" aria-hidden />
               <a href={`tel:${demande.patient_telephone.replace(/\s/g, '')}`} className="underline decoration-gray-300 hover:text-gray-900">
                 {demande.patient_telephone}
               </a>
             </p>
             <p className="flex items-center gap-2">
-              <span aria-hidden>📅</span>
+              <CalendarDays size={13} className="text-gray-400 shrink-0" aria-hidden />
               <span>Livraison prévue : <span className="font-600 text-gray-800">{formatJour(demande.jour_livraison)}</span></span>
             </p>
           </div>
@@ -261,7 +262,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
           {/* Utile seulement si c'est moi qui ai fait la dernière modification. */}
           {demande.derniere_activite_par === utilisateurId && (
             <p className={`mt-3 text-[11px] flex items-center gap-1.5 ${autreAJour ? 'text-emerald-600' : 'text-gray-400'}`}>
-              <span aria-hidden>👁</span>
+              <Eye size={13} className="shrink-0" aria-hidden />
               {autreAJour
                 ? `Vue par ${autre} le ${formatHorodatage(lectureAutre!.vu_le)}`
                 : lectureAutre
@@ -272,7 +273,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
 
           {demande.notes_initiales && (
             <div className="mt-3 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 flex items-start gap-2">
-              <span className="text-sm">⚠️</span>
+              <TriangleAlert size={15} className="text-amber-600 shrink-0 mt-px" aria-hidden />
               <p className="text-xs text-amber-700 leading-snug whitespace-pre-wrap">{demande.notes_initiales}</p>
             </div>
           )}
@@ -286,7 +287,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
               onClick={() => setEdition(true)}
               className="w-full text-xs font-600 py-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
             >
-              ✏️ Modifier les informations
+              <Pencil size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Modifier les informations
             </button>
           )}
           {edition && (
@@ -321,7 +322,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
                 onClick={() => executer(onGenererBon)}
                 className="mt-2 w-full text-xs font-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl py-2 transition-colors disabled:opacity-50"
               >
-                📄 Générer le bon de livraison
+                <FileText size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Générer le bon de livraison
               </button>
             )}
             {/* Les deux rôles peuvent ajouter des pièces, à tout moment : le
@@ -329,7 +330,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
                 Plusieurs fichiers par type sont possibles (recto / verso, pages). */}
             <div className="mt-3 rounded-2xl border border-violet-100 bg-violet-50/40 p-3">
               <p className="text-[11px] font-600 text-violet-800 mb-2">
-                📎 Ajouter un document
+                <Paperclip size={13} className="inline-block align-[-3px] mr-1.5" aria-hidden />Ajouter un document
                 <span className="block font-400 text-[10px] text-violet-500">Photo ou PDF — sur téléphone, l'appareil photo est proposé</span>
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -404,7 +405,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
               onClick={() => executer(() => onChangerStatut('en_cours'))}
               className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white font-600 text-sm py-2.5 rounded-xl transition-colors"
             >
-              🚚 Passer « En cours de livraison »
+              <Truck size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />Passer « En cours de livraison »
             </button>
           )}
 
@@ -417,7 +418,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
                 onClick={() => preuveRef.current?.click()}
                 className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-600 text-sm py-2.5 rounded-xl transition-colors disabled:opacity-50"
               >
-                📷 Ajouter une photo de preuve <span className="font-400 opacity-70">(optionnel)</span>
+                <Camera size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />Ajouter une photo de preuve <span className="font-400 opacity-70">(optionnel)</span>
               </button>
               <input
                 ref={preuveRef}
@@ -440,13 +441,13 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
               onClick={() => executer(() => onChangerStatut('livree'))}
               className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-600 text-sm py-2.5 rounded-xl transition-colors"
             >
-              ✓ Marquer comme livrée
+              <Check size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />Marquer comme livrée
             </button>
           )}
 
           {demande.statut === 'livree' && (
             <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-600 text-sm py-2.5 rounded-xl text-center">
-              ✓ Livrée
+              <CircleCheck size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />Livrée
             </div>
           )}
 
@@ -457,7 +458,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
               onClick={supprimer}
               className="w-full text-xs font-600 py-2 rounded-xl bg-white text-red-600 hover:bg-red-50 border border-red-300 transition-colors disabled:opacity-50"
             >
-              🗑 Supprimer définitivement
+              <Trash2 size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Supprimer définitivement
             </button>
           )}
 
@@ -468,7 +469,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
               onClick={() => executer(() => onChangerStatut('nouvelle'))}
               className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white font-600 text-sm py-2.5 rounded-xl transition-colors"
             >
-              ↩ Remettre en « Nouvelle demande »
+              <Undo2 size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />Remettre en « Nouvelle demande »
             </button>
           )}
 
@@ -479,7 +480,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
               onClick={annuler}
               className="w-full text-xs font-600 py-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 border border-red-200 transition-colors disabled:opacity-50"
             >
-              ✕ Annuler la demande
+              <X size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Annuler la demande
             </button>
           )}
         </div>

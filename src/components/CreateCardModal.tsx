@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { FileText } from 'lucide-react';
 import type { Criticite, Medicament, NouvelleDemande, Pieces } from '../types';
 import { CRITICITE_CONFIG, DOC_CONFIG, LIBELLE_PIECE, PIECES } from '../data';
 import ChampPiece from './ChampPiece';
@@ -166,7 +167,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
               <select id="criticite" value={form.criticite} onChange={set('criticite')} className={`${CHAMP} appearance-none`}>
                 {(Object.keys(CRITICITE_CONFIG) as Criticite[]).map(c => (
                   <option key={c} value={c}>
-                    {CRITICITE_CONFIG[c].emoji} {CRITICITE_CONFIG[c].label}
+                    {CRITICITE_CONFIG[c].label}
                   </option>
                 ))}
               </select>
@@ -250,14 +251,15 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
           <div>
             <span className={ETIQUETTE}>Pièces jointes (optionnelles)</span>
             <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 mb-2">
-              📄 Un bon de livraison PDF sera généré automatiquement à partir de ces informations.
+              <FileText size={13} className="inline -mt-0.5 mr-1" aria-hidden />
+              Un bon de livraison PDF sera généré automatiquement à partir de ces informations.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {PIECES.map(type => (
                 <ChampPiece
                   key={type}
                   libelle={LIBELLE_PIECE[type]}
-                  icone={DOC_CONFIG[type].icon}
+                  icone={(() => { const I = DOC_CONFIG[type].Icone; return <I size={18} style={{ color: DOC_CONFIG[type].color }} />; })()}
                   fichier={pieces[type]}
                   onChange={f => setPieces(p => ({ ...p, [type]: f }))}
                   onErreur={setErreur}
