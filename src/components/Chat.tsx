@@ -19,7 +19,7 @@ interface Props {
 
 const LIBELLE_ROLE: Record<MessageChat['auteur_role'], string> = {
   dispatcheur: 'Dispatcheur',
-  livraison: 'Société de livraison',
+  livraison: 'Pharmacie',
 };
 
 const COULEURS = {

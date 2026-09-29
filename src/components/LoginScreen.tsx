@@ -41,7 +41,7 @@ export default function LoginScreen({ onSignIn, initialError, configMissing }: P
       >
         <p className="font-700 text-gray-900 text-base mb-1">Connexion</p>
         <p className="text-sm text-gray-400 leading-relaxed mb-5">
-          Votre rôle (Dispatcheur ou Société de livraison) est associé à votre compte.
+          Votre rôle (Dispatcheur ou Pharmacie) est associé à votre compte.
         </p>
 
         {configMissing && (

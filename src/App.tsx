@@ -238,8 +238,8 @@ export default function App() {
           style={role === 'dispatcher' ? { background: '#f3f4f6', color: '#111827' } : { background: '#f5f3ff', color: '#7c3aed' }}
         >
           <span>{role === 'dispatcher' ? '🎛' : '🚚'}</span>
-          <span>{role === 'dispatcher' ? 'Dispatcheur' : 'Société de livraison'}</span>
-          {userName && userName !== (role === 'dispatcher' ? 'Dispatcheur' : 'Société de livraison') && (
+          <span>{role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie'}</span>
+          {userName && userName !== (role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie') && (
             <span className="opacity-60">— {userName}</span>
           )}
         </div>

@@ -12,7 +12,7 @@ from auth.users
 where email = 'EMAIL_DE_FLORENCE@exemple.fr';
 
 insert into profils (id, role, nom)
-select id, 'livraison', 'Société de livraison'
+select id, 'livraison', 'Pharmacie'
 from auth.users
 where email = 'EMAIL_DE_LA_SOCIETE@exemple.fr';
 
