@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Demande, Statut } from '../types';
+import type { Demande, EtatVu, Statut } from '../types';
+import BadgeVu from './BadgeVu';
 import { CRITICITE_CONFIG, CRITICITE_ORDRE, STATUT_CONFIG } from '../data';
 import WeekView from './WeekView';
 import IconDate from '../assets/IconDate';
@@ -12,9 +13,10 @@ interface Props {
   demandes: Demande[];
   onOpen: (demande: Demande) => void;
   onDropCard: (demandeId: string, jour: string) => void;
+  etats: Record<string, EtatVu>;
 }
 
-function MedicalCard({ demande, onClick, highlight }: { demande: Demande; onClick: () => void; highlight?: boolean }) {
+function MedicalCard({ demande, onClick, highlight, etatVu }: { demande: Demande; onClick: () => void; highlight?: boolean; etatVu: EtatVu }) {
   const criticite = CRITICITE_CONFIG[demande.criticite];
   const annulee = demande.statut === 'annulee';
   const nbMedicaments = demande.medicaments.length;
@@ -25,12 +27,15 @@ function MedicalCard({ demande, onClick, highlight }: { demande: Demande; onClic
       onClick={onClick}
       className={`card-new w-full text-left bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow group ${
         annulee ? 'border-red-200 opacity-60' : 'border-black/5'
-      } ${highlight ? 'ring-2 ring-amber-400' : ''}`}
+      } ${highlight ? 'ring-2 ring-amber-400' : etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
     >
       <div className="h-1" style={{ background: annulee ? '#ef4444' : criticite.color }} />
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <span className="font-mono text-[11px] text-gray-400 tracking-widest">{demande.numero_ticket}</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-mono text-[11px] text-gray-400 tracking-widest">{demande.numero_ticket}</span>
+            <BadgeVu etat={etatVu} />
+          </div>
           <span className="text-[11px] text-gray-500 font-500 shrink-0">{formatJour(demande.jour_livraison)}</span>
         </div>
         <p className="font-700 text-gray-900 text-[15px] leading-tight mb-2">{demande.patient_nom}</p>
@@ -72,8 +77,8 @@ function TriBouton({ actif, onClick, children }: { actif: boolean; onClick: () =
   );
 }
 
-function Colonne({ statut, items, onOpen, surlignes }: {
-  statut: Statut; items: Demande[]; onOpen: (d: Demande) => void; surlignes?: Set<string>;
+function Colonne({ statut, items, onOpen, surlignes, etats }: {
+  statut: Statut; items: Demande[]; onOpen: (d: Demande) => void; surlignes?: Set<string>; etats: Record<string, EtatVu>;
 }) {
   const cfg = STATUT_CONFIG[statut];
   return (
@@ -92,7 +97,7 @@ function Colonne({ statut, items, onOpen, surlignes }: {
           </div>
         )}
         {items.map(d => (
-          <MedicalCard key={d.id} demande={d} onClick={() => onOpen(d)} highlight={surlignes?.has(d.id)} />
+          <MedicalCard key={d.id} demande={d} onClick={() => onOpen(d)} highlight={surlignes?.has(d.id)} etatVu={etats[d.id] ?? null} />
         ))}
       </div>
     </div>
@@ -141,7 +146,7 @@ function BarreRecherche({ valeur, onChange }: { valeur: string; onChange: (v: st
   );
 }
 
-export default function LivreurBoard({ demandes, onOpen, onDropCard }: Props) {
+export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Props) {
   const [tri, setTri] = useState<Tri>('date');
   const [vue, setVue] = useState<Vue>('kanban');
   const [debutSemaine, setDebutSemaine] = useState<Date>(() => lundiDeLaSemaine(new Date()));
@@ -221,10 +226,10 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard }: Props) {
 
       {vue === 'kanban' ? (
         <div className="flex gap-5 flex-1 min-h-0 overflow-x-auto pb-4">
-          <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} surlignes={surlignes} />
-          <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} surlignes={surlignes} />
-          <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} surlignes={surlignes} />
-          {annulees.length > 0 && <Colonne statut="annulee" items={annulees} onOpen={onOpen} surlignes={surlignes} />}
+          <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} surlignes={surlignes} etats={etats} />
+          <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} surlignes={surlignes} etats={etats} />
+          <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} surlignes={surlignes} etats={etats} />
+          {annulees.length > 0 && <Colonne statut="annulee" items={annulees} onOpen={onOpen} surlignes={surlignes} etats={etats} />}
         </div>
       ) : (
         <div className="flex-1 min-h-0">
@@ -233,6 +238,7 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard }: Props) {
             weekStart={debutSemaine}
             onOpen={onOpen}
             onDropCard={onDropCard}
+            etats={etats}
           />
         </div>
       )}

@@ -1,4 +1,5 @@
-import type { Demande } from '../types';
+import type { Demande, EtatVu } from '../types';
+import BadgeVu from './BadgeVu';
 import { CRITICITE_CONFIG, STATUT_CONFIG } from '../data';
 import { ajouterJours, aujourdhuiParis, moisCourt, versJour } from '../lib/dates';
 
@@ -7,11 +8,12 @@ interface Props {
   weekStart: Date;
   onOpen: (demande: Demande) => void;
   onDropCard: (demandeId: string, jour: string) => void;
+  etats: Record<string, EtatVu>;
 }
 
 const JOURS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
-function WeekCard({ demande, onClick }: { demande: Demande; onClick: () => void }) {
+function WeekCard({ demande, onClick, etatVu }: { demande: Demande; onClick: () => void; etatVu: EtatVu }) {
   const criticite = CRITICITE_CONFIG[demande.criticite];
   const statut = STATUT_CONFIG[demande.statut];
 
@@ -19,7 +21,7 @@ function WeekCard({ demande, onClick }: { demande: Demande; onClick: () => void 
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left bg-white rounded-xl border border-black/5 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+      className={`w-full text-left bg-white rounded-xl border border-black/5 shadow-sm hover:shadow-md transition-shadow overflow-hidden ${etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
     >
       <div className="h-0.5" style={{ background: criticite.color }} />
       <div className="px-2.5 py-2">
@@ -32,6 +34,7 @@ function WeekCard({ demande, onClick }: { demande: Demande; onClick: () => void 
             {statut.court}
           </span>
         </div>
+        {etatVu && <div className="mb-1"><BadgeVu etat={etatVu} compact /></div>}
         <p className="font-600 text-gray-900 text-[11px] leading-tight truncate">{demande.patient_nom}</p>
         <p className="text-[10px] text-gray-400 truncate mt-0.5">{demande.patient_adresse}</p>
         <p className="text-[9px] font-600 truncate mt-1.5" style={{ color: criticite.color }}>
@@ -44,7 +47,7 @@ function WeekCard({ demande, onClick }: { demande: Demande; onClick: () => void 
 
 // Vue hebdomadaire : une colonne par jour, du lundi au samedi.
 // Glisser une carte vers un autre jour la reporte (la base vérifie la date).
-export default function WeekView({ demandes, weekStart, onOpen, onDropCard }: Props) {
+export default function WeekView({ demandes, weekStart, onOpen, onDropCard, etats }: Props) {
   const jours = Array.from({ length: 6 }, (_, i) => ajouterJours(weekStart, i));
   const aujourdhui = aujourdhuiParis();
 
@@ -92,7 +95,7 @@ export default function WeekView({ demandes, weekStart, onOpen, onDropCard }: Pr
               )}
               {items.map(d => (
                 <div key={d.id} draggable onDragStart={e => e.dataTransfer.setData('demandeId', d.id)}>
-                  <WeekCard demande={d} onClick={() => onOpen(d)} />
+                  <WeekCard demande={d} onClick={() => onOpen(d)} etatVu={etats[d.id] ?? null} />
                 </div>
               ))}
             </div>

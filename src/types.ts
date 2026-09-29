@@ -33,8 +33,15 @@ export interface Demande {
   notes_initiales: string | null;
   cree_le: string;
   mis_a_jour_le: string;
+  derniere_activite_le: string;
+  derniere_activite_par: string | null;
   documents: DocumentJoint[];
+  lectures_demandes: { utilisateur_id: string; vu_le: string }[];
 }
+
+// « nouvelle » : jamais ouverte par moi ; « maj » : l'autre compte l'a modifiée
+// depuis ma dernière consultation.
+export type EtatVu = 'nouvelle' | 'maj' | null;
 
 export interface NouvelleDemande {
   patient_nom: string;
@@ -51,4 +58,13 @@ export interface Note {
   contenu: string;
   cree_le: string;
   auteur_nom: string;
+}
+
+export interface MessageChat {
+  id: string;
+  contenu: string;
+  cree_le: string;
+  auteur: string;
+  auteur_nom: string;
+  auteur_role: 'dispatcheur' | 'livraison';
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Demande, NouvelleDemande, Statut, TypeDocument } from './types';
+import type { Demande, EtatVu, NouvelleDemande, Statut, TypeDocument } from './types';
 import Board from './components/Board';
 import LivreurBoard from './components/LivreurBoard';
 import CreateCardModal from './components/CreateCardModal';
@@ -14,26 +14,25 @@ import {
   changerStatut,
   creerDemande,
   deposerDocument,
+  etatVu,
   listerDemandes,
+  marquerVue,
   messageErreur,
   reporter,
+  supprimerDemande,
   surveillerDemandes,
 } from './lib/demandes';
+import { useChat } from './lib/chat';
 import { ajouterJours, lundiDeLaSemaine, moisCourt } from './lib/dates';
 
 type DispatcherView = 'kanban' | 'week';
-
-interface ChatMessage {
-  id: string;
-  author: Role;
-  text: string;
-  sentAt: Date;
-}
 
 export default function App() {
   const { state: auth, signIn, signOut } = useAuth();
   const role: Role | null = auth.status === 'signed_in' ? auth.user.role : null;
   const userName = auth.status === 'signed_in' ? auth.user.name : '';
+  const userId = auth.status === 'signed_in' ? auth.user.id : null;
+  const chat = useChat(userId);
 
   const [demandes, setDemandes] = useState<Demande[]>([]);
   const [chargement, setChargement] = useState(true);
@@ -43,8 +42,6 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [dispatcherView, setDispatcherView] = useState<DispatcherView>('kanban');
   const [weekStart, setWeekStart] = useState<Date>(() => lundiDeLaSemaine(new Date()));
-  // Le chat reste local au navigateur jusqu'à l'étape 9.
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
   const recharger = useCallback(async () => {
     try {
@@ -63,6 +60,15 @@ export default function App() {
     recharger();
     return surveillerDemandes(recharger);
   }, [role, recharger]);
+
+  // Ouvrir une carte la marque comme vue ; si l'autre compte la modifie
+  // pendant qu'elle est ouverte, elle est de nouveau marquée comme vue.
+  const ouverteCourante = ouverteId ? demandes.find(d => d.id === ouverteId) : undefined;
+  const ouverteNonVue = ouverteCourante && userId ? etatVu(ouverteCourante, userId) !== null : false;
+  useEffect(() => {
+    if (!ouverteId || !ouverteNonVue) return;
+    marquerVue(ouverteId).then(recharger).catch(e => setErreur(messageErreur(e)));
+  }, [ouverteId, ouverteNonVue, recharger]);
 
   useEffect(() => {
     if (!info) return;
@@ -107,11 +113,6 @@ export default function App() {
 
   const shiftWeek = (n: number) => setWeekStart(d => ajouterJours(d, n * 7));
 
-  const handleSendChat = (text: string) => {
-    if (!role) return;
-    setChatMessages(ms => [...ms, { id: `cm-${Date.now()}`, author: role, text, sentAt: new Date() }]);
-  };
-
   if (auth.status === 'loading') {
     return (
       <div className="min-h-screen bg-[#f5f4f0] flex items-center justify-center">
@@ -120,7 +121,7 @@ export default function App() {
     );
   }
 
-  if (!role) {
+  if (!role || !userId) {
     return (
       <LoginScreen
         onSignIn={signIn}
@@ -135,6 +136,8 @@ export default function App() {
   const actives = demandes.filter(d => d.statut !== 'annulee');
   const nbNouvelles = demandes.filter(d => d.statut === 'nouvelle').length;
   const finSemaine = ajouterJours(weekStart, 5);
+  const etats: Record<string, EtatVu> = Object.fromEntries(demandes.map(d => [d.id, etatVu(d, userId)]));
+  const nbNonVues = Object.values(etats).filter(Boolean).length;
 
   return (
     <div className="h-screen flex flex-col bg-[#f5f4f0] overflow-hidden">
@@ -162,6 +165,12 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-4">
+          {nbNonVues > 0 && (
+            <span className="flex items-center gap-1.5 text-xs font-600 text-violet-700 bg-violet-100 px-2.5 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-violet-500 pulse-dot" aria-hidden />
+              {nbNonVues} non vue{nbNonVues > 1 ? 's' : ''}
+            </span>
+          )}
           <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-500">
             <span className="pulse-dot w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
             <span className="font-mono">{actives.length} demandes actives</span>
@@ -246,9 +255,9 @@ export default function App() {
 
             <div className="flex-1 overflow-hidden px-4 sm:px-6 pb-6">
               {dispatcherView === 'kanban' ? (
-                <Board demandes={demandes} onOpen={ouvrir} />
+                <Board demandes={demandes} onOpen={ouvrir} etats={etats} />
               ) : (
-                <WeekView demandes={actives} weekStart={weekStart} onOpen={ouvrir} onDropCard={handleDropCard} />
+                <WeekView demandes={actives} weekStart={weekStart} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} />
               )}
             </div>
           </div>
@@ -260,7 +269,7 @@ export default function App() {
               <span className="text-xs text-gray-400 font-mono">{nbNouvelles} nouvelle{nbNouvelles !== 1 ? 's' : ''}</span>
             </div>
             <div className="flex-1 min-h-0">
-              <LivreurBoard demandes={demandes} onOpen={ouvrir} onDropCard={handleDropCard} />
+              <LivreurBoard demandes={demandes} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} />
             </div>
           </div>
         )}
@@ -269,7 +278,15 @@ export default function App() {
       {ouverte && (
         <DemandePanel
           demande={ouverte}
+          role={role}
+          utilisateurId={userId}
           onClose={() => setOuverteId(null)}
+          onSupprimer={async () => {
+            const ticket = ouverte.numero_ticket;
+            const ok = await agir(() => supprimerDemande(ouverte), `Demande ${ticket} supprimée.`);
+            if (ok) setOuverteId(null);
+            return ok;
+          }}
           onChangerStatut={(statut: Statut) => agir(() => changerStatut(ouverte.id, statut), `Demande ${ouverte.numero_ticket} mise à jour.`)}
           onReporter={(jour: string) => agir(() => reporter(ouverte.id, jour), `Demande ${ouverte.numero_ticket} reportée.`)}
           onDeposer={(type: TypeDocument, fichier: File) =>
@@ -280,7 +297,16 @@ export default function App() {
 
       {showModal && <CreateCardModal onClose={() => setShowModal(false)} onSubmit={handleCreate} />}
 
-      <Chat currentView={role} messages={chatMessages} onSend={handleSendChat} />
+      <Chat
+        utilisateurId={userId}
+        role={role}
+        messages={chat.messages}
+        nonLus={chat.nonLus}
+        autreVuJusquau={chat.autreVuJusquau}
+        erreur={chat.erreur}
+        onSend={chat.envoyer}
+        onMarquerLu={chat.marquerLu}
+      />
     </div>
   );
 }
