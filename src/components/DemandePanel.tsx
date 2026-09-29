@@ -329,7 +329,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
                 Plusieurs fichiers par type sont possibles (recto / verso, pages). */}
             <div className="mt-3 rounded-2xl border border-violet-100 bg-violet-50/40 p-3">
               <p className="text-[11px] font-600 text-violet-800 mb-2">
-                📎 Ajouter un document {role === 'livreur' ? 'remis sur place' : ''}
+                📎 Ajouter un document
                 <span className="block font-400 text-[10px] text-violet-500">Photo ou PDF — sur téléphone, l'appareil photo est proposé</span>
               </p>
               <div className="grid grid-cols-2 gap-2">
