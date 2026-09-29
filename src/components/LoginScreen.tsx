@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import logo from '../assets/logo.png';
+import BandeauEnvironnement from './BandeauEnvironnement';
 
 interface Props {
   onSignIn: (email: string, password: string) => Promise<string | null>;
@@ -24,7 +25,9 @@ export default function LoginScreen({ onSignIn, initialError, configMissing }: P
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f4f0] flex flex-col items-center justify-center p-6">
+    <div className="min-h-dvh bg-[#f5f4f0] flex flex-col">
+      <BandeauEnvironnement />
+    <div className="flex-1 flex flex-col items-center justify-center p-6">
       <div className="flex items-center gap-3 mb-12">
         <div className="w-12 h-12 rounded-2xl overflow-hidden bg-white flex items-center justify-center shadow-sm border border-black/5">
           <img src={logo} alt="MediDispatch" className="w-full h-full object-contain" />
@@ -90,6 +93,7 @@ export default function LoginScreen({ onSignIn, initialError, configMissing }: P
       </form>
 
       <p className="mt-10 text-[11px] text-gray-300 font-mono">Accès sécurisé — données de santé protégées</p>
+    </div>
     </div>
   );
 }

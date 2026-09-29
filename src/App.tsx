@@ -34,6 +34,7 @@ import {
 import { useChat } from './lib/chat';
 import { useNotifications } from './lib/notifications';
 import Alertes from './components/Alertes';
+import BandeauEnvironnement from './components/BandeauEnvironnement';
 import { ajouterJours, aujourdhuiParis, lundiDeLaSemaine, moisCourt } from './lib/dates';
 
 type DispatcherView = 'kanban' | 'week';
@@ -269,6 +270,7 @@ export default function App() {
 
   return (
     <div className="h-dvh flex flex-col bg-[#f5f4f0] overflow-hidden">
+      <BandeauEnvironnement />
       {/* Barre du haut */}
       <header className="shrink-0 flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-4 bg-white border-b border-black/5">
         <button
