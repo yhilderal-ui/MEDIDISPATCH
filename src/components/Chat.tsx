@@ -12,6 +12,9 @@ interface Props {
   erreur: string | null;
   onSend: (texte: string) => Promise<string | null>;
   onMarquerLu: () => void;
+  // Incrémenté par une alerte « nouveau message » : ouvre la messagerie.
+  ouvrirSignal?: number;
+  onOuvertChange?: (ouvert: boolean) => void;
 }
 
 const LIBELLE_ROLE: Record<MessageChat['auteur_role'], string> = {
@@ -28,8 +31,16 @@ function heure(iso: string) {
   return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
 }
 
-export default function Chat({ utilisateurId, role, messages, nonLus, autreVuJusquau, erreur, onSend, onMarquerLu }: Props) {
+export default function Chat({ utilisateurId, role, messages, nonLus, autreVuJusquau, erreur, onSend, onMarquerLu, ouvrirSignal, onOuvertChange }: Props) {
   const [ouvert, setOuvert] = useState(false);
+
+  useEffect(() => {
+    if (ouvrirSignal) setOuvert(true);
+  }, [ouvrirSignal]);
+
+  useEffect(() => {
+    onOuvertChange?.(ouvert);
+  }, [ouvert, onOuvertChange]);
   const [texte, setTexte] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [erreurEnvoi, setErreurEnvoi] = useState<string | null>(null);
