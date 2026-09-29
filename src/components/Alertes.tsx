@@ -1,3 +1,4 @@
+import { ClipboardList, MessageSquare, Pencil, TriangleAlert } from 'lucide-react';
 import type { Alerte } from '../lib/notifications';
 
 interface Props {
@@ -16,6 +17,12 @@ export default function Alertes({ alertes, onActiver, onFermer }: Props) {
           key={a.id}
           className={`slide-in bg-white rounded-2xl shadow-xl border flex items-start gap-3 p-3 ${a.urgente ? 'border-red-300 ring-2 ring-red-200' : 'border-violet-200'}`}
         >
+          <span
+            className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${a.urgente ? 'bg-red-50 text-red-600' : 'bg-violet-50 text-violet-600'}`}
+            aria-hidden
+          >
+            {a.genre === 'message' ? <MessageSquare size={16} /> : a.genre === 'maj' ? <Pencil size={16} /> : a.urgente ? <TriangleAlert size={16} /> : <ClipboardList size={16} />}
+          </span>
           <button type="button" onClick={() => onActiver(a)} className="flex-1 min-w-0 text-left">
             <p className={`text-sm font-700 ${a.urgente ? 'text-red-700' : 'text-gray-900'}`}>{a.titre}</p>
             <p className="text-xs text-gray-500 truncate">{a.detail}</p>

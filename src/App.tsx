@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Archive, Bell, BellOff, CalendarDays, CircleCheck, Headset, LayoutGrid, Pill, TriangleAlert } from 'lucide-react';
 import type { Demande, EtatVu, ModificationDemande, NouvelleDemande, Pieces, Statut, TypeDocument } from './types';
 import { publierBonGenere } from './lib/bonLivraison';
 import Board from './components/Board';
@@ -210,7 +211,7 @@ export default function App() {
         onClick={() => setVueArchives(v => !v)}
         className="ml-auto text-xs font-600 px-3 py-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
       >
-        {vueArchives ? '← Retour au tableau' : '🗄 Archives'}
+        {vueArchives ? '← Retour au tableau' : <><Archive size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Archives</>}
       </button>
     </div>
   );
@@ -237,7 +238,7 @@ export default function App() {
           className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-600"
           style={role === 'dispatcher' ? { background: '#f3f4f6', color: '#111827' } : { background: '#f5f3ff', color: '#7c3aed' }}
         >
-          <span>{role === 'dispatcher' ? '🎛' : '🚚'}</span>
+          {role === 'dispatcher' ? <Headset size={14} aria-hidden /> : <Pill size={14} aria-hidden />}
           <span>{role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie'}</span>
           {userName && userName !== (role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie') && (
             <span className="opacity-60">— {userName}</span>
@@ -250,9 +251,9 @@ export default function App() {
             onClick={notif.basculerSon}
             title={notif.son ? 'Son des alertes activé (cliquer pour couper)' : 'Son des alertes coupé (cliquer pour activer)'}
             aria-label={notif.son ? 'Couper le son des alertes' : 'Activer le son des alertes'}
-            className="text-base leading-none opacity-70 hover:opacity-100"
+            className="text-gray-500 hover:text-gray-900 transition-colors"
           >
-            {notif.son ? '🔔' : '🔕'}
+            {notif.son ? <Bell size={17} aria-hidden /> : <BellOff size={17} aria-hidden />}
           </button>
           {notif.permission === 'default' && (
             <button
@@ -291,14 +292,14 @@ export default function App() {
       {/* Messages d'erreur et de confirmation */}
       {erreur && (
         <div role="alert" className="shrink-0 mx-4 sm:mx-6 mt-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-start gap-3 slide-in">
-          <span className="text-sm">⚠️</span>
+          <TriangleAlert size={16} className="text-red-500 shrink-0 mt-0.5" aria-hidden />
           <p className="text-sm text-red-700 flex-1">{erreur}</p>
           <button type="button" onClick={() => setErreur(null)} aria-label="Fermer le message" className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
         </div>
       )}
       {info && !erreur && (
         <div role="status" className="shrink-0 mx-4 sm:mx-6 mt-4 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm text-emerald-700 slide-in">
-          ✓ {info}
+          <CircleCheck size={15} className="inline-block align-[-3px] mr-1.5" aria-hidden />{info}
         </div>
       )}
 
@@ -342,7 +343,7 @@ export default function App() {
                 <span className="text-xs text-gray-400 font-mono">{nbNouvelles} en attente</span>
 
                 <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg ml-2">
-                  {([['kanban', '⊞', 'Vue par statut'], ['week', '📅', 'Vue semaine']] as [DispatcherView, string, string][]).map(([v, icone, titre]) => (
+                  {([['kanban', LayoutGrid, 'Vue par statut'], ['week', CalendarDays, 'Vue semaine']] as [DispatcherView, typeof LayoutGrid, string][]).map(([v, Icone, titre]) => (
                     <button
                       key={v}
                       type="button"
@@ -356,7 +357,7 @@ export default function App() {
                         boxShadow: dispatcherView === v ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                       }}
                     >
-                      {icone}
+                      <Icone size={14} aria-hidden />
                     </button>
                   ))}
                 </div>

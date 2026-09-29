@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { CalendarDays, FileText, LayoutGrid, Pill, TriangleAlert } from 'lucide-react';
+import BadgeCriticite from './BadgeCriticite';
 import type { Demande, EtatVu, Statut } from '../types';
 import BadgeVu from './BadgeVu';
 import { CRITICITE_CONFIG, CRITICITE_ORDRE, STATUT_CONFIG } from '../data';
 import WeekView from './WeekView';
-import IconDate from '../assets/IconDate';
 import { ajouterJours, formatJour, lundiDeLaSemaine, moisCourt } from '../lib/dates';
 
 type Tri = 'date' | 'criticite';
@@ -45,17 +46,17 @@ function MedicalCard({ demande, onClick, etatVu }: { demande: Demande; onClick: 
         </div>
         {demande.notes_initiales && (
           <div className="bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5 mb-3 flex items-start gap-1.5">
-            <span className="text-xs shrink-0">⚠️</span>
+            <TriangleAlert size={13} className="text-amber-600 shrink-0 mt-px" aria-hidden />
             <p className="text-[11px] text-amber-700 leading-snug">{demande.notes_initiales}</p>
           </div>
         )}
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-600 truncate" style={{ color: criticite.color }}>
-            {criticite.emoji} {criticite.label}
-          </span>
+          <BadgeCriticite criticite={demande.criticite} />
           <div className="flex items-center gap-2 text-[11px] text-gray-400 group-hover:text-gray-600 transition-colors shrink-0">
-            <span>💊 {nbMedicaments}</span>
-            {demande.documents.length > 0 && <span>📄 {demande.documents.length}</span>}
+            <span className="inline-flex items-center gap-1" title="Médicaments"><Pill size={12} aria-hidden /> {nbMedicaments}</span>
+            {demande.documents.length > 0 && (
+              <span className="inline-flex items-center gap-1" title="Documents"><FileText size={12} aria-hidden /> {demande.documents.length}</span>
+            )}
             <span className="font-500">Voir →</span>
           </div>
         </div>
@@ -128,10 +129,10 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Pr
             <>
               <span className="text-[10px] font-700 uppercase tracking-widest text-gray-400">Trier</span>
               <TriBouton actif={tri === 'date'} onClick={() => setTri('date')}>
-                <IconDate size={13} color={tri === 'date' ? '#fff' : '#6b7280'} /> Date
+                <CalendarDays size={13} aria-hidden /> Date
               </TriBouton>
               <TriBouton actif={tri === 'criticite'} onClick={() => setTri('criticite')}>
-                🔴 Criticité
+                <TriangleAlert size={13} aria-hidden /> Criticité
               </TriBouton>
             </>
           )}
@@ -147,7 +148,7 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Pr
           )}
 
           <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg">
-            {([['kanban', '⊞', 'Vue par statut'], ['week', '📅', 'Vue semaine']] as [Vue, string, string][]).map(([v, icone, titre]) => (
+            {([['kanban', LayoutGrid, 'Vue par statut'], ['week', CalendarDays, 'Vue semaine']] as [Vue, typeof LayoutGrid, string][]).map(([v, Icone, titre]) => (
               <button
                 key={v}
                 type="button"
@@ -161,7 +162,7 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Pr
                   boxShadow: vue === v ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                 }}
               >
-                {icone}
+                <Icone size={14} aria-hidden />
               </button>
             ))}
           </div>

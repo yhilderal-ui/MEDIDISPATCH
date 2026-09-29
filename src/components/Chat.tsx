@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { CheckCheck, Headset, Pill } from 'lucide-react';
 import type { MessageChat } from '../types';
 import type { Role } from '../lib/useAuth';
 import { formatHorodatage } from '../lib/dates';
@@ -91,8 +92,8 @@ export default function Chat({ utilisateurId, role, messages, nonLus, autreVuJus
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
             <div className="flex items-center gap-2">
               <div className="flex -space-x-1">
-                <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center text-[10px]">🎛</div>
-                <div className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center text-[10px]">🚚</div>
+                <div className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center ring-2 ring-white"><Headset size={12} aria-hidden /></div>
+                <div className="w-6 h-6 rounded-full bg-violet-500 text-white flex items-center justify-center ring-2 ring-white"><Pill size={12} aria-hidden /></div>
               </div>
               <div>
                 <p className="text-xs font-700 text-gray-900">Messagerie</p>
@@ -143,7 +144,7 @@ export default function Chat({ utilisateurId, role, messages, nonLus, autreVuJus
                   </div>
                   <p className="text-[9px] text-gray-300 mt-0.5 px-1">
                     {heure(m.cree_le)}
-                    {dernierVu?.id === m.id && <span className="text-emerald-500 font-600"> · Vu ✓</span>}
+                    {dernierVu?.id === m.id && <span className="text-emerald-500 font-600 inline-flex items-center gap-0.5"> · Vu <CheckCheck size={11} aria-hidden /></span>}
                   </p>
                 </div>
               );
