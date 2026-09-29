@@ -33,6 +33,7 @@ export interface Demande {
   notes_initiales: string | null;
   cree_le: string;
   mis_a_jour_le: string;
+  livree_le: string | null;
   derniere_activite_le: string;
   derniere_activite_par: string | null;
   documents: DocumentJoint[];

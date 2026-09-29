@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import type { Demande, EtatVu, Statut } from '../types';
 import BadgeVu from './BadgeVu';
 import { CRITICITE_CONFIG, CRITICITE_ORDRE, STATUT_CONFIG } from '../data';
@@ -16,7 +16,7 @@ interface Props {
   etats: Record<string, EtatVu>;
 }
 
-function MedicalCard({ demande, onClick, highlight, etatVu }: { demande: Demande; onClick: () => void; highlight?: boolean; etatVu: EtatVu }) {
+function MedicalCard({ demande, onClick, etatVu }: { demande: Demande; onClick: () => void; etatVu: EtatVu }) {
   const criticite = CRITICITE_CONFIG[demande.criticite];
   const annulee = demande.statut === 'annulee';
   const nbMedicaments = demande.medicaments.length;
@@ -27,7 +27,7 @@ function MedicalCard({ demande, onClick, highlight, etatVu }: { demande: Demande
       onClick={onClick}
       className={`card-new w-full text-left bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow group ${
         annulee ? 'border-red-200 opacity-60' : 'border-black/5'
-      } ${highlight ? 'ring-2 ring-amber-400' : etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
+      } ${etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
     >
       <div className="h-1" style={{ background: annulee ? '#ef4444' : criticite.color }} />
       <div className="p-4">
@@ -77,8 +77,8 @@ function TriBouton({ actif, onClick, children }: { actif: boolean; onClick: () =
   );
 }
 
-function Colonne({ statut, items, onOpen, surlignes, etats }: {
-  statut: Statut; items: Demande[]; onOpen: (d: Demande) => void; surlignes?: Set<string>; etats: Record<string, EtatVu>;
+function Colonne({ statut, items, onOpen, etats }: {
+  statut: Statut; items: Demande[]; onOpen: (d: Demande) => void; etats: Record<string, EtatVu>;
 }) {
   const cfg = STATUT_CONFIG[statut];
   return (
@@ -97,51 +97,9 @@ function Colonne({ statut, items, onOpen, surlignes, etats }: {
           </div>
         )}
         {items.map(d => (
-          <MedicalCard key={d.id} demande={d} onClick={() => onOpen(d)} highlight={surlignes?.has(d.id)} etatVu={etats[d.id] ?? null} />
+          <MedicalCard key={d.id} demande={d} onClick={() => onOpen(d)} etatVu={etats[d.id] ?? null} />
         ))}
       </div>
-    </div>
-  );
-}
-
-function BarreRecherche({ valeur, onChange }: { valeur: string; onChange: (v: string) => void }) {
-  const ref = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const raccourci = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault();
-        ref.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', raccourci);
-    return () => window.removeEventListener('keydown', raccourci);
-  }, []);
-
-  return (
-    <div className="relative flex items-center">
-      <svg className="absolute left-3 text-gray-400 shrink-0" width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
-        <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="1.4" />
-        <path d="M9 9l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      </svg>
-      <input
-        ref={ref}
-        value={valeur}
-        onChange={e => onChange(e.target.value)}
-        placeholder="Rechercher par patient ou n° ticket…"
-        aria-label="Rechercher"
-        className="w-64 max-w-full text-xs bg-white border border-gray-200 rounded-xl pl-8 pr-8 py-2 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all placeholder:text-gray-300"
-      />
-      {valeur && (
-        <button
-          type="button"
-          onClick={() => onChange('')}
-          aria-label="Effacer la recherche"
-          className="absolute right-2.5 w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-500 text-[10px] transition-colors"
-        >
-          ×
-        </button>
-      )}
     </div>
   );
 }
@@ -150,13 +108,6 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Pr
   const [tri, setTri] = useState<Tri>('date');
   const [vue, setVue] = useState<Vue>('kanban');
   const [debutSemaine, setDebutSemaine] = useState<Date>(() => lundiDeLaSemaine(new Date()));
-  const [recherche, setRecherche] = useState('');
-
-  const q = recherche.trim().toLowerCase();
-  const filtrees = q
-    ? demandes.filter(d => d.patient_nom.toLowerCase().includes(q) || d.numero_ticket.toLowerCase().includes(q))
-    : demandes;
-  const surlignes = q ? new Set(filtrees.map(d => d.id)) : undefined;
 
   const trier = (items: Demande[]) =>
     [...items].sort((a, b) =>
@@ -165,20 +116,13 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Pr
         : CRITICITE_ORDRE[a.criticite] - CRITICITE_ORDRE[b.criticite] || a.jour_livraison.localeCompare(b.jour_livraison),
     );
 
-  const parStatut = (s: Statut) => trier(filtrees.filter(d => d.statut === s));
+  const parStatut = (s: Statut) => trier(demandes.filter(d => d.statut === s));
   const annulees = parStatut('annulee');
   const finSemaine = ajouterJours(debutSemaine, 5);
 
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-3 mb-4 flex-wrap shrink-0">
-        <BarreRecherche valeur={recherche} onChange={setRecherche} />
-        {q && (
-          <span className="text-[11px] font-600 text-gray-400">
-            {filtrees.length} résultat{filtrees.length !== 1 ? 's' : ''}
-          </span>
-        )}
-
         <div className="flex items-center gap-2 ml-auto flex-wrap">
           {vue === 'kanban' && (
             <>
@@ -226,15 +170,15 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Pr
 
       {vue === 'kanban' ? (
         <div className="flex gap-5 flex-1 min-h-0 overflow-x-auto pb-4">
-          <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} surlignes={surlignes} etats={etats} />
-          <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} surlignes={surlignes} etats={etats} />
-          <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} surlignes={surlignes} etats={etats} />
-          {annulees.length > 0 && <Colonne statut="annulee" items={annulees} onOpen={onOpen} surlignes={surlignes} etats={etats} />}
+          <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} etats={etats} />
+          <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} etats={etats} />
+          <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} etats={etats} />
+          {annulees.length > 0 && <Colonne statut="annulee" items={annulees} onOpen={onOpen} etats={etats} />}
         </div>
       ) : (
         <div className="flex-1 min-h-0">
           <WeekView
-            demandes={filtrees.filter(d => d.statut !== 'annulee')}
+            demandes={demandes.filter(d => d.statut !== 'annulee')}
             weekStart={debutSemaine}
             onOpen={onOpen}
             onDropCard={onDropCard}

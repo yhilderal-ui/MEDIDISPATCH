@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Demande, EtatVu, NouvelleDemande, Statut, TypeDocument } from './types';
 import Board from './components/Board';
 import LivreurBoard from './components/LivreurBoard';
@@ -7,6 +7,9 @@ import Chat from './components/Chat';
 import LoginScreen from './components/LoginScreen';
 import WeekView from './components/WeekView';
 import DemandePanel from './components/DemandePanel';
+import BarreFiltres from './components/BarreFiltres';
+import ArchivesView from './components/ArchivesView';
+import { appliquerFiltres, FILTRES_VIDES, type Filtres } from './lib/filtres';
 import logo from './assets/logo.png';
 import { useAuth, type Role } from './lib/useAuth';
 import { supabaseConfigured } from './lib/supabase';
@@ -15,6 +18,7 @@ import {
   creerDemande,
   deposerDocument,
   etatVu,
+  listerArchives,
   listerDemandes,
   marquerVue,
   messageErreur,
@@ -42,10 +46,16 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [dispatcherView, setDispatcherView] = useState<DispatcherView>('kanban');
   const [weekStart, setWeekStart] = useState<Date>(() => lundiDeLaSemaine(new Date()));
+  const [filtres, setFiltres] = useState<Filtres>(FILTRES_VIDES);
+  const [vueArchives, setVueArchives] = useState(false);
+  const [archives, setArchives] = useState<Demande[]>([]);
+  const [chargementArchives, setChargementArchives] = useState(false);
+  const vueArchivesRef = useRef(false);
 
   const recharger = useCallback(async () => {
     try {
       setDemandes(await listerDemandes());
+      if (vueArchivesRef.current) setArchives(await listerArchives());
     } catch (e) {
       setErreur(messageErreur(e));
     } finally {
@@ -61,9 +71,20 @@ export default function App() {
     return surveillerDemandes(recharger);
   }, [role, recharger]);
 
+  // Les archives ne sont chargées que lorsqu'on les affiche.
+  useEffect(() => {
+    vueArchivesRef.current = vueArchives;
+    if (!vueArchives) return;
+    setChargementArchives(true);
+    listerArchives()
+      .then(setArchives)
+      .catch(e => setErreur(messageErreur(e)))
+      .finally(() => setChargementArchives(false));
+  }, [vueArchives]);
+
   // Ouvrir une carte la marque comme vue ; si l'autre compte la modifie
   // pendant qu'elle est ouverte, elle est de nouveau marquée comme vue.
-  const ouverteCourante = ouverteId ? demandes.find(d => d.id === ouverteId) : undefined;
+  const ouverteCourante = ouverteId ? demandes.find(d => d.id === ouverteId) ?? archives.find(d => d.id === ouverteId) : undefined;
   const ouverteNonVue = ouverteCourante && userId ? etatVu(ouverteCourante, userId) !== null : false;
   useEffect(() => {
     if (!ouverteId || !ouverteNonVue) return;
@@ -131,9 +152,30 @@ export default function App() {
     );
   }
 
-  const ouverte = ouverteId ? demandes.find(d => d.id === ouverteId) ?? null : null;
+  const ouverte = ouverteCourante ?? null;
   const ouvrir = (d: Demande) => setOuverteId(d.id);
   const actives = demandes.filter(d => d.statut !== 'annulee');
+  const filtrees = appliquerFiltres(demandes, filtres);
+  const archivesFiltrees = appliquerFiltres(archives, filtres);
+
+  const barreFiltres = (
+    <div className="flex items-center gap-2 flex-wrap">
+      <BarreFiltres
+        filtres={filtres}
+        onChange={setFiltres}
+        nbResultats={vueArchives ? archivesFiltrees.length : filtrees.length}
+        nbTotal={vueArchives ? archives.length : demandes.length}
+        masquerStatut={vueArchives}
+      />
+      <button
+        type="button"
+        onClick={() => setVueArchives(v => !v)}
+        className="ml-auto text-xs font-600 px-3 py-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+      >
+        {vueArchives ? '← Retour au tableau' : '🗄 Archives'}
+      </button>
+    </div>
+  );
   const nbNouvelles = demandes.filter(d => d.statut === 'nouvelle').length;
   const finSemaine = ajouterJours(weekStart, 5);
   const etats: Record<string, EtatVu> = Object.fromEntries(demandes.map(d => [d.id, etatVu(d, userId)]));
@@ -210,6 +252,18 @@ export default function App() {
           <div className="h-full flex items-center justify-center">
             <p className="text-xs text-gray-400 font-mono">Chargement des demandes…</p>
           </div>
+        ) : vueArchives ? (
+          <div className="h-full flex flex-col px-4 sm:px-6 pt-5 pb-6">
+            <div className="flex items-center gap-2 mb-3 shrink-0">
+              <h2 className="text-xs font-700 uppercase tracking-widest text-gray-400">Archives</h2>
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400">Demandes livrées depuis plus de 30 jours</span>
+            </div>
+            <div className="mb-4 shrink-0">{barreFiltres}</div>
+            <div className="flex-1 min-h-0">
+              <ArchivesView demandes={archivesFiltrees} chargement={chargementArchives} onOpen={ouvrir} />
+            </div>
+          </div>
         ) : role === 'dispatcher' ? (
           <div className="h-full flex flex-col">
             <div className="px-4 sm:px-6 pt-5 pb-3 shrink-0">
@@ -251,13 +305,14 @@ export default function App() {
                   ))}
                 </div>
               </div>
+              <div className="mt-3">{barreFiltres}</div>
             </div>
 
             <div className="flex-1 overflow-hidden px-4 sm:px-6 pb-6">
               {dispatcherView === 'kanban' ? (
-                <Board demandes={demandes} onOpen={ouvrir} etats={etats} />
+                <Board demandes={filtrees} onOpen={ouvrir} etats={etats} />
               ) : (
-                <WeekView demandes={actives} weekStart={weekStart} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} />
+                <WeekView demandes={filtrees.filter(d => d.statut !== 'annulee')} weekStart={weekStart} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} />
               )}
             </div>
           </div>
@@ -268,8 +323,9 @@ export default function App() {
               <div className="flex-1 h-px bg-gray-200" />
               <span className="text-xs text-gray-400 font-mono">{nbNouvelles} nouvelle{nbNouvelles !== 1 ? 's' : ''}</span>
             </div>
+            <div className="mb-3 shrink-0">{barreFiltres}</div>
             <div className="flex-1 min-h-0">
-              <LivreurBoard demandes={demandes} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} />
+              <LivreurBoard demandes={filtrees} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} />
             </div>
           </div>
         )}
