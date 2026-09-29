@@ -8,7 +8,7 @@ interface Props {
   onOpen: (demande: Demande) => void;
 }
 
-// Demandes livrées depuis plus de 30 jours, hors du tableau actif.
+// Demandes livrées avant aujourd'hui ou archivées à la main, hors du tableau actif.
 export default function ArchivesView({ demandes, chargement, onOpen }: Props) {
   if (chargement) {
     return <p className="text-xs text-gray-400 font-mono text-center py-10">Chargement des archives…</p>;

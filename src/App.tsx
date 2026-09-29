@@ -20,6 +20,7 @@ import {
   creerDemande,
   deposerDocument,
   etatVu,
+  archiverDemande,
   listerArchives,
   listerDemandes,
   marquerVue,
@@ -32,7 +33,7 @@ import {
 import { useChat } from './lib/chat';
 import { useNotifications } from './lib/notifications';
 import Alertes from './components/Alertes';
-import { ajouterJours, lundiDeLaSemaine, moisCourt } from './lib/dates';
+import { ajouterJours, aujourdhuiParis, lundiDeLaSemaine, moisCourt } from './lib/dates';
 
 type DispatcherView = 'kanban' | 'week';
 
@@ -74,6 +75,22 @@ export default function App() {
     setChargement(true);
     recharger();
     return surveillerDemandes(recharger);
+  }, [role, recharger]);
+
+  // À minuit (heure de Paris), les demandes livrées la veille basculent dans
+  // les Archives : on recharge le tableau au changement de jour, même si
+  // l'application est restée ouverte toute la nuit.
+  useEffect(() => {
+    if (!role) return;
+    let jour = aujourdhuiParis();
+    const minuteur = setInterval(() => {
+      const maintenant = aujourdhuiParis();
+      if (maintenant !== jour) {
+        jour = maintenant;
+        recharger();
+      }
+    }, 60 * 1000);
+    return () => clearInterval(minuteur);
   }, [role, recharger]);
 
   // Les archives ne sont chargées que lorsqu'on les affiche.
@@ -327,7 +344,7 @@ export default function App() {
             <div className="flex items-center gap-2 mb-3 shrink-0">
               <h2 className="text-xs font-700 uppercase tracking-widest text-gray-400">Archives</h2>
               <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400">Demandes livrées depuis plus de 30 jours</span>
+              <span className="text-xs text-gray-400">Demandes livrées les jours précédents ou archivées à la main</span>
             </div>
             <div className="mb-4 shrink-0">{barreFiltres}</div>
             <div className="flex-1 min-h-0">
@@ -421,6 +438,12 @@ export default function App() {
             modifierPuisRegenerer(ouverte.id, ouverte.numero_ticket, () => modifierDemande(ouverte.id, champs), `Demande ${ouverte.numero_ticket} modifiée.`)
           }
           onGenererBon={() => agir(() => publierBonGenere(ouverte.id), 'Bon de livraison généré.')}
+          onArchiver={async () => {
+            const ticket = ouverte.numero_ticket;
+            const ok = await agir(() => archiverDemande(ouverte.id), `Demande ${ticket} archivée.`);
+            if (ok && !vueArchives) setOuverteId(null);
+            return ok;
+          }}
           onDeposer={(type: TypeDocument, fichier: File) =>
             agir(async () => { await deposerDocument(ouverte.id, type, fichier); }, 'Document ajouté.')
           }

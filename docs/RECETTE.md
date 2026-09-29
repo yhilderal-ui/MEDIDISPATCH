@@ -66,7 +66,8 @@ Pharmacie) sur **un téléphone**, en même temps.
 
 - [ ] La recherche trouve un patient sans les accents, et un ticket par son numéro.
 - [ ] Les filtres statut / criticité / date fonctionnent (sur téléphone : bouton « Filtres »).
-- [ ] Le bouton **Archives** s'ouvre (vide tant qu'aucune demande n'est livrée depuis 30 jours).
+- [ ] Sur une demande livrée, **Archiver maintenant** la fait passer du tableau aux **Archives**.
+- [ ] Le lendemain, les demandes livrées la veille sont passées toutes seules dans les **Archives**.
 
 ## 7. Annulation et suppression
 

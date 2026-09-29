@@ -9,6 +9,18 @@ export function aujourdhuiParis(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
 }
 
+// Instant de minuit aujourd'hui à Paris, en format ISO (UTC), pour comparer
+// avec les dates enregistrées en base. Gère l'heure d'été / d'hiver.
+export function minuitParisISO(): string {
+  const [a, m, j] = aujourdhuiParis().split('-').map(Number);
+  const midiUTC = new Date(Date.UTC(a, m - 1, j, 12));
+  const decalage = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Paris', timeZoneName: 'shortOffset' })
+    .formatToParts(midiUTC)
+    .find(p => p.type === 'timeZoneName')?.value ?? 'GMT+1'; // ex. « GMT+2 »
+  const heures = Number(decalage.replace('GMT', '') || '0');
+  return new Date(Date.UTC(a, m - 1, j, 0) - heures * 3600 * 1000).toISOString();
+}
+
 export function versJour(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const j = String(d.getDate()).padStart(2, '0');
