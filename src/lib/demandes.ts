@@ -58,14 +58,30 @@ export async function listerDemandes(): Promise<Demande[]> {
   return (data ?? []) as Demande[];
 }
 
+// Option B (décision du 29/09) : la vue Archives montre les 30 derniers jours ;
+// les demandes plus anciennes restent en base et se retrouvent par la recherche.
+export const JOURS_ARCHIVES_AFFICHES = 30;
+
 export async function listerArchives(): Promise<Demande[]> {
+  const depuis = new Date(Date.now() - JOURS_ARCHIVES_AFFICHES * 24 * 3600 * 1000).toISOString();
   const { data, error } = await supabase
     .from('demandes')
     .select(AVEC_DOCUMENTS)
     .eq('statut', 'livree')
     .or(`archivee_le.not.is.null,livree_le.lt."${minuitParisISO()}"`)
+    .gte('livree_le', depuis)
     .order('livree_le', { ascending: false })
-    .limit(500);
+    .limit(1000);
+  if (error) echouer(error);
+  return (data ?? []) as Demande[];
+}
+
+// Recherche dans TOUTES les archives, sans limite de date, faite par la base
+// (sans tenir compte des accents) : voir la migration 0009.
+export async function rechercherArchives(recherche: string): Promise<Demande[]> {
+  const { data, error } = await supabase
+    .rpc('rechercher_archives', { p_recherche: recherche, p_minuit: minuitParisISO() })
+    .select(AVEC_DOCUMENTS);
   if (error) echouer(error);
   return (data ?? []) as Demande[];
 }

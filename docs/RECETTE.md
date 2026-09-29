@@ -68,6 +68,7 @@ Pharmacie) sur **un téléphone**, en même temps.
 - [ ] Les filtres statut / criticité / date fonctionnent (sur téléphone : bouton « Filtres »).
 - [ ] Sur une demande livrée, **Archiver maintenant** la fait passer du tableau aux **Archives**.
 - [ ] Le lendemain, les demandes livrées la veille sont passées toutes seules dans les **Archives**.
+- [ ] Dans les Archives, la recherche retrouve aussi une demande de plus de 30 jours (par nom sans accent ou par n° de ticket).
 
 ## 7. Annulation et suppression
 

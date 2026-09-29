@@ -22,6 +22,7 @@ import {
   etatVu,
   archiverDemande,
   listerArchives,
+  rechercherArchives,
   listerDemandes,
   marquerVue,
   messageErreur,
@@ -36,6 +37,10 @@ import Alertes from './components/Alertes';
 import { ajouterJours, aujourdhuiParis, lundiDeLaSemaine, moisCourt } from './lib/dates';
 
 type DispatcherView = 'kanban' | 'week';
+
+function chargerArchives(recherche: string): Promise<Demande[]> {
+  return recherche ? rechercherArchives(recherche) : listerArchives();
+}
 
 export default function App() {
   const { state: auth, signIn, signOut } = useAuth();
@@ -57,11 +62,12 @@ export default function App() {
   const [archives, setArchives] = useState<Demande[]>([]);
   const [chargementArchives, setChargementArchives] = useState(false);
   const vueArchivesRef = useRef(false);
+  const rechercheArchivesRef = useRef('');
 
   const recharger = useCallback(async () => {
     try {
       setDemandes(await listerDemandes());
-      if (vueArchivesRef.current) setArchives(await listerArchives());
+      if (vueArchivesRef.current) setArchives(await chargerArchives(rechercheArchivesRef.current));
     } catch (e) {
       setErreur(messageErreur(e));
     } finally {
@@ -93,16 +99,27 @@ export default function App() {
     return () => clearInterval(minuteur);
   }, [role, recharger]);
 
-  // Les archives ne sont chargées que lorsqu'on les affiche.
+  // Les archives ne sont chargées que lorsqu'on les affiche : les 30 derniers
+  // jours par défaut, ou toutes les archives qui correspondent à la recherche.
+  // On attend une courte pause dans la frappe avant d'interroger la base.
+  const rechercheArchives = vueArchives ? filtres.recherche.trim() : '';
   useEffect(() => {
     vueArchivesRef.current = vueArchives;
+    rechercheArchivesRef.current = rechercheArchives;
     if (!vueArchives) return;
+    let actif = true;
     setChargementArchives(true);
-    listerArchives()
-      .then(setArchives)
-      .catch(e => setErreur(messageErreur(e)))
-      .finally(() => setChargementArchives(false));
-  }, [vueArchives]);
+    const minuteur = setTimeout(() => {
+      chargerArchives(rechercheArchives)
+        .then(a => actif && setArchives(a))
+        .catch(e => actif && setErreur(messageErreur(e)))
+        .finally(() => actif && setChargementArchives(false));
+    }, rechercheArchives ? 350 : 0);
+    return () => {
+      actif = false;
+      clearTimeout(minuteur);
+    };
+  }, [vueArchives, rechercheArchives]);
 
   // Ouvrir une carte la marque comme vue ; si l'autre compte la modifie
   // pendant qu'elle est ouverte, elle est de nouveau marquée comme vue.
@@ -348,7 +365,7 @@ export default function App() {
             </div>
             <div className="mb-4 shrink-0">{barreFiltres}</div>
             <div className="flex-1 min-h-0">
-              <ArchivesView demandes={archivesFiltrees} chargement={chargementArchives} onOpen={ouvrir} />
+              <ArchivesView demandes={archivesFiltrees} chargement={chargementArchives} onOpen={ouvrir} recherche={rechercheArchives} />
             </div>
           </div>
         ) : role === 'dispatcher' ? (
