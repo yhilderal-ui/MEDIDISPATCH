@@ -33,9 +33,11 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [x] **8. Vu / non vu** sur les cartes — pastilles « Non vue » / « Mise à jour », compteur dans l'en-tête, « Vue par … » dans le détail
 - [x] **9. Chat global** — messages horodatés avec auteur, compteur de non lus, « Vu ✓ », temps réel
 - [x] **Suppression de cartes** (ajout du 29/09) — Dispatcheur uniquement, demande annulée uniquement, confirmation par le n° de ticket, trace dans `journal_suppressions`
-- [x] **10. Notifications in-app** — bandeau cliquable, son (plus insistant pour une demande urgente, coupable avec 🔔/🔕), compteur dans le titre de l'onglet qui clignote en arrière-plan, notification du navigateur optionnelle ; uniquement pour les actions de l'autre compte
+- [x] **10. Notifications in-app** — bandeau cliquable, son (plus insistant pour une demande urgente, coupable avec le bouton cloche), compteur dans le titre de l'onglet qui clignote en arrière-plan, notification du navigateur optionnelle ; uniquement pour les actions de l'autre compte
 - [x] **11. Archives** — demandes livrées sorties du tableau actif **30 jours** après la livraison (décision du 29/09), vue « Archives » séparée avec recherche
-- [ ] **12. Mise en ligne** — nom de domaine, variables d'environnement, recette complète sur mobile et ordinateur
+- [x] **12a. Affichage mobile** — en-tête compact, onglets de statut, filtres repliables, vue semaine verticale, chat plein écran, alertes en bas d'écran, installation sur l'écran d'accueil ; icônes Lucide à la place des émoticônes
+- [ ] **12b. Recette** — à dérouler avec Florence et la pharmacie : voir `docs/RECETTE.md`
+- [ ] **12c. Nom de domaine** (optionnel) — à acheter puis relier à Vercel
 
 ## Écarts entre la maquette et le cahier des charges
 
@@ -48,7 +50,7 @@ cahier des charges, et à quelle étape on le corrige.
 | Connexion | Nom tapé, sans mot de passe | Vrai compte sécurisé, 2 comptes | 3 |
 | Persistance | Perdue au rechargement | Base de données, rien ne se perd | 2 |
 | Statuts | 6 statuts + un 2ᵉ statut « pharmacie » (nouveau / validé / archivé…) | 3 statuts : Nouvelle → En cours → Livrée (+ Annulée) | 2 et 7 |
-| Criticité | Urgent / Standard / Faible | 🔴 Urgent / 🟠 Standard prioritaire / 🟢 Standard | 4 |
+| Criticité | Urgent / Standard / Faible | Urgent / Standard prioritaire / Standard (pastilles rouge, orange, vert) | 4 |
 | Formulaire | Adresse de collecte, client, poids, produits | Patient, adresse, téléphone, médicaments, ordonnance, bon de livraison | 4 |
 | Date de livraison | Accepte les jours passés et le dimanche | Aujourd'hui ou plus tard, jamais le dimanche (jour même autorisé : décision du 28/09, remplace « jamais le jour même » du cahier des charges) | 4 |
 | Pièces jointes | Noms de fichiers seulement (non envoyés), Word accepté, 20 Mo | Fichiers réellement stockés, PDF/JPEG/PNG, 10 Mo | 4 |

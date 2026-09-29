@@ -97,6 +97,7 @@ interface Options {
   chargement: boolean;
   messages: MessageChat[];
   nonLusChat: number;
+  chatCharge: boolean;
   chatOuvert: boolean;
   onOuvrirDemande: (id: string) => void;
   onOuvrirChat: () => void;
@@ -104,7 +105,7 @@ interface Options {
 
 const TITRE = 'MediDispatch';
 
-export function useNotifications({ utilisateurId, demandes, chargement, messages, nonLusChat, chatOuvert, onOuvrirDemande, onOuvrirChat }: Options) {
+export function useNotifications({ utilisateurId, demandes, chargement, messages, nonLusChat, chatCharge, chatOuvert, onOuvrirDemande, onOuvrirChat }: Options) {
   const [alertes, setAlertes] = useState<Alerte[]>([]);
   const [son, setSon] = useState(lirePreferenceSon);
   const [permission, setPermission] = useState<NotificationPermission | 'indisponible'>(() =>
@@ -171,7 +172,7 @@ export function useNotifications({ utilisateurId, demandes, chargement, messages
 
   // Nouveaux messages du chat.
   useEffect(() => {
-    if (!utilisateurId) return;
+    if (!utilisateurId || !chatCharge) return; // attendre l'historique du chat
     const avant = nonLusAvant.current;
     nonLusAvant.current = nonLusChat;
     // Chat déjà ouvert : le message est sous les yeux, pas besoin d'alerte.
@@ -186,7 +187,7 @@ export function useNotifications({ utilisateurId, demandes, chargement, messages
       urgente: false,
       chat: true,
     }]);
-  }, [nonLusChat, messages, utilisateurId, chatOuvert, emettre]);
+  }, [nonLusChat, messages, utilisateurId, chatCharge, chatOuvert, emettre]);
 
   // Titre de l'onglet : « (3) MediDispatch », qui clignote si la fenêtre est
   // en arrière-plan et qu'une alerte est en attente.

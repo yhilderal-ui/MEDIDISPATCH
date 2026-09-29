@@ -86,8 +86,7 @@ export default function Chat({ utilisateurId, role, messages, nonLus, autreVuJus
     <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3">
       {ouvert && (
         <div
-          className="w-[min(20rem,calc(100vw-2.5rem))] bg-white rounded-3xl shadow-2xl border border-black/5 flex flex-col overflow-hidden slide-in"
-          style={{ height: 'min(460px, calc(100vh - 7rem))' }}
+          className="max-sm:fixed max-sm:inset-0 max-sm:z-50 max-sm:rounded-none w-full sm:w-80 h-full sm:h-[min(460px,calc(100dvh-7rem))] bg-white sm:rounded-3xl shadow-2xl border border-black/5 flex flex-col overflow-hidden slide-in"
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
             <div className="flex items-center gap-2">
@@ -185,7 +184,7 @@ export default function Chat({ utilisateurId, role, messages, nonLus, autreVuJus
         type="button"
         onClick={() => setOuvert(o => !o)}
         aria-label={ouvert ? 'Fermer la messagerie' : `Ouvrir la messagerie${nonLus ? ` (${nonLus} non lus)` : ''}`}
-        className="relative w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+        className={`relative w-12 h-12 rounded-2xl shadow-lg items-center justify-center transition-all hover:scale-105 active:scale-95 ${ouvert ? 'hidden sm:flex' : 'flex'}`}
         style={{ background: ouvert ? '#374151' : '#111827' }}
       >
         {ouvert ? (

@@ -3,6 +3,7 @@ import { CalendarDays, FileText, LayoutGrid, Pill, TriangleAlert } from 'lucide-
 import BadgeCriticite from './BadgeCriticite';
 import type { Demande, EtatVu, Statut } from '../types';
 import BadgeVu from './BadgeVu';
+import OngletsStatut from './OngletsStatut';
 import { CRITICITE_CONFIG, CRITICITE_ORDRE, STATUT_CONFIG } from '../data';
 import WeekView from './WeekView';
 import { ajouterJours, formatJour, lundiDeLaSemaine, moisCourt } from '../lib/dates';
@@ -78,13 +79,13 @@ function TriBouton({ actif, onClick, children }: { actif: boolean; onClick: () =
   );
 }
 
-function Colonne({ statut, items, onOpen, etats }: {
-  statut: Statut; items: Demande[]; onOpen: (d: Demande) => void; etats: Record<string, EtatVu>;
+function Colonne({ statut, items, onOpen, etats, visibleMobile }: {
+  statut: Statut; items: Demande[]; onOpen: (d: Demande) => void; etats: Record<string, EtatVu>; visibleMobile: boolean;
 }) {
   const cfg = STATUT_CONFIG[statut];
   return (
-    <div className="flex flex-col min-w-[280px] w-[280px] shrink-0">
-      <div className="flex items-center justify-between mb-3 px-3 py-2 rounded-xl" style={{ background: cfg.color + '12' }}>
+    <div className={`${visibleMobile ? 'flex' : 'hidden'} md:flex flex-col w-full md:min-w-[280px] md:w-[280px] shrink-0 min-h-0`}>
+      <div className="hidden md:flex items-center justify-between mb-3 px-3 py-2 rounded-xl" style={{ background: cfg.color + '12' }}>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ background: cfg.color }} />
           <span className="text-xs font-700 uppercase tracking-widest" style={{ color: cfg.color }}>{cfg.label}</span>
@@ -108,6 +109,7 @@ function Colonne({ statut, items, onOpen, etats }: {
 export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Props) {
   const [tri, setTri] = useState<Tri>('date');
   const [vue, setVue] = useState<Vue>('kanban');
+  const [onglet, setOnglet] = useState<Statut>('nouvelle');
   const [debutSemaine, setDebutSemaine] = useState<Date>(() => lundiDeLaSemaine(new Date()));
 
   const trier = (items: Demande[]) =>
@@ -170,11 +172,16 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Pr
       </div>
 
       {vue === 'kanban' ? (
-        <div className="flex gap-5 flex-1 min-h-0 overflow-x-auto pb-4">
-          <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} etats={etats} />
-          <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} etats={etats} />
-          <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} etats={etats} />
-          {annulees.length > 0 && <Colonne statut="annulee" items={annulees} onOpen={onOpen} etats={etats} />}
+        <div className="flex flex-col flex-1 min-h-0">
+          <OngletsStatut demandes={demandes} etats={etats} actif={onglet} onChange={setOnglet} />
+          <div className="flex gap-5 flex-1 min-h-0 md:overflow-x-auto pb-24 md:pb-4">
+            <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'nouvelle'} />
+            <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'en_cours'} />
+            <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'livree'} />
+            {(annulees.length > 0 || onglet === 'annulee') && (
+              <Colonne statut="annulee" items={annulees} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'annulee'} />
+            )}
+          </div>
         </div>
       ) : (
         <div className="flex-1 min-h-0">

@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 import type { Criticite, Statut } from '../types';
 import { CRITICITE_CONFIG, STATUT_CONFIG } from '../data';
 import { FILTRES_VIDES, filtresActifs, type FiltreDate, type Filtres } from '../lib/filtres';
@@ -31,10 +32,13 @@ export default function BarreFiltres({ filtres, onChange, nbResultats, nbTotal, 
   }, []);
 
   const actifs = filtresActifs(filtres);
+  // Sur téléphone, les listes déroulantes sont repliées derrière « Filtres ».
+  const [deplie, setDeplie] = useState(false);
+  const nbFiltres = [filtres.statut !== 'tous', filtres.criticite !== 'toutes', filtres.date !== 'toutes'].filter(Boolean).length;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <div className="relative flex items-center">
+    <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+      <div className="relative flex items-center flex-1 md:flex-none min-w-0">
         <svg className="absolute left-3 text-gray-400" width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
           <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="1.4" />
           <path d="M9 9l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
@@ -45,36 +49,47 @@ export default function BarreFiltres({ filtres, onChange, nbResultats, nbTotal, 
           onChange={e => set('recherche', e.target.value)}
           placeholder="Patient ou n° de ticket…"
           aria-label="Rechercher par patient ou numéro de ticket"
-          className="w-56 max-w-[70vw] text-xs bg-white border border-gray-200 rounded-xl pl-8 pr-3 py-2 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all placeholder:text-gray-300"
+          className="w-full md:w-56 text-xs bg-white border border-gray-200 rounded-xl pl-8 pr-3 py-2 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all placeholder:text-gray-300"
         />
       </div>
 
-      {!masquerStatut && (
-        <select aria-label="Filtrer par statut" value={filtres.statut} onChange={e => set('statut', e.target.value as Statut | 'tous')} className={SELECT}>
-          <option value="tous">Tous les statuts</option>
-          {(Object.keys(STATUT_CONFIG) as Statut[]).map(s => (
-            <option key={s} value={s}>{STATUT_CONFIG[s].label}</option>
+      <button
+        type="button"
+        onClick={() => setDeplie(d => !d)}
+        aria-expanded={deplie}
+        className="md:hidden flex items-center gap-1.5 text-xs font-600 px-3 py-2 rounded-xl border border-gray-200 bg-white text-gray-600"
+      >
+        <SlidersHorizontal size={14} aria-hidden /> Filtres{nbFiltres > 0 && ` (${nbFiltres})`}
+      </button>
+
+      <div className={`${deplie ? 'flex' : 'hidden'} md:contents flex-wrap gap-2 w-full`}>
+        {!masquerStatut && (
+          <select aria-label="Filtrer par statut" value={filtres.statut} onChange={e => set('statut', e.target.value as Statut | 'tous')} className={SELECT}>
+            <option value="tous">Tous les statuts</option>
+            {(Object.keys(STATUT_CONFIG) as Statut[]).map(s => (
+              <option key={s} value={s}>{STATUT_CONFIG[s].label}</option>
+            ))}
+          </select>
+        )}
+
+        <select aria-label="Filtrer par criticité" value={filtres.criticite} onChange={e => set('criticite', e.target.value as Criticite | 'toutes')} className={SELECT}>
+          <option value="toutes">Toutes criticités</option>
+          {(Object.keys(CRITICITE_CONFIG) as Criticite[]).map(c => (
+            <option key={c} value={c}>{CRITICITE_CONFIG[c].label}</option>
           ))}
         </select>
-      )}
 
-      <select aria-label="Filtrer par criticité" value={filtres.criticite} onChange={e => set('criticite', e.target.value as Criticite | 'toutes')} className={SELECT}>
-        <option value="toutes">Toutes criticités</option>
-        {(Object.keys(CRITICITE_CONFIG) as Criticite[]).map(c => (
-          <option key={c} value={c}>{CRITICITE_CONFIG[c].label}</option>
-        ))}
-      </select>
-
-      <select aria-label="Filtrer par date de livraison" value={filtres.date} onChange={e => set('date', e.target.value as FiltreDate)} className={SELECT}>
-        <option value="toutes">Toutes les dates</option>
-        <option value="aujourdhui">Aujourd'hui</option>
-        <option value="demain">Demain</option>
-        <option value="semaine">Cette semaine</option>
-        <option value="jour">Choisir un jour…</option>
-      </select>
-      {filtres.date === 'jour' && (
-        <input type="date" aria-label="Jour de livraison" value={filtres.jour} onChange={e => set('jour', e.target.value)} className={SELECT} />
-      )}
+        <select aria-label="Filtrer par date de livraison" value={filtres.date} onChange={e => set('date', e.target.value as FiltreDate)} className={SELECT}>
+          <option value="toutes">Toutes les dates</option>
+          <option value="aujourdhui">Aujourd'hui</option>
+          <option value="demain">Demain</option>
+          <option value="semaine">Cette semaine</option>
+          <option value="jour">Choisir un jour…</option>
+        </select>
+        {filtres.date === 'jour' && (
+          <input type="date" aria-label="Jour de livraison" value={filtres.jour} onChange={e => set('jour', e.target.value)} className={SELECT} />
+        )}
+      </div>
 
       {actifs && (
         <>
