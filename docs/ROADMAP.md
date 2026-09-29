@@ -25,14 +25,14 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [x] **2. Modèle de données** — tables Supabase : `profiles`, `demandes`, `documents`, `notes`, `historique_statuts`, `messages`, `lectures` (vu / non vu) ; numéro de ticket auto ; règles d'accès (RLS)
 - [x] **3. Authentification réelle** — 2 comptes (Dispatcheur, Société de livraison), inscription publique désactivée, badge de rôle
 - [x] **4. Création de demande** — formulaire, liste de médicaments, bon de livraison (seule pièce jointe en V1, l'ordonnance viendra plus tard), sélecteur de date (ni passé, ni dimanche ; jour même autorisé)
-- [ ] **5. Tableau hebdomadaire** — colonnes lundi → samedi, recherche (patient / ticket), filtres (statut, criticité, date)
+- [x] **5. Tableau hebdomadaire** — colonnes lundi → samedi, recherche (patient / ticket, sans tenir compte des accents), filtres (statut, criticité, date) pour les deux rôles
 - [ ] **6. Détail de la carte** — ✅ fait à l'étape 4 : infos patient, criticité mise en avant, documents, fil de notes, report, annulation. Reste : affichage de l'historique, modification des informations
 - [x] **7. Statuts et preuve de livraison** — Nouvelle → En cours → Livrée ; photo de preuve **optionnelle** en V1 (décision du 29/09, le cahier des charges la prévoyait obligatoire)
 - [x] **8. Vu / non vu** sur les cartes — pastilles « Non vue » / « Mise à jour », compteur dans l'en-tête, « Vue par … » dans le détail
 - [x] **9. Chat global** — messages horodatés avec auteur, compteur de non lus, « Vu ✓ », temps réel
 - [x] **Suppression de cartes** (ajout du 29/09) — Dispatcheur uniquement, demande annulée uniquement, confirmation par le n° de ticket, trace dans `journal_suppressions`
 - [ ] **10. Notifications in-app** — nouvelles demandes, nouveaux messages
-- [ ] **11. Archives** — demandes livrées sorties du tableau actif après un délai, accès séparé
+- [x] **11. Archives** — demandes livrées sorties du tableau actif **30 jours** après la livraison (décision du 29/09), vue « Archives » séparée avec recherche
 - [ ] **12. Mise en ligne** — nom de domaine, variables d'environnement, recette complète sur mobile et ordinateur
 
 ## Écarts entre la maquette et le cahier des charges

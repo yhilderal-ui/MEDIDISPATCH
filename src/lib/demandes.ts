@@ -39,13 +39,33 @@ export function erreurFichier(fichier: File): string | null {
   return null;
 }
 
+// Décision du 29/09 : une demande livrée depuis plus de 30 jours est archivée.
+export const JOURS_AVANT_ARCHIVAGE = 30;
+
+function limiteArchivage(): string {
+  return new Date(Date.now() - JOURS_AVANT_ARCHIVAGE * 24 * 60 * 60 * 1000).toISOString();
+}
+
+// Tableau actif : tout sauf les livrées depuis plus de 30 jours.
 export async function listerDemandes(): Promise<Demande[]> {
   const { data, error } = await supabase
     .from('demandes')
     .select(AVEC_DOCUMENTS)
-    .is('archivee_le', null)
+    .or(`statut.neq.livree,livree_le.gte."${limiteArchivage()}",livree_le.is.null`)
     .order('jour_livraison', { ascending: true })
     .order('cree_le', { ascending: false });
+  if (error) echouer(error);
+  return (data ?? []) as Demande[];
+}
+
+export async function listerArchives(): Promise<Demande[]> {
+  const { data, error } = await supabase
+    .from('demandes')
+    .select(AVEC_DOCUMENTS)
+    .eq('statut', 'livree')
+    .lt('livree_le', limiteArchivage())
+    .order('livree_le', { ascending: false })
+    .limit(500);
   if (error) echouer(error);
   return (data ?? []) as Demande[];
 }
