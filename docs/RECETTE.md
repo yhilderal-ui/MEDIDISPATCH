@@ -95,3 +95,24 @@ Ces points ne sont **pas techniques** mais sont **bloquants** (cahier des charge
       traitements.
 - [ ] **Durée de conservation** des demandes et documents archivés.
 - [ ] **Mots de passe** forts et propres à chaque compte, jamais partagés par message.
+
+---
+
+## 9. Remise à zéro avant la mise en service
+
+Une fois la recette validée, on efface toutes les données de test pour démarrer propre.
+**À faire une seule fois, juste avant le premier jour d'utilisation réelle.**
+
+1. **Prévenir** Florence et la pharmacie : ne rien créer pendant les 5 minutes du nettoyage.
+2. **Supabase → SQL Editor → + New query** : coller le contenu de
+   `supabase/scripts/nettoyer_donnees_test.sql` → **Run** → confirmer l'avertissement
+   « destructive operations ». Le tableau final doit afficher `0` partout et `comptes = 2`.
+3. **Supabase → Storage → `documents`** : sélectionner tous les dossiers → **Delete**
+   (ou menu ⋯ du bucket → **Empty bucket**). Ce sont les PDF et photos de test.
+   ⚠️ Ne pas supprimer le bucket lui-même, seulement son contenu.
+4. **Vérifier** : se connecter sur www.medi-dispatch.fr → tableau vide, chat vide ;
+   créer une demande → elle porte le numéro **MD-00001** → l'annuler puis la supprimer
+   (ou la garder si c'est une vraie demande).
+
+Ce qui est conservé : les deux comptes et leurs mots de passe, les réglages, la structure
+de la base.
