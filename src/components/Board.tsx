@@ -1,15 +1,16 @@
-import type { Demande, Statut } from '../types';
+import type { Demande, EtatVu, Statut } from '../types';
 import { STATUT_CONFIG } from '../data';
 import DeliveryCardComponent from './DeliveryCardComponent';
 
 interface Props {
   demandes: Demande[];
   onOpen: (demande: Demande) => void;
+  etats: Record<string, EtatVu>;
 }
 
 const COLONNES: Statut[] = ['nouvelle', 'en_cours', 'livree'];
 
-export default function Board({ demandes, onOpen }: Props) {
+export default function Board({ demandes, onOpen, etats }: Props) {
   const annulees = demandes.filter(d => d.statut === 'annulee');
 
   return (
@@ -41,7 +42,7 @@ export default function Board({ demandes, onOpen }: Props) {
                   </div>
                 )}
                 {items.map(d => (
-                  <DeliveryCardComponent key={d.id} demande={d} onOpen={onOpen} />
+                  <DeliveryCardComponent key={d.id} demande={d} onOpen={onOpen} etatVu={etats[d.id]} />
                 ))}
               </div>
             </div>
@@ -59,7 +60,7 @@ export default function Board({ demandes, onOpen }: Props) {
           <div className="flex gap-4 flex-wrap">
             {annulees.map(d => (
               <div key={d.id} className="w-[240px]">
-                <DeliveryCardComponent demande={d} onOpen={onOpen} />
+                <DeliveryCardComponent demande={d} onOpen={onOpen} etatVu={etats[d.id]} />
               </div>
             ))}
           </div>

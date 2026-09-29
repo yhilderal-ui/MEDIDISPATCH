@@ -3,10 +3,14 @@ import type { Demande, DocumentJoint, Note, Statut, TypeDocument } from '../type
 import { CRITICITE_CONFIG, DOC_CONFIG, STATUT_CONFIG } from '../data';
 import { aujourdhuiParis, erreurJourLivraison, formatHorodatage, formatJour } from '../lib/dates';
 import { ajouterNote, lienDocument, listerNotes, messageErreur, surveillerNotes } from '../lib/demandes';
+import type { Role } from '../lib/useAuth';
 
 interface Props {
   demande: Demande;
+  role: Role;
+  utilisateurId: string;
   onClose: () => void;
+  onSupprimer: () => Promise<boolean>;
   // Chaque action renvoie true si elle a réussi ; les erreurs sont affichées par App.
   onChangerStatut: (statut: Statut) => Promise<boolean>;
   onReporter: (jour: string) => Promise<boolean>;
@@ -130,7 +134,7 @@ function FilNotes({ demandeId }: { demandeId: string }) {
   );
 }
 
-export default function DemandePanel({ demande, onClose, onChangerStatut, onReporter, onDeposer }: Props) {
+export default function DemandePanel({ demande, role, utilisateurId, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer }: Props) {
   const criticite = CRITICITE_CONFIG[demande.criticite];
   const statut = STATUT_CONFIG[demande.statut];
   const [occupe, setOccupe] = useState(false);
@@ -166,6 +170,24 @@ export default function DemandePanel({ demande, onClose, onChangerStatut, onRepo
       executer(() => onChangerStatut('annulee'));
     }
   };
+
+  const supprimer = () => {
+    const saisie = window.prompt(
+      `Suppression DÉFINITIVE de la demande ${demande.numero_ticket} et de ses documents.\n` +
+        `Cette action est irréversible.\n\nTapez ${demande.numero_ticket} pour confirmer :`,
+    );
+    if (saisie === null) return;
+    if (saisie.trim().toUpperCase() !== demande.numero_ticket) {
+      window.alert('Numéro de ticket incorrect : la demande n\'a pas été supprimée.');
+      return;
+    }
+    executer(onSupprimer);
+  };
+
+  // L'autre compte a-t-il consulté la carte depuis sa dernière modification ?
+  const autre = role === 'dispatcher' ? 'la société de livraison' : 'le dispatcheur';
+  const lectureAutre = demande.lectures_demandes.find(l => l.utilisateur_id !== utilisateurId);
+  const autreAJour = lectureAutre && lectureAutre.vu_le >= demande.derniere_activite_le;
 
   const modifiable = demande.statut === 'nouvelle' || demande.statut === 'en_cours';
 
@@ -225,6 +247,18 @@ export default function DemandePanel({ demande, onClose, onChangerStatut, onRepo
               <span>Livraison prévue : <span className="font-600 text-gray-800">{formatJour(demande.jour_livraison)}</span></span>
             </p>
           </div>
+
+          {/* Utile seulement si c'est moi qui ai fait la dernière modification. */}
+          {demande.derniere_activite_par === utilisateurId && (
+            <p className={`mt-3 text-[11px] flex items-center gap-1.5 ${autreAJour ? 'text-emerald-600' : 'text-gray-400'}`}>
+              <span aria-hidden>👁</span>
+              {autreAJour
+                ? `Vue par ${autre} le ${formatHorodatage(lectureAutre!.vu_le)}`
+                : lectureAutre
+                  ? `Dernière modification pas encore vue par ${autre}`
+                  : `Pas encore consultée par ${autre}`}
+            </p>
+          )}
 
           {demande.notes_initiales && (
             <div className="mt-3 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 flex items-start gap-2">
@@ -358,6 +392,17 @@ export default function DemandePanel({ demande, onClose, onChangerStatut, onRepo
             <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-600 text-sm py-2.5 rounded-xl text-center">
               ✓ Livrée
             </div>
+          )}
+
+          {demande.statut === 'annulee' && role === 'dispatcher' && (
+            <button
+              type="button"
+              disabled={occupe}
+              onClick={supprimer}
+              className="w-full text-xs font-600 py-2 rounded-xl bg-white text-red-600 hover:bg-red-50 border border-red-300 transition-colors disabled:opacity-50"
+            >
+              🗑 Supprimer définitivement
+            </button>
           )}
 
           {demande.statut === 'annulee' && (

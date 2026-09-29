@@ -1,11 +1,11 @@
 import { supabase } from './supabase';
-import type { Demande, DocumentJoint, NouvelleDemande, Note, Statut, TypeDocument } from '../types';
+import type { Demande, DocumentJoint, EtatVu, NouvelleDemande, Note, Statut, TypeDocument } from '../types';
 
 // Toutes les lectures et écritures des demandes passent par ce fichier.
 // Les règles (date, preuve de livraison, droits) sont vérifiées par la base ;
 // ici on traduit ses refus en messages compréhensibles.
 
-const AVEC_DOCUMENTS = '*, documents(*)';
+const AVEC_DOCUMENTS = '*, documents(*), lectures_demandes(utilisateur_id, vu_le)';
 
 export const TYPES_FICHIERS_ACCEPTES = ['application/pdf', 'image/jpeg', 'image/png'];
 export const TAILLE_MAX_OCTETS = 10 * 1024 * 1024;
@@ -130,12 +130,41 @@ export async function ajouterNote(demandeId: string, contenu: string): Promise<v
   if (error) echouer(error);
 }
 
+// Vu / non vu, du point de vue de l'utilisateur connecté.
+export function etatVu(demande: Demande, utilisateurId: string): EtatVu {
+  if (demande.derniere_activite_par === utilisateurId) return null;
+  const maLecture = demande.lectures_demandes.find(l => l.utilisateur_id === utilisateurId);
+  if (!maLecture) return 'nouvelle';
+  return maLecture.vu_le < demande.derniere_activite_le ? 'maj' : null;
+}
+
+export async function marquerVue(demandeId: string): Promise<void> {
+  const { error } = await supabase.rpc('marquer_demande_vue', { p_demande_id: demandeId });
+  if (error) echouer(error);
+}
+
+// Suppression définitive (Dispatcheur, demande annulée uniquement : la base
+// refuse sinon). On supprime d'abord la carte, puis ses fichiers.
+export async function supprimerDemande(demande: Demande): Promise<void> {
+  const { data, error } = await supabase.from('demandes').delete().eq('id', demande.id).select('id');
+  if (error) echouer(error);
+  if (!data || data.length === 0) {
+    throw new Error('Suppression refusée : seule une demande annulée peut être supprimée, par le compte Dispatcheur.');
+  }
+  const chemins = demande.documents.map(d => d.chemin_fichier);
+  if (chemins.length > 0) {
+    // Si cette étape échoue, il ne reste que des fichiers privés orphelins, sans conséquence.
+    await supabase.storage.from('documents').remove(chemins);
+  }
+}
+
 // Temps réel : la base prévient à chaque changement ; on recharge alors la liste.
 export function surveillerDemandes(auChangement: () => void): () => void {
   const canal = supabase
     .channel('demandes-et-documents')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'demandes' }, auChangement)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, auChangement)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'lectures_demandes' }, auChangement)
     .subscribe();
   return () => {
     supabase.removeChannel(canal);
