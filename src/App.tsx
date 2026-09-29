@@ -208,6 +208,18 @@ export default function App() {
 
   const shiftWeek = (n: number) => setWeekStart(d => ajouterJours(d, n * 7));
 
+  // Clic sur le logo : retour au tableau des livraisons, dans son état de départ.
+  const [accueil, setAccueil] = useState(0);
+  const retourAccueil = () => {
+    setOuverteId(null);
+    setShowModal(false);
+    setVueArchives(false);
+    setDispatcherView('kanban');
+    setWeekStart(lundiDeLaSemaine(new Date()));
+    setFiltres(FILTRES_VIDES);
+    setAccueil(n => n + 1); // réinitialise les onglets et la vue du tableau Pharmacie
+  };
+
   if (auth.status === 'loading') {
     return (
       <div className="min-h-screen bg-[#f5f4f0] flex items-center justify-center">
@@ -259,15 +271,21 @@ export default function App() {
     <div className="h-dvh flex flex-col bg-[#f5f4f0] overflow-hidden">
       {/* Barre du haut */}
       <header className="shrink-0 flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-4 bg-white border-b border-black/5">
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <div className="w-8 h-8 rounded-xl overflow-hidden bg-white flex items-center justify-center shrink-0">
-            <img src={logo} alt="MediDispatch" className="w-full h-full object-contain" />
+        <button
+          type="button"
+          onClick={retourAccueil}
+          title="Retour au tableau des livraisons"
+          aria-label="MediDispatch — retour au tableau des livraisons"
+          className="flex items-center gap-2 sm:gap-3 shrink-0 text-left rounded-xl -m-1 p-1 hover:bg-gray-50 transition-colors"
+        >
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden bg-white flex items-center justify-center shrink-0">
+            <img src={logo} alt="" className="w-full h-full object-contain" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-sm font-700 text-gray-900 leading-tight">MediDispatch</h1>
+            <h1 className="text-sm sm:text-base font-700 text-gray-900 leading-tight">MediDispatch</h1>
             <p className="hidden sm:block whitespace-nowrap text-[10px] text-gray-400 font-mono tracking-wide">Livraison médicale — Île-de-France</p>
           </div>
-        </div>
+        </button>
 
         <div
           className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-600 shrink-0"
@@ -414,7 +432,7 @@ export default function App() {
 
             <div className="flex-1 overflow-hidden px-4 sm:px-6 pb-6">
               {dispatcherView === 'kanban' ? (
-                <Board demandes={filtrees} onOpen={ouvrir} etats={etats} />
+                <Board key={accueil} demandes={filtrees} onOpen={ouvrir} etats={etats} />
               ) : (
                 <WeekView demandes={filtrees.filter(d => d.statut !== 'annulee')} weekStart={weekStart} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} />
               )}
@@ -429,7 +447,7 @@ export default function App() {
             </div>
             <div className="mb-3 shrink-0">{barreFiltres}</div>
             <div className="flex-1 min-h-0">
-              <LivreurBoard demandes={filtrees} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} />
+              <LivreurBoard key={accueil} demandes={filtrees} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} />
             </div>
           </div>
         )}
