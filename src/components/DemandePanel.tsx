@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
+import { Archive, CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
 import type { Demande, DocumentJoint, ModificationDemande as Champs, Note, Statut, TypeDocument } from '../types';
 import ModificationDemande from './ModificationDemande';
 import HistoriqueDemande from './HistoriqueDemande';
@@ -20,6 +20,7 @@ interface Props {
   onDeposer: (type: TypeDocument, fichier: File) => Promise<boolean>;
   onModifier: (champs: Champs) => Promise<boolean>;
   onGenererBon: () => Promise<boolean>;
+  onArchiver: () => Promise<boolean>;
 }
 
 const TITRE = 'text-[10px] font-700 uppercase tracking-widest text-gray-400 mb-2';
@@ -144,7 +145,7 @@ function FilNotes({ demandeId }: { demandeId: string }) {
   );
 }
 
-export default function DemandePanel({ demande, role, utilisateurId, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon }: Props) {
+export default function DemandePanel({ demande, role, utilisateurId, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon, onArchiver }: Props) {
   const [edition, setEdition] = useState(false);
   const criticite = CRITICITE_CONFIG[demande.criticite];
   const statut = STATUT_CONFIG[demande.statut];
@@ -442,6 +443,18 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
               className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-600 text-sm py-2.5 rounded-xl transition-colors"
             >
               <Check size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />Marquer comme livrée
+            </button>
+          )}
+
+          {demande.statut === 'livree' && !demande.archivee_le && (
+            <button
+              type="button"
+              disabled={occupe}
+              onClick={() => executer(onArchiver)}
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-600 text-sm py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              <Archive size={15} className="inline-block align-[-3px] mr-1.5" aria-hidden />Archiver maintenant
+              <span className="block text-[10px] font-400 text-gray-400">Sinon, archivage automatique à minuit</span>
             </button>
           )}
 

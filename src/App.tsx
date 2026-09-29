@@ -20,7 +20,9 @@ import {
   creerDemande,
   deposerDocument,
   etatVu,
+  archiverDemande,
   listerArchives,
+  rechercherArchives,
   listerDemandes,
   marquerVue,
   messageErreur,
@@ -32,9 +34,13 @@ import {
 import { useChat } from './lib/chat';
 import { useNotifications } from './lib/notifications';
 import Alertes from './components/Alertes';
-import { ajouterJours, lundiDeLaSemaine, moisCourt } from './lib/dates';
+import { ajouterJours, aujourdhuiParis, lundiDeLaSemaine, moisCourt } from './lib/dates';
 
 type DispatcherView = 'kanban' | 'week';
+
+function chargerArchives(recherche: string): Promise<Demande[]> {
+  return recherche ? rechercherArchives(recherche) : listerArchives();
+}
 
 export default function App() {
   const { state: auth, signIn, signOut } = useAuth();
@@ -56,11 +62,12 @@ export default function App() {
   const [archives, setArchives] = useState<Demande[]>([]);
   const [chargementArchives, setChargementArchives] = useState(false);
   const vueArchivesRef = useRef(false);
+  const rechercheArchivesRef = useRef('');
 
   const recharger = useCallback(async () => {
     try {
       setDemandes(await listerDemandes());
-      if (vueArchivesRef.current) setArchives(await listerArchives());
+      if (vueArchivesRef.current) setArchives(await chargerArchives(rechercheArchivesRef.current));
     } catch (e) {
       setErreur(messageErreur(e));
     } finally {
@@ -76,16 +83,43 @@ export default function App() {
     return surveillerDemandes(recharger);
   }, [role, recharger]);
 
-  // Les archives ne sont chargées que lorsqu'on les affiche.
+  // À minuit (heure de Paris), les demandes livrées la veille basculent dans
+  // les Archives : on recharge le tableau au changement de jour, même si
+  // l'application est restée ouverte toute la nuit.
+  useEffect(() => {
+    if (!role) return;
+    let jour = aujourdhuiParis();
+    const minuteur = setInterval(() => {
+      const maintenant = aujourdhuiParis();
+      if (maintenant !== jour) {
+        jour = maintenant;
+        recharger();
+      }
+    }, 60 * 1000);
+    return () => clearInterval(minuteur);
+  }, [role, recharger]);
+
+  // Les archives ne sont chargées que lorsqu'on les affiche : les 30 derniers
+  // jours par défaut, ou toutes les archives qui correspondent à la recherche.
+  // On attend une courte pause dans la frappe avant d'interroger la base.
+  const rechercheArchives = vueArchives ? filtres.recherche.trim() : '';
   useEffect(() => {
     vueArchivesRef.current = vueArchives;
+    rechercheArchivesRef.current = rechercheArchives;
     if (!vueArchives) return;
+    let actif = true;
     setChargementArchives(true);
-    listerArchives()
-      .then(setArchives)
-      .catch(e => setErreur(messageErreur(e)))
-      .finally(() => setChargementArchives(false));
-  }, [vueArchives]);
+    const minuteur = setTimeout(() => {
+      chargerArchives(rechercheArchives)
+        .then(a => actif && setArchives(a))
+        .catch(e => actif && setErreur(messageErreur(e)))
+        .finally(() => actif && setChargementArchives(false));
+    }, rechercheArchives ? 350 : 0);
+    return () => {
+      actif = false;
+      clearTimeout(minuteur);
+    };
+  }, [vueArchives, rechercheArchives]);
 
   // Ouvrir une carte la marque comme vue ; si l'autre compte la modifie
   // pendant qu'elle est ouverte, elle est de nouveau marquée comme vue.
@@ -327,11 +361,11 @@ export default function App() {
             <div className="flex items-center gap-2 mb-3 shrink-0">
               <h2 className="text-xs font-700 uppercase tracking-widest text-gray-400">Archives</h2>
               <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400">Demandes livrées depuis plus de 30 jours</span>
+              <span className="text-xs text-gray-400">Demandes livrées les jours précédents ou archivées à la main</span>
             </div>
             <div className="mb-4 shrink-0">{barreFiltres}</div>
             <div className="flex-1 min-h-0">
-              <ArchivesView demandes={archivesFiltrees} chargement={chargementArchives} onOpen={ouvrir} />
+              <ArchivesView demandes={archivesFiltrees} chargement={chargementArchives} onOpen={ouvrir} recherche={rechercheArchives} />
             </div>
           </div>
         ) : role === 'dispatcher' ? (
@@ -421,6 +455,12 @@ export default function App() {
             modifierPuisRegenerer(ouverte.id, ouverte.numero_ticket, () => modifierDemande(ouverte.id, champs), `Demande ${ouverte.numero_ticket} modifiée.`)
           }
           onGenererBon={() => agir(() => publierBonGenere(ouverte.id), 'Bon de livraison généré.')}
+          onArchiver={async () => {
+            const ticket = ouverte.numero_ticket;
+            const ok = await agir(() => archiverDemande(ouverte.id), `Demande ${ticket} archivée.`);
+            if (ok && !vueArchives) setOuverteId(null);
+            return ok;
+          }}
           onDeposer={(type: TypeDocument, fichier: File) =>
             agir(async () => { await deposerDocument(ouverte.id, type, fichier); }, 'Document ajouté.')
           }

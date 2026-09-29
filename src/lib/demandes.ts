@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { minuitParisISO } from './dates';
 import type { Demande, DocumentJoint, EtatVu, EvenementHistorique, ModificationDemande, NouvelleDemande, Note, Pieces, Statut, TypeDocument, TypePiece } from '../types';
 
 // Toutes les lectures et écritures des demandes passent par ce fichier.
@@ -39,33 +40,48 @@ export function erreurFichier(fichier: File): string | null {
   return null;
 }
 
-// Décision du 29/09 : une demande livrée depuis plus de 30 jours est archivée.
-export const JOURS_AVANT_ARCHIVAGE = 30;
+// Décision du 29/09 (révisée) : une demande livrée reste dans le tableau le
+// jour de sa livraison, puis bascule dans les Archives à minuit (heure de
+// Paris). On peut aussi l'archiver tout de suite (bouton « Archiver maintenant »).
 
-function limiteArchivage(): string {
-  return new Date(Date.now() - JOURS_AVANT_ARCHIVAGE * 24 * 60 * 60 * 1000).toISOString();
-}
-
-// Tableau actif : tout sauf les livrées depuis plus de 30 jours.
+// Tableau actif : tout sauf les demandes archivées à la main, et les livrées
+// avant aujourd'hui.
 export async function listerDemandes(): Promise<Demande[]> {
   const { data, error } = await supabase
     .from('demandes')
     .select(AVEC_DOCUMENTS)
-    .or(`statut.neq.livree,livree_le.gte."${limiteArchivage()}",livree_le.is.null`)
+    .is('archivee_le', null)
+    .or(`statut.neq.livree,livree_le.gte."${minuitParisISO()}",livree_le.is.null`)
     .order('jour_livraison', { ascending: true })
     .order('cree_le', { ascending: false });
   if (error) echouer(error);
   return (data ?? []) as Demande[];
 }
 
+// Option B (décision du 29/09) : la vue Archives montre les 30 derniers jours ;
+// les demandes plus anciennes restent en base et se retrouvent par la recherche.
+export const JOURS_ARCHIVES_AFFICHES = 30;
+
 export async function listerArchives(): Promise<Demande[]> {
+  const depuis = new Date(Date.now() - JOURS_ARCHIVES_AFFICHES * 24 * 3600 * 1000).toISOString();
   const { data, error } = await supabase
     .from('demandes')
     .select(AVEC_DOCUMENTS)
     .eq('statut', 'livree')
-    .lt('livree_le', limiteArchivage())
+    .or(`archivee_le.not.is.null,livree_le.lt."${minuitParisISO()}"`)
+    .gte('livree_le', depuis)
     .order('livree_le', { ascending: false })
-    .limit(500);
+    .limit(1000);
+  if (error) echouer(error);
+  return (data ?? []) as Demande[];
+}
+
+// Recherche dans TOUTES les archives, sans limite de date, faite par la base
+// (sans tenir compte des accents) : voir la migration 0009.
+export async function rechercherArchives(recherche: string): Promise<Demande[]> {
+  const { data, error } = await supabase
+    .rpc('rechercher_archives', { p_recherche: recherche, p_minuit: minuitParisISO() })
+    .select(AVEC_DOCUMENTS);
   if (error) echouer(error);
   return (data ?? []) as Demande[];
 }
@@ -171,6 +187,18 @@ export async function listerNotes(demandeId: string): Promise<Note[]> {
 export async function ajouterNote(demandeId: string, contenu: string): Promise<void> {
   const { error } = await supabase.from('notes').insert({ demande_id: demandeId, contenu });
   if (error) echouer(error);
+}
+
+// Archivage manuel d'une demande livrée (les deux comptes).
+export async function archiverDemande(id: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('demandes')
+    .update({ archivee_le: new Date().toISOString() })
+    .eq('id', id)
+    .eq('statut', 'livree')
+    .select('id');
+  if (error) echouer(error);
+  if (!data || data.length === 0) throw new Error('Seule une demande livrée peut être archivée.');
 }
 
 // Vu / non vu, du point de vue de l'utilisateur connecté.
