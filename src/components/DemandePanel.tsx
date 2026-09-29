@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Demande, DocumentJoint, Note, Statut, TypeDocument } from '../types';
-import { CRITICITE_CONFIG, DOC_CONFIG, STATUT_CONFIG } from '../data';
+import type { Demande, DocumentJoint, ModificationDemande as Champs, Note, Statut, TypeDocument } from '../types';
+import ModificationDemande from './ModificationDemande';
+import HistoriqueDemande from './HistoriqueDemande';
+import { CRITICITE_CONFIG, DOC_CONFIG, LIBELLE_PIECE, PIECES, STATUT_CONFIG } from '../data';
 import { aujourdhuiParis, erreurJourLivraison, formatHorodatage, formatJour } from '../lib/dates';
 import { ajouterNote, lienDocument, listerNotes, messageErreur, surveillerNotes } from '../lib/demandes';
 import type { Role } from '../lib/useAuth';
@@ -15,6 +17,8 @@ interface Props {
   onChangerStatut: (statut: Statut) => Promise<boolean>;
   onReporter: (jour: string) => Promise<boolean>;
   onDeposer: (type: TypeDocument, fichier: File) => Promise<boolean>;
+  onModifier: (champs: Champs) => Promise<boolean>;
+  onGenererBon: () => Promise<boolean>;
 }
 
 const TITRE = 'text-[10px] font-700 uppercase tracking-widest text-gray-400 mb-2';
@@ -49,7 +53,12 @@ function LigneDocument({ doc }: { doc: DocumentJoint }) {
           {cfg.icon}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-600 text-gray-800 leading-tight">{cfg.label}</p>
+          <p className="text-sm font-600 text-gray-800 leading-tight">
+            {cfg.label}
+            {doc.type === 'bon_livraison' && (
+              <span className="ml-1.5 text-[9px] font-700 uppercase tracking-widest text-gray-400">{doc.genere ? 'généré' : 'joint'}</span>
+            )}
+          </p>
           <p className="text-[11px] text-gray-400 truncate mt-0.5">{doc.nom_fichier}</p>
           <p className="text-[10px] text-gray-400 font-mono mt-0.5">Ajouté le {formatHorodatage(doc.ajoute_le)}</p>
         </div>
@@ -134,7 +143,8 @@ function FilNotes({ demandeId }: { demandeId: string }) {
   );
 }
 
-export default function DemandePanel({ demande, role, utilisateurId, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer }: Props) {
+export default function DemandePanel({ demande, role, utilisateurId, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon }: Props) {
+  const [edition, setEdition] = useState(false);
   const criticite = CRITICITE_CONFIG[demande.criticite];
   const statut = STATUT_CONFIG[demande.statut];
   const [occupe, setOccupe] = useState(false);
@@ -270,6 +280,19 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
 
         {/* Corps */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+          {modifiable && !edition && (
+            <button
+              type="button"
+              onClick={() => setEdition(true)}
+              className="w-full text-xs font-600 py-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              ✏️ Modifier les informations
+            </button>
+          )}
+          {edition && (
+            <ModificationDemande demande={demande} onAnnuler={() => setEdition(false)} onEnregistrer={onModifier} />
+          )}
+
           <section>
             <p className={TITRE}>Médicaments ({demande.medicaments.length})</p>
             <div className="border border-gray-100 rounded-xl overflow-hidden">
@@ -291,21 +314,36 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
               {documents.map(doc => <LigneDocument key={doc.id} doc={doc} />)}
               {documents.length === 0 && <p className="text-sm text-gray-400 py-3 text-center">Aucun document joint</p>}
             </div>
-            {!demande.documents.some(d => d.type === 'bon_livraison') && (
-              <label className="mt-2 block text-center text-xs font-600 text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-xl py-2 cursor-pointer transition-colors">
-                + Ajouter le bon de livraison
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="application/pdf,image/jpeg,image/png"
-                  onChange={e => {
-                    const f = e.target.files?.[0];
-                    e.target.value = '';
-                    if (f) executer(() => onDeposer('bon_livraison', f));
-                  }}
-                />
-              </label>
+            {!demande.documents.some(d => d.genere) && (
+              <button
+                type="button"
+                disabled={occupe}
+                onClick={() => executer(onGenererBon)}
+                className="mt-2 w-full text-xs font-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl py-2 transition-colors disabled:opacity-50"
+              >
+                📄 Générer le bon de livraison
+              </button>
             )}
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {PIECES.filter(type => !demande.documents.some(d => d.type === type && !d.genere)).map(type => (
+                <label
+                  key={type}
+                  className="text-center text-[11px] font-600 text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-xl px-2 py-2 cursor-pointer transition-colors"
+                >
+                  + {LIBELLE_PIECE[type]}
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="application/pdf,image/jpeg,image/png"
+                    onChange={e => {
+                      const f = e.target.files?.[0];
+                      e.target.value = '';
+                      if (f) executer(() => onDeposer(type, f));
+                    }}
+                  />
+                </label>
+              ))}
+            </div>
           </section>
 
           {modifiable && (
@@ -336,6 +374,11 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
           <section>
             <p className={TITRE}>Notes</p>
             <FilNotes demandeId={demande.id} />
+          </section>
+
+          <section>
+            <p className={TITRE}>Historique</p>
+            <HistoriqueDemande demandeId={demande.id} version={demande.mis_a_jour_le} />
           </section>
         </div>
 
