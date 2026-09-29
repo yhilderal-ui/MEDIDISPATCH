@@ -2,7 +2,11 @@
 
 export type Criticite = 'urgent' | 'standard_prioritaire' | 'standard';
 export type Statut = 'nouvelle' | 'en_cours' | 'livree' | 'annulee';
-export type TypeDocument = 'ordonnance' | 'bon_livraison' | 'preuve_livraison';
+export type TypeDocument = 'ordonnance' | 'bon_livraison' | 'preuve_livraison' | 'carte_vitale' | 'mutuelle';
+
+// Pièces jointes proposées à la création et dans le détail (demande du 29/09).
+export type TypePiece = 'ordonnance' | 'carte_vitale' | 'mutuelle' | 'bon_livraison';
+export type Pieces = Partial<Record<TypePiece, File>>;
 
 export interface Medicament {
   nom: string;
@@ -18,6 +22,7 @@ export interface DocumentJoint {
   taille_octets: number;
   type_mime: string;
   ajoute_le: string;
+  genere: boolean; // bon de livraison généré automatiquement
 }
 
 export interface Demande {
@@ -52,6 +57,20 @@ export interface NouvelleDemande {
   criticite: Criticite;
   jour_livraison: string;
   notes_initiales: string | null;
+}
+
+export type ModificationDemande = Pick<
+  NouvelleDemande,
+  'patient_nom' | 'patient_adresse' | 'patient_telephone' | 'medicaments' | 'criticite' | 'notes_initiales'
+>;
+
+export interface EvenementHistorique {
+  id: string;
+  evenement: 'creation' | 'statut' | 'report' | 'modification';
+  ancienne_valeur: string | null;
+  nouvelle_valeur: string | null;
+  cree_le: string;
+  auteur_nom: string;
 }
 
 export interface Note {

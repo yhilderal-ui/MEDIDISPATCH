@@ -1,4 +1,4 @@
-import type { Criticite, Statut, TypeDocument } from './types';
+import type { Criticite, Statut, TypeDocument, TypePiece } from './types';
 
 // Section 7 du cahier des charges.
 export const CRITICITE_CONFIG: Record<Criticite, { label: string; emoji: string; color: string; bg: string }> = {
@@ -25,4 +25,15 @@ export const DOC_CONFIG: Record<TypeDocument, { icon: string; color: string; bg:
   ordonnance: { icon: '📄', color: '#7c3aed', bg: '#f5f3ff', label: 'Ordonnance' },
   bon_livraison: { icon: '📋', color: '#0891b2', bg: '#ecfeff', label: 'Bon de livraison' },
   preuve_livraison: { icon: '📷', color: '#059669', bg: '#f0fdf4', label: 'Preuve de livraison' },
+  carte_vitale: { icon: '💳', color: '#16a34a', bg: '#f0fdf4', label: 'Carte Vitale' },
+  mutuelle: { icon: '🛡️', color: '#2563eb', bg: '#eff6ff', label: 'Mutuelle' },
+};
+
+export const PIECES: TypePiece[] = ['ordonnance', 'carte_vitale', 'mutuelle', 'bon_livraison'];
+
+export const LIBELLE_PIECE: Record<TypePiece, string> = {
+  ordonnance: 'Ordonnance',
+  carte_vitale: 'Carte Vitale',
+  mutuelle: 'Mutuelle',
+  bon_livraison: 'Bon de livraison complémentaire',
 };

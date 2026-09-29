@@ -1,22 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Criticite, Medicament, NouvelleDemande } from '../types';
-import { CRITICITE_CONFIG } from '../data';
+import type { Criticite, Medicament, NouvelleDemande, Pieces } from '../types';
+import { CRITICITE_CONFIG, DOC_CONFIG, LIBELLE_PIECE, PIECES } from '../data';
+import ChampPiece from './ChampPiece';
 import { aujourdhuiParis, erreurJourLivraison } from '../lib/dates';
-import { erreurFichier } from '../lib/demandes';
 
 interface Props {
   onClose: () => void;
-  onSubmit: (demande: NouvelleDemande, bonLivraison: File) => Promise<string | null>;
+  onSubmit: (demande: NouvelleDemande, pieces: Pieces) => Promise<string | null>;
 }
 
 interface LigneMedicament extends Medicament {
   cle: number;
-}
-
-function tailleLisible(octets: number): string {
-  if (octets < 1024) return `${octets} o`;
-  if (octets < 1024 * 1024) return `${(octets / 1024).toFixed(0)} Ko`;
-  return `${(octets / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
 const CHAMP =
@@ -35,11 +29,9 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
     notes_initiales: '',
   });
   const [medicaments, setMedicaments] = useState<LigneMedicament[]>([{ cle: prochaineCle++, nom: '', quantite: '' }]);
-  const [bon, setBon] = useState<File | null>(null);
-  const [glisse, setGlisse] = useState(false);
+  const [pieces, setPieces] = useState<Pieces>({});
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
-  const fichierRef = useRef<HTMLInputElement>(null);
   const nomRefs = useRef<(HTMLInputElement | null)[]>([]);
   // Ligne à placer sous le curseur après le prochain affichage.
   const [aFocaliser, setAFocaliser] = useState<number | null>(null);
@@ -52,18 +44,6 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
-
-  const choisirFichier = (fichiers: FileList | null) => {
-    const f = fichiers?.[0];
-    if (!f) return;
-    const refus = erreurFichier(f);
-    if (refus) {
-      setErreur(refus);
-      return;
-    }
-    setErreur(null);
-    setBon(f);
-  };
 
   const ajouterLigne = (apres: number) => {
     setMedicaments(ls => {
@@ -91,7 +71,6 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
       (!form.patient_adresse.trim() && "Indiquez l'adresse de livraison.") ||
       erreurJourLivraison(form.jour_livraison) ||
       (lignes.length === 0 && 'Ajoutez au moins un médicament.') ||
-      (!bon && 'Joignez le bon de livraison.') ||
       null;
     if (probleme) {
       setErreur(probleme);
@@ -110,7 +89,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
         medicaments: lignes,
         notes_initiales: form.notes_initiales.trim() || null,
       },
-      bon!,
+      pieces,
     );
     setEnvoi(false);
     if (echec) setErreur(echec);
@@ -267,50 +246,24 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
             />
           </div>
 
-          {/* Bon de livraison */}
+          {/* Pièces jointes (toutes optionnelles) */}
           <div>
-            <span className={ETIQUETTE}>Bon de livraison</span>
-            {bon ? (
-              <div className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 slide-in">
-                <span className="text-base shrink-0">{bon.type === 'application/pdf' ? '📄' : '🖼️'}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-600 text-gray-700 truncate">{bon.name}</p>
-                  <p className="text-[10px] text-gray-400 font-mono">{tailleLisible(bon.size)}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setBon(null)}
-                  aria-label="Retirer le fichier"
-                  className="w-5 h-5 rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-500 flex items-center justify-center text-gray-400 text-xs transition-colors shrink-0"
-                >
-                  ×
-                </button>
-              </div>
-            ) : (
-              <div
-                role="button"
-                tabIndex={0}
-                onDragOver={e => { e.preventDefault(); setGlisse(true); }}
-                onDragLeave={() => setGlisse(false)}
-                onDrop={e => { e.preventDefault(); setGlisse(false); choisirFichier(e.dataTransfer.files); }}
-                onClick={() => fichierRef.current?.click()}
-                onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && fichierRef.current?.click()}
-                className="cursor-pointer border-2 border-dashed rounded-2xl px-4 py-5 text-center transition-colors"
-                style={{ borderColor: glisse ? '#7c3aed' : '#e5e7eb', background: glisse ? '#f5f3ff' : '#fafafa' }}
-              >
-                <p className="text-sm text-gray-400">
-                  <span className="font-600 text-gray-600">Cliquez</span> ou glissez-déposez le bon de livraison
-                </p>
-                <p className="text-[11px] text-gray-300 mt-1">PDF, JPEG ou PNG — 10 Mo maximum</p>
-              </div>
-            )}
-            <input
-              ref={fichierRef}
-              type="file"
-              className="hidden"
-              accept="application/pdf,image/jpeg,image/png"
-              onChange={e => { choisirFichier(e.target.files); e.target.value = ''; }}
-            />
+            <span className={ETIQUETTE}>Pièces jointes (optionnelles)</span>
+            <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 mb-2">
+              📄 Un bon de livraison PDF sera généré automatiquement à partir de ces informations.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {PIECES.map(type => (
+                <ChampPiece
+                  key={type}
+                  libelle={LIBELLE_PIECE[type]}
+                  icone={DOC_CONFIG[type].icon}
+                  fichier={pieces[type]}
+                  onChange={f => setPieces(p => ({ ...p, [type]: f }))}
+                  onErreur={setErreur}
+                />
+              ))}
+            </div>
           </div>
 
           {erreur && (

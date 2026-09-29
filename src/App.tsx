@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Demande, EtatVu, NouvelleDemande, Statut, TypeDocument } from './types';
+import type { Demande, EtatVu, ModificationDemande, NouvelleDemande, Pieces, Statut, TypeDocument } from './types';
+import { publierBonGenere } from './lib/bonLivraison';
 import Board from './components/Board';
 import LivreurBoard from './components/LivreurBoard';
 import CreateCardModal from './components/CreateCardModal';
@@ -22,6 +23,7 @@ import {
   listerDemandes,
   marquerVue,
   messageErreur,
+  modifierDemande,
   reporter,
   supprimerDemande,
   surveillerDemandes,
@@ -111,14 +113,21 @@ export default function App() {
     }
   };
 
-  const handleCreate = async (demande: NouvelleDemande, bonLivraison: File): Promise<string | null> => {
+  const handleCreate = async (demande: NouvelleDemande, pieces: Pieces): Promise<string | null> => {
     try {
-      const { numeroTicket, erreurFichier } = await creerDemande(demande, bonLivraison);
+      const { id, numeroTicket, erreursFichiers } = await creerDemande(demande, pieces);
+      const problemes: string[] = [];
+      if (erreursFichiers.length) problemes.push(`certaines pièces jointes n'ont pas pu être envoyées (${erreursFichiers.join(' ; ')})`);
+      try {
+        await publierBonGenere(id);
+      } catch (e) {
+        problemes.push(`le bon de livraison n'a pas pu être généré (${(e as Error).message})`);
+      }
       await recharger();
-      if (erreurFichier) {
-        setErreur(`Demande ${numeroTicket} créée, mais le bon de livraison n'a pas pu être envoyé : ${erreurFichier} Ouvrez la demande pour l'ajouter.`);
+      if (problemes.length) {
+        setErreur(`Demande ${numeroTicket} créée, mais ${problemes.join(' et ')}. Ouvrez la demande pour réessayer.`);
       } else {
-        setInfo(`Demande ${numeroTicket} créée.`);
+        setInfo(`Demande ${numeroTicket} créée, bon de livraison généré.`);
       }
       return null;
     } catch (e) {
@@ -126,10 +135,22 @@ export default function App() {
     }
   };
 
+  // Toute modification du contenu du bon (informations, date) le régénère,
+  // en remplaçant l'ancien (décision du 29/09).
+  const modifierPuisRegenerer = (id: string, ticket: string, action: () => Promise<void>, succes: string) =>
+    agir(async () => {
+      await action();
+      try {
+        await publierBonGenere(id);
+      } catch (e) {
+        throw new Error(`${succes.replace(/\.$/, '')}, mais le bon de livraison n'a pas pu être régénéré : ${(e as Error).message}`);
+      }
+    }, `${succes} Bon de livraison ${ticket} mis à jour.`);
+
   const handleDropCard = (id: string, jour: string) => {
     const d = demandes.find(x => x.id === id);
     if (!d || d.jour_livraison === jour) return;
-    agir(() => reporter(id, jour), `Demande ${d.numero_ticket} reportée.`);
+    modifierPuisRegenerer(id, d.numero_ticket, () => reporter(id, jour), `Demande ${d.numero_ticket} reportée.`);
   };
 
   const shiftWeek = (n: number) => setWeekStart(d => ajouterJours(d, n * 7));
@@ -344,7 +365,13 @@ export default function App() {
             return ok;
           }}
           onChangerStatut={(statut: Statut) => agir(() => changerStatut(ouverte.id, statut), `Demande ${ouverte.numero_ticket} mise à jour.`)}
-          onReporter={(jour: string) => agir(() => reporter(ouverte.id, jour), `Demande ${ouverte.numero_ticket} reportée.`)}
+          onReporter={(jour: string) =>
+            modifierPuisRegenerer(ouverte.id, ouverte.numero_ticket, () => reporter(ouverte.id, jour), `Demande ${ouverte.numero_ticket} reportée.`)
+          }
+          onModifier={(champs: ModificationDemande) =>
+            modifierPuisRegenerer(ouverte.id, ouverte.numero_ticket, () => modifierDemande(ouverte.id, champs), `Demande ${ouverte.numero_ticket} modifiée.`)
+          }
+          onGenererBon={() => agir(() => publierBonGenere(ouverte.id), 'Bon de livraison généré.')}
           onDeposer={(type: TypeDocument, fichier: File) =>
             agir(async () => { await deposerDocument(ouverte.id, type, fichier); }, 'Document ajouté.')
           }

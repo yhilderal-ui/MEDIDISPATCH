@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Demande, DocumentJoint, EtatVu, NouvelleDemande, Note, Statut, TypeDocument } from '../types';
+import type { Demande, DocumentJoint, EtatVu, EvenementHistorique, ModificationDemande, NouvelleDemande, Note, Pieces, Statut, TypeDocument, TypePiece } from '../types';
 
 // Toutes les lectures et écritures des demandes passent par ce fichier.
 // Les règles (date, preuve de livraison, droits) sont vérifiées par la base ;
@@ -98,21 +98,44 @@ export async function deposerDocument(demandeId: string, type: TypeDocument, fic
   return data as DocumentJoint;
 }
 
-// Crée la demande puis envoie le bon de livraison. Si l'envoi du fichier
+// Crée la demande puis envoie les pièces jointes. Si l'envoi d'un fichier
 // échoue, la demande est quand même enregistrée (rien ne se perd) et on
-// renvoie l'erreur pour que l'utilisateur ajoute le fichier ensuite.
+// renvoie les erreurs pour que l'utilisateur ajoute les fichiers ensuite.
+// Le bon PDF généré est produit ensuite (voir bonLivraison.ts).
 export async function creerDemande(
   demande: NouvelleDemande,
-  bonLivraison: File,
-): Promise<{ numeroTicket: string; erreurFichier: string | null }> {
+  pieces: Pieces,
+): Promise<{ id: string; numeroTicket: string; erreursFichiers: string[] }> {
   const { data, error } = await supabase.from('demandes').insert(demande).select('id, numero_ticket').single();
   if (error) echouer(error);
-  try {
-    await deposerDocument(data.id, 'bon_livraison', bonLivraison);
-    return { numeroTicket: data.numero_ticket, erreurFichier: null };
-  } catch (e) {
-    return { numeroTicket: data.numero_ticket, erreurFichier: (e as Error).message };
+  const erreursFichiers: string[] = [];
+  for (const [type, fichier] of Object.entries(pieces) as [TypePiece, File][]) {
+    try {
+      await deposerDocument(data.id, type, fichier);
+    } catch (e) {
+      erreursFichiers.push(`${fichier.name} : ${(e as Error).message}`);
+    }
   }
+  return { id: data.id as string, numeroTicket: data.numero_ticket as string, erreursFichiers };
+}
+
+// Étape 6 : corriger les informations d'une demande (les deux rôles).
+export async function modifierDemande(id: string, champs: ModificationDemande): Promise<void> {
+  const { error } = await supabase.from('demandes').update(champs).eq('id', id);
+  if (error) echouer(error);
+}
+
+export async function listerHistorique(demandeId: string): Promise<EvenementHistorique[]> {
+  const { data, error } = await supabase
+    .from('historique')
+    .select('id, evenement, ancienne_valeur, nouvelle_valeur, cree_le, profils(nom)')
+    .eq('demande_id', demandeId)
+    .order('cree_le', { ascending: true });
+  if (error) echouer(error);
+  return (data ?? []).map(h => {
+    const p = h.profils as unknown as { nom: string } | null;
+    return { ...h, auteur_nom: p?.nom ?? '—' } as EvenementHistorique;
+  });
 }
 
 export async function changerStatut(id: string, statut: Statut): Promise<void> {
