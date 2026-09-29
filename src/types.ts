@@ -1,57 +1,54 @@
-export type Priority = 'urgent' | 'standard' | 'low';
-export type Status = 'nouveau' | 'assigné' | 'en_transit' | 'livré' | 'annulé' | 'suspendu';
-export type LivreurStatus = 'nouveau' | 'validé' | 'annulé' | 'suspendu' | 'archivé';
+// Types alignés sur les tables Supabase (voir supabase/migrations).
 
-export interface MedicalDocument {
-  id: string;
-  type: 'ordonnance' | 'bon_livraison' | 'fiche_patient';
-  label: string;
-  reference: string;
-  date: string;
-  issuer: string;
-  pages: number;
-  confidential: boolean;
+export type Criticite = 'urgent' | 'standard_prioritaire' | 'standard';
+export type Statut = 'nouvelle' | 'en_cours' | 'livree' | 'annulee';
+export type TypeDocument = 'ordonnance' | 'bon_livraison' | 'preuve_livraison';
+
+export interface Medicament {
+  nom: string;
+  quantite: string;
 }
 
-export interface CardNote {
+export interface DocumentJoint {
   id: string;
-  author: string;
-  content: string;
-  createdAt: Date;
+  demande_id: string;
+  type: TypeDocument;
+  chemin_fichier: string;
+  nom_fichier: string;
+  taille_octets: number;
+  type_mime: string;
+  ajoute_le: string;
 }
 
-export interface Attachment {
+export interface Demande {
   id: string;
-  name: string;
-  size: string;
-  type: string;
-  mimeCategory: 'pdf' | 'image' | 'word' | 'other';
+  numero_ticket: string;
+  patient_nom: string;
+  patient_adresse: string;
+  patient_telephone: string;
+  medicaments: Medicament[];
+  criticite: Criticite;
+  jour_livraison: string; // AAAA-MM-JJ
+  statut: Statut;
+  notes_initiales: string | null;
+  cree_le: string;
+  mis_a_jour_le: string;
+  documents: DocumentJoint[];
 }
 
-export interface Product {
-  id: string;
-  name: string;
-  quantity: string;
+export interface NouvelleDemande {
+  patient_nom: string;
+  patient_adresse: string;
+  patient_telephone: string;
+  medicaments: Medicament[];
+  criticite: Criticite;
+  jour_livraison: string;
+  notes_initiales: string | null;
 }
 
-export interface DeliveryCard {
-  products?: Product[];
-  distanceKm?: number;
-  scheduledDate?: string; // ISO date string YYYY-MM-DD
+export interface Note {
   id: string;
-  createdAt: Date;
-  pickup: string;
-  dropoff: string;
-  client: string;
-  phone: string;
-  weight: string;
-  notes: string;
-  priority: Priority;
-  status: Status;
-  livreurStatus?: LivreurStatus;
-  isNew?: boolean;
-  patient?: string;
-  documents?: MedicalDocument[];
-  cardNotes?: CardNote[];
-  attachments?: Attachment[];
+  contenu: string;
+  cree_le: string;
+  auteur_nom: string;
 }

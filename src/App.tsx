@@ -1,16 +1,25 @@
-import { useState, useEffect, useRef } from 'react';
-import type { DeliveryCard, CardNote } from './types';
-import { INITIAL_CARDS } from './data';
+import { useState, useEffect, useCallback } from 'react';
+import type { Demande, NouvelleDemande, Statut, TypeDocument } from './types';
 import Board from './components/Board';
 import LivreurBoard from './components/LivreurBoard';
 import CreateCardModal from './components/CreateCardModal';
 import Chat from './components/Chat';
 import LoginScreen from './components/LoginScreen';
 import WeekView from './components/WeekView';
-import DeliveryCardComponent from './components/DeliveryCardComponent';
+import DemandePanel from './components/DemandePanel';
 import logo from './assets/logo.png';
 import { useAuth, type Role } from './lib/useAuth';
 import { supabaseConfigured } from './lib/supabase';
+import {
+  changerStatut,
+  creerDemande,
+  deposerDocument,
+  listerDemandes,
+  messageErreur,
+  reporter,
+  surveillerDemandes,
+} from './lib/demandes';
+import { ajouterJours, lundiDeLaSemaine, moisCourt } from './lib/dates';
 
 type DispatcherView = 'kanban' | 'week';
 
@@ -21,104 +30,86 @@ interface ChatMessage {
   sentAt: Date;
 }
 
-let idCounter = 9;
-
 export default function App() {
   const { state: auth, signIn, signOut } = useAuth();
   const role: Role | null = auth.status === 'signed_in' ? auth.user.role : null;
   const userName = auth.status === 'signed_in' ? auth.user.name : '';
-  const [cards, setCards] = useState<DeliveryCard[]>(INITIAL_CARDS);
+
+  const [demandes, setDemandes] = useState<Demande[]>([]);
+  const [chargement, setChargement] = useState(true);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [ouverteId, setOuverteId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [dispatcherView, setDispatcherView] = useState<DispatcherView>('kanban');
-  const [weekStart, setWeekStart] = useState<Date>(() => {
-    const d = new Date();
-    const day = d.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    d.setDate(d.getDate() + diff);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
-  const [weekCardOpen, setWeekCardOpen] = useState<DeliveryCard | null>(null);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { id: 'cm-1', author: 'dispatcher', text: 'Bonjour, la livraison DL-004 est prioritaire — produit sanguin critique.', sentAt: new Date(Date.now() - 1000 * 60 * 6) },
-    { id: 'cm-2', author: 'livreur', text: 'Bien reçu, on part dans 10 minutes.', sentAt: new Date(Date.now() - 1000 * 60 * 5) },
-  ]);
-  const prevCountRef = useRef(cards.length);
+  const [weekStart, setWeekStart] = useState<Date>(() => lundiDeLaSemaine(new Date()));
+  // Le chat reste local au navigateur jusqu'à l'étape 9.
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+  const recharger = useCallback(async () => {
+    try {
+      setDemandes(await listerDemandes());
+    } catch (e) {
+      setErreur(messageErreur(e));
+    } finally {
+      setChargement(false);
+    }
+  }, []);
+
+  // Chargement initial, puis rechargement à chaque changement signalé par la base.
+  useEffect(() => {
+    if (!role) return;
+    setChargement(true);
+    recharger();
+    return surveillerDemandes(recharger);
+  }, [role, recharger]);
 
   useEffect(() => {
-    const fresh = cards.filter(c => c.isNew);
-    if (fresh.length === 0) return;
-    const t = setTimeout(() => {
-      setCards(cs => cs.map(c => ({ ...c, isNew: false })));
-    }, 5000);
+    if (!info) return;
+    const t = setTimeout(() => setInfo(null), 4000);
     return () => clearTimeout(t);
-  }, [cards]);
+  }, [info]);
 
-  const handleLogout = () => signOut();
-
-  const handleCreate = (data: Omit<DeliveryCard, 'id' | 'createdAt' | 'status' | 'isNew' | 'livreurStatus'>) => {
-    const newCard: DeliveryCard = {
-      ...data,
-      id: `DL-${String(idCounter++).padStart(3, '0')}`,
-      createdAt: new Date(),
-      status: 'nouveau',
-      livreurStatus: 'nouveau',
-      isNew: true,
-      documents: [],
-    };
-    setCards(cs => [newCard, ...cs]);
+  // Exécute une écriture, recharge la liste, et affiche l'erreur éventuelle.
+  const agir = async (action: () => Promise<void>, succes?: string): Promise<boolean> => {
+    try {
+      await action();
+      setErreur(null);
+      if (succes) setInfo(succes);
+      await recharger();
+      return true;
+    } catch (e) {
+      setErreur(messageErreur(e));
+      return false;
+    }
   };
 
-  const handleStatusChange = (id: string, status: DeliveryCard['status']) => {
-    setCards(cs => cs.map(c => c.id === id ? { ...c, status } : c));
+  const handleCreate = async (demande: NouvelleDemande, bonLivraison: File): Promise<string | null> => {
+    try {
+      const { numeroTicket, erreurFichier } = await creerDemande(demande, bonLivraison);
+      await recharger();
+      if (erreurFichier) {
+        setErreur(`Demande ${numeroTicket} créée, mais le bon de livraison n'a pas pu être envoyé : ${erreurFichier} Ouvrez la demande pour l'ajouter.`);
+      } else {
+        setInfo(`Demande ${numeroTicket} créée.`);
+      }
+      return null;
+    } catch (e) {
+      return messageErreur(e);
+    }
   };
 
-  const handleValidate = (id: string) => {
-    setCards(cs => cs.map(c => c.id === id ? { ...c, livreurStatus: 'validé' } : c));
+  const handleDropCard = (id: string, jour: string) => {
+    const d = demandes.find(x => x.id === id);
+    if (!d || d.jour_livraison === jour) return;
+    agir(() => reporter(id, jour), `Demande ${d.numero_ticket} reportée.`);
   };
 
-  const handleArchive = (id: string) => {
-    setCards(cs => cs.map(c => c.id === id ? { ...c, livreurStatus: 'archivé' } : c));
-  };
-
-  const handleCancel = (id: string) => {
-    setCards(cs => cs.map(c => c.id === id ? { ...c, status: 'annulé', livreurStatus: 'annulé' } : c));
-  };
-
-  const handleSuspend = (id: string) => {
-    setCards(cs => cs.map(c => c.id === id ? { ...c, status: 'suspendu', livreurStatus: 'suspendu' } : c));
-  };
-
-  const handleRestore = (id: string) => {
-    setCards(cs => cs.map(c => c.id === id ? { ...c, status: 'nouveau', livreurStatus: 'nouveau' } : c));
-  };
-
-  const handleDropCard = (cardId: string, date: string) => {
-    setCards(cs => cs.map(c => c.id === cardId ? { ...c, scheduledDate: date } : c));
-  };
-
-  const shiftWeek = (n: number) => {
-    setWeekStart(d => {
-      const nd = new Date(d);
-      nd.setDate(nd.getDate() + n * 7);
-      return nd;
-    });
-  };
-
-  const handleAddNote = (cardId: string, note: CardNote) => {
-    setCards(cs => cs.map(c =>
-      c.id === cardId ? { ...c, cardNotes: [...(c.cardNotes ?? []), note] } : c
-    ));
-  };
+  const shiftWeek = (n: number) => setWeekStart(d => ajouterJours(d, n * 7));
 
   const handleSendChat = (text: string) => {
     if (!role) return;
-    setChatMessages(ms => [...ms, {
-      id: `cm-${Date.now()}`,
-      author: role,
-      text,
-      sentAt: new Date(),
-    }]);
+    setChatMessages(ms => [...ms, { id: `cm-${Date.now()}`, author: role, text, sentAt: new Date() }]);
   };
 
   if (auth.status === 'loading') {
@@ -139,13 +130,16 @@ export default function App() {
     );
   }
 
-  const nouveauCount = cards.filter(c => c.status === 'nouveau').length;
-  const newLivreurCount = cards.filter(c => c.livreurStatus === 'nouveau').length;
+  const ouverte = ouverteId ? demandes.find(d => d.id === ouverteId) ?? null : null;
+  const ouvrir = (d: Demande) => setOuverteId(d.id);
+  const actives = demandes.filter(d => d.statut !== 'annulee');
+  const nbNouvelles = demandes.filter(d => d.statut === 'nouvelle').length;
+  const finSemaine = ajouterJours(weekStart, 5);
 
   return (
     <div className="h-screen flex flex-col bg-[#f5f4f0] overflow-hidden">
-      {/* Top bar */}
-      <header className="shrink-0 flex items-center justify-between px-6 py-4 bg-white border-b border-black/5">
+      {/* Barre du haut */}
+      <header className="shrink-0 flex items-center justify-between gap-3 px-4 sm:px-6 py-4 bg-white border-b border-black/5 flex-wrap">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl overflow-hidden bg-white flex items-center justify-center">
             <img src={logo} alt="MediDispatch" className="w-full h-full object-contain" />
@@ -156,12 +150,9 @@ export default function App() {
           </div>
         </div>
 
-        {/* Role badge */}
         <div
           className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-600"
-          style={role === 'dispatcher'
-            ? { background: '#f3f4f6', color: '#111827' }
-            : { background: '#f5f3ff', color: '#7c3aed' }}
+          style={role === 'dispatcher' ? { background: '#f3f4f6', color: '#111827' } : { background: '#f5f3ff', color: '#7c3aed' }}
         >
           <span>{role === 'dispatcher' ? '🎛' : '🚚'}</span>
           <span>{role === 'dispatcher' ? 'Dispatcheur' : 'Société de livraison'}</span>
@@ -170,61 +161,74 @@ export default function App() {
           )}
         </div>
 
-        {/* Right side */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-500">
             <span className="pulse-dot w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-            <span className="font-mono">{cards.length} demandes actives</span>
+            <span className="font-mono">{actives.length} demandes actives</span>
           </div>
           {role === 'dispatcher' && (
             <button
+              type="button"
               onClick={() => setShowModal(true)}
-              className="text-white text-xs font-600 px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5"
-              style={{ background: '#2db8a0' }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#25a08b')}
-              onMouseLeave={e => (e.currentTarget.style.background = '#2db8a0')}
+              className="text-white text-xs font-600 px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5 bg-[#2db8a0] hover:bg-[#25a08b]"
             >
               <span>+</span> Nouvelle demande
             </button>
           )}
-          <button
-            onClick={handleLogout}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors font-500"
-          >
+          <button type="button" onClick={signOut} className="text-xs text-gray-400 hover:text-gray-600 transition-colors font-500">
             Déconnexion
           </button>
         </div>
       </header>
 
-      {/* Main */}
+      {/* Messages d'erreur et de confirmation */}
+      {erreur && (
+        <div role="alert" className="shrink-0 mx-4 sm:mx-6 mt-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-start gap-3 slide-in">
+          <span className="text-sm">⚠️</span>
+          <p className="text-sm text-red-700 flex-1">{erreur}</p>
+          <button type="button" onClick={() => setErreur(null)} aria-label="Fermer le message" className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
+        </div>
+      )}
+      {info && !erreur && (
+        <div role="status" className="shrink-0 mx-4 sm:mx-6 mt-4 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm text-emerald-700 slide-in">
+          ✓ {info}
+        </div>
+      )}
+
+      {/* Contenu */}
       <main className="flex-1 overflow-hidden">
-        {role === 'dispatcher' ? (
+        {chargement ? (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-xs text-gray-400 font-mono">Chargement des demandes…</p>
+          </div>
+        ) : role === 'dispatcher' ? (
           <div className="h-full flex flex-col">
-            <div className="px-6 pt-5 pb-3 shrink-0">
-              <div className="flex items-center gap-2">
+            <div className="px-4 sm:px-6 pt-5 pb-3 shrink-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xs font-700 uppercase tracking-widest text-gray-400">
                   {dispatcherView === 'kanban' ? 'Tableau de dispatch' : 'Planning semaine'}
                 </h2>
                 <div className="flex-1 h-px bg-gray-200" />
 
-                {/* Week navigation */}
                 {dispatcherView === 'week' && (
                   <div className="flex items-center gap-2">
-                    <button onClick={() => shiftWeek(-1)} className="w-6 h-6 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 text-xs transition-colors">‹</button>
+                    <button type="button" aria-label="Semaine précédente" onClick={() => shiftWeek(-1)} className="w-6 h-6 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 text-xs transition-colors">‹</button>
                     <span className="text-xs font-600 text-gray-600 font-mono whitespace-nowrap">
-                      {weekStart.getDate()} — {new Date(weekStart.getTime() + 5 * 86400000).getDate()} {['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'][new Date(weekStart.getTime() + 5 * 86400000).getMonth()]}
+                      {weekStart.getDate()} — {finSemaine.getDate()} {moisCourt(finSemaine)}
                     </span>
-                    <button onClick={() => shiftWeek(1)} className="w-6 h-6 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 text-xs transition-colors">›</button>
+                    <button type="button" aria-label="Semaine suivante" onClick={() => shiftWeek(1)} className="w-6 h-6 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 text-xs transition-colors">›</button>
                   </div>
                 )}
 
-                <span className="text-xs text-gray-400 font-mono">{nouveauCount} en attente</span>
+                <span className="text-xs text-gray-400 font-mono">{nbNouvelles} en attente</span>
 
-                {/* View toggle */}
                 <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg ml-2">
-                  {([['kanban', '⊞'], ['week', '📅']] as [DispatcherView, string][]).map(([v, icon]) => (
+                  {([['kanban', '⊞', 'Vue par statut'], ['week', '📅', 'Vue semaine']] as [DispatcherView, string, string][]).map(([v, icone, titre]) => (
                     <button
                       key={v}
+                      type="button"
+                      title={titre}
+                      aria-label={titre}
                       onClick={() => setDispatcherView(v)}
                       className="text-xs px-2.5 py-1 rounded-md transition-all font-600"
                       style={{
@@ -233,87 +237,48 @@ export default function App() {
                         boxShadow: dispatcherView === v ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                       }}
                     >
-                      {icon}
+                      {icone}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 overflow-hidden px-6 pb-6">
+            <div className="flex-1 overflow-hidden px-4 sm:px-6 pb-6">
               {dispatcherView === 'kanban' ? (
-                <Board
-                  cards={cards}
-                  onStatusChange={handleStatusChange}
-                  onCancel={handleCancel}
-                  onSuspend={handleSuspend}
-                  onRestore={handleRestore}
-                  isDispatcher
-                />
+                <Board demandes={demandes} onOpen={ouvrir} />
               ) : (
-                <>
-                  <WeekView
-                    cards={cards.filter(c => c.status !== 'annulé' && c.status !== 'suspendu')}
-                    weekStart={weekStart}
-                    onCardClick={setWeekCardOpen}
-                    onDropCard={handleDropCard}
-                  />
-                  {weekCardOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-6" onClick={() => setWeekCardOpen(null)}>
-                      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
-                      <div className="relative w-72 slide-in" onClick={e => e.stopPropagation()}>
-                        <DeliveryCardComponent
-                          card={weekCardOpen}
-                          onStatusChange={(id, s) => { handleStatusChange(id, s); setWeekCardOpen(null); }}
-                          onCancel={(id) => { handleCancel(id); setWeekCardOpen(null); }}
-                          onSuspend={(id) => { handleSuspend(id); setWeekCardOpen(null); }}
-                          onRestore={(id) => { handleRestore(id); setWeekCardOpen(null); }}
-                          isDispatcher
-                        />
-                      </div>
-                    </div>
-                  )}
-                </>
+                <WeekView demandes={actives} weekStart={weekStart} onOpen={ouvrir} onDropCard={handleDropCard} />
               )}
             </div>
           </div>
         ) : (
-          <div className="h-full flex flex-col">
-            {cards.some(c => c.isNew) && (
-              <div className="shrink-0 mx-6 mt-4 bg-violet-50 border border-violet-200 rounded-2xl px-4 py-3 flex items-center gap-3 slide-in">
-                <span className="pulse-dot w-2 h-2 rounded-full bg-violet-500 shrink-0" />
-                <p className="text-sm font-500 text-violet-700">
-                  <span className="font-700">{cards.filter(c => c.isNew).length} nouvelle{cards.filter(c => c.isNew).length > 1 ? 's' : ''} demande{cards.filter(c => c.isNew).length > 1 ? 's' : ''}</span>
-                  {' '}disponible{cards.filter(c => c.isNew).length > 1 ? 's' : ''} — cliquez pour consulter les documents
-                </p>
-              </div>
-            )}
-            <div className="px-6 pt-4 pb-3 shrink-0">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xs font-700 uppercase tracking-widest text-gray-400">Tableau des livraisons</h2>
-                <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-xs text-gray-400 font-mono">{newLivreurCount} à valider</span>
-              </div>
+          <div className="h-full flex flex-col px-4 sm:px-6 pt-4 pb-6">
+            <div className="flex items-center gap-2 mb-3 shrink-0">
+              <h2 className="text-xs font-700 uppercase tracking-widest text-gray-400">Tableau des livraisons</h2>
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400 font-mono">{nbNouvelles} nouvelle{nbNouvelles !== 1 ? 's' : ''}</span>
             </div>
-            <div className="flex-1 overflow-hidden px-6 pb-6">
-              <LivreurBoard
-                cards={cards}
-                onValidate={handleValidate}
-                onAddNote={handleAddNote}
-                onArchive={handleArchive}
-                onCancel={handleCancel}
-                onSuspend={handleSuspend}
-                onRestore={handleRestore}
-                onDropCard={handleDropCard}
-              />
+            <div className="flex-1 min-h-0">
+              <LivreurBoard demandes={demandes} onOpen={ouvrir} onDropCard={handleDropCard} />
             </div>
           </div>
         )}
       </main>
 
-      {showModal && (
-        <CreateCardModal onClose={() => setShowModal(false)} onSubmit={handleCreate} />
+      {ouverte && (
+        <DemandePanel
+          demande={ouverte}
+          onClose={() => setOuverteId(null)}
+          onChangerStatut={(statut: Statut) => agir(() => changerStatut(ouverte.id, statut), `Demande ${ouverte.numero_ticket} mise à jour.`)}
+          onReporter={(jour: string) => agir(() => reporter(ouverte.id, jour), `Demande ${ouverte.numero_ticket} reportée.`)}
+          onDeposer={(type: TypeDocument, fichier: File) =>
+            agir(async () => { await deposerDocument(ouverte.id, type, fichier); }, 'Document ajouté.')
+          }
+        />
       )}
+
+      {showModal && <CreateCardModal onClose={() => setShowModal(false)} onSubmit={handleCreate} />}
 
       <Chat currentView={role} messages={chatMessages} onSend={handleSendChat} />
     </div>
