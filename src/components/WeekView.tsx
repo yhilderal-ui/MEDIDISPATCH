@@ -53,7 +53,7 @@ export default function WeekView({ demandes, weekStart, onOpen, onDropCard, etat
   const aujourdhui = aujourdhuiParis();
 
   return (
-    <div className="flex gap-3 h-full min-h-0 overflow-x-auto">
+    <div className="flex flex-col md:flex-row gap-3 h-full min-h-0 overflow-y-auto md:overflow-y-visible md:overflow-x-auto pb-24 md:pb-0">
       {jours.map((jour, i) => {
         const iso = versJour(jour);
         const items = demandes.filter(d => d.jour_livraison === iso);
@@ -62,7 +62,7 @@ export default function WeekView({ demandes, weekStart, onOpen, onDropCard, etat
         return (
           <div
             key={iso}
-            className="flex flex-col min-w-[160px] flex-1"
+            className="flex flex-col shrink-0 md:shrink md:min-w-[160px] md:flex-1"
             onDragOver={e => e.preventDefault()}
             onDrop={e => {
               const id = e.dataTransfer.getData('demandeId');
@@ -88,9 +88,9 @@ export default function WeekView({ demandes, weekStart, onOpen, onDropCard, etat
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto flex flex-col gap-2 rounded-xl min-h-[80px] p-1 border-2 border-dashed border-transparent hover:border-gray-200 transition-colors">
+            <div className="md:flex-1 md:overflow-y-auto flex flex-col gap-2 rounded-xl md:min-h-[80px] p-1 border-2 border-dashed border-transparent hover:border-gray-200 transition-colors">
               {items.length === 0 && (
-                <div className="flex items-center justify-center flex-1 min-h-[60px]">
+                <div className="flex items-center justify-center flex-1 min-h-[28px] md:min-h-[60px]">
                   <p className="text-[10px] text-gray-300 font-500">Aucune livraison</p>
                 </div>
               )}

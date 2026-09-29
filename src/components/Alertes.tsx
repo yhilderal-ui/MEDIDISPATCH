@@ -11,7 +11,7 @@ interface Props {
 export default function Alertes({ alertes, onActiver, onFermer }: Props) {
   if (alertes.length === 0) return null;
   return (
-    <div className="fixed top-20 right-4 z-[60] flex flex-col gap-2 w-[min(22rem,calc(100vw-2rem))]" aria-live="polite">
+    <div className="fixed z-[35] sm:z-[60] left-3 right-3 bottom-20 sm:left-auto sm:bottom-auto sm:top-20 sm:right-4 flex flex-col-reverse sm:flex-col gap-2 sm:w-[22rem]" aria-live="polite">
       {alertes.map(a => (
         <div
           key={a.id}

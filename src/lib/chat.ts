@@ -39,6 +39,8 @@ export function useChat(utilisateurId: string | null) {
   const [messages, setMessages] = useState<MessageChat[]>([]);
   const [lectures, setLectures] = useState<Record<string, string>>({});
   const [erreur, setErreur] = useState<string | null>(null);
+  // Vrai une fois l'historique chargé : sert à ne pas alerter pour les anciens messages.
+  const [charge, setCharge] = useState(false);
 
   const recharger = useCallback(async () => {
     try {
@@ -46,6 +48,7 @@ export function useChat(utilisateurId: string | null) {
       setMessages(m);
       setLectures(l);
       setErreur(null);
+      setCharge(true);
     } catch (e) {
       setErreur((e as Error).message);
     }
@@ -81,5 +84,5 @@ export function useChat(utilisateurId: string | null) {
   const autreId = Object.keys(lectures).find(id => id !== utilisateurId);
   const autreVuJusquau = autreId ? lectures[autreId] : undefined;
 
-  return { messages, nonLus, autreVuJusquau, erreur, envoyer, marquerLu };
+  return { messages, nonLus, autreVuJusquau, erreur, envoyer, marquerLu, charge };
 }

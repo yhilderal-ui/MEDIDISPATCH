@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Archive, Bell, BellOff, CalendarDays, CircleCheck, Headset, LayoutGrid, Pill, TriangleAlert } from 'lucide-react';
+import { Archive, Bell, BellOff, CalendarDays, CircleCheck, Headset, LayoutGrid, LogOut, Pill, Plus, TriangleAlert } from 'lucide-react';
 import type { Demande, EtatVu, ModificationDemande, NouvelleDemande, Pieces, Statut, TypeDocument } from './types';
 import { publierBonGenere } from './lib/bonLivraison';
 import Board from './components/Board';
@@ -106,6 +106,7 @@ export default function App() {
     chargement,
     messages: chat.messages,
     nonLusChat: chat.nonLus,
+    chatCharge: chat.charge,
     chatOuvert,
     onOuvrirDemande: setOuverteId,
     onOuvrirChat: ouvrirChat,
@@ -221,56 +222,60 @@ export default function App() {
   const nbNonVues = Object.values(etats).filter(Boolean).length;
 
   return (
-    <div className="h-screen flex flex-col bg-[#f5f4f0] overflow-hidden">
+    <div className="h-dvh flex flex-col bg-[#f5f4f0] overflow-hidden">
       {/* Barre du haut */}
-      <header className="shrink-0 flex items-center justify-between gap-3 px-4 sm:px-6 py-4 bg-white border-b border-black/5 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl overflow-hidden bg-white flex items-center justify-center">
+      <header className="shrink-0 flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-4 bg-white border-b border-black/5">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="w-8 h-8 rounded-xl overflow-hidden bg-white flex items-center justify-center shrink-0">
             <img src={logo} alt="MediDispatch" className="w-full h-full object-contain" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-sm font-700 text-gray-900 leading-tight">MediDispatch</h1>
-            <p className="text-[10px] text-gray-400 font-mono tracking-wide">Livraison médicale — Île-de-France</p>
+            <p className="hidden sm:block whitespace-nowrap text-[10px] text-gray-400 font-mono tracking-wide">Livraison médicale — Île-de-France</p>
           </div>
         </div>
 
         <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-600"
+          className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-600 shrink-0"
           style={role === 'dispatcher' ? { background: '#f3f4f6', color: '#111827' } : { background: '#f5f3ff', color: '#7c3aed' }}
+          title={role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie'}
         >
           {role === 'dispatcher' ? <Headset size={14} aria-hidden /> : <Pill size={14} aria-hidden />}
-          <span>{role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie'}</span>
+          <span className="hidden sm:inline">{role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie'}</span>
           {userName && userName !== (role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie') && (
-            <span className="opacity-60">— {userName}</span>
+            <span className="hidden sm:inline opacity-60">— {userName}</span>
           )}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
           <button
             type="button"
             onClick={notif.basculerSon}
             title={notif.son ? 'Son des alertes activé (cliquer pour couper)' : 'Son des alertes coupé (cliquer pour activer)'}
             aria-label={notif.son ? 'Couper le son des alertes' : 'Activer le son des alertes'}
-            className="text-gray-500 hover:text-gray-900 transition-colors"
+            className="text-gray-500 hover:text-gray-900 transition-colors p-1"
           >
-            {notif.son ? <Bell size={17} aria-hidden /> : <BellOff size={17} aria-hidden />}
+            {notif.son ? <Bell size={18} aria-hidden /> : <BellOff size={18} aria-hidden />}
           </button>
           {notif.permission === 'default' && (
             <button
               type="button"
               onClick={notif.autoriserNavigateur}
-              className="hidden md:inline text-[11px] font-600 text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-2.5 py-1 rounded-full"
+              className="hidden xl:inline text-[11px] font-600 text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-2.5 py-1 rounded-full"
             >
               Recevoir les alertes même fenêtre réduite
             </button>
           )}
           {nbNonVues > 0 && (
-            <span className="flex items-center gap-1.5 text-xs font-600 text-violet-700 bg-violet-100 px-2.5 py-1 rounded-full">
+            <span
+              className="flex items-center gap-1.5 text-xs font-600 text-violet-700 bg-violet-100 px-2 sm:px-2.5 py-1 rounded-full"
+              title={`${nbNonVues} demande${nbNonVues > 1 ? 's' : ''} non vue${nbNonVues > 1 ? 's' : ''}`}
+            >
               <span className="w-1.5 h-1.5 rounded-full bg-violet-500 pulse-dot" aria-hidden />
-              {nbNonVues} non vue{nbNonVues > 1 ? 's' : ''}
+              {nbNonVues}<span className="hidden sm:inline"> non vue{nbNonVues > 1 ? 's' : ''}</span>
             </span>
           )}
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-500">
+          <div className="hidden lg:flex items-center gap-1.5 text-xs text-gray-500 whitespace-nowrap">
             <span className="pulse-dot w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
             <span className="font-mono">{actives.length} demandes actives</span>
           </div>
@@ -278,13 +283,21 @@ export default function App() {
             <button
               type="button"
               onClick={() => setShowModal(true)}
-              className="text-white text-xs font-600 px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5 bg-[#2db8a0] hover:bg-[#25a08b]"
+              aria-label="Nouvelle demande"
+              className="text-white text-xs font-600 px-2.5 sm:px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5 bg-[#2db8a0] hover:bg-[#25a08b]"
             >
-              <span>+</span> Nouvelle demande
+              <Plus size={15} aria-hidden /> <span className="hidden sm:inline">Nouvelle demande</span>
             </button>
           )}
-          <button type="button" onClick={signOut} className="text-xs text-gray-400 hover:text-gray-600 transition-colors font-500">
-            Déconnexion
+          <button
+            type="button"
+            onClick={signOut}
+            aria-label="Déconnexion"
+            title="Déconnexion"
+            className="text-xs text-gray-400 hover:text-gray-600 transition-colors font-500 p-1"
+          >
+            <LogOut size={17} className="sm:hidden" aria-hidden />
+            <span className="hidden sm:inline">Déconnexion</span>
           </button>
         </div>
       </header>
