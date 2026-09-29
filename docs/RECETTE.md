@@ -6,7 +6,7 @@ d'écran) et corrigé avant la mise en service.
 
 **Qui ?** Florence (compte Dispatcheur) sur son ordinateur, et la pharmacie (compte
 Pharmacie) sur **un téléphone**, en même temps.
-**Où ?** Sur https://medidispatch.vercel.app (ou le nom de domaine choisi).
+**Où ?** Sur https://www.medi-dispatch.fr
 **Avec quoi ?** Uniquement des **patients et documents fictifs**.
 **Durée :** environ 45 minutes.
 

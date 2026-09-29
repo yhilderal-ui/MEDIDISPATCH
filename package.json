@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sql:installation": "node scripts/generer-installation.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

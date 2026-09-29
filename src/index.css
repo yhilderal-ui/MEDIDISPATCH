@@ -23,6 +23,22 @@
   }
 }
 
+/* iPhone : toucher un champ écrit en moins de 16 px fait zoomer la page, et le zoom
+   reste après la connexion. En 16 px sur téléphone, plus de zoom automatique.
+   (Hors @layer pour passer devant les classes Tailwind comme text-sm.) */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 @keyframes card-appear {
   from {
     opacity: 0;
