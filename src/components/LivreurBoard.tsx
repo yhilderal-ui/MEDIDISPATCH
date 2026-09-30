@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { CalendarDays, FileText, LayoutGrid, Pill, TriangleAlert } from 'lucide-react';
+import { CalendarDays, FileText, LayoutGrid, Pill, Route, TriangleAlert } from 'lucide-react';
 import BadgeCriticite from './BadgeCriticite';
 import type { Demande, EtatVu, Statut } from '../types';
 import BadgeVu from './BadgeVu';
 import OngletsStatut from './OngletsStatut';
 import { CRITICITE_CONFIG, CRITICITE_ORDRE, STATUT_CONFIG } from '../data';
 import WeekView from './WeekView';
+import TourneeDuJour from './TourneeDuJour';
 import { ajouterJours, formatJour, lundiDeLaSemaine, moisCourt } from '../lib/dates';
 
 type Tri = 'date' | 'criticite';
-type Vue = 'kanban' | 'week';
+type Vue = 'kanban' | 'week' | 'tournee';
 
 interface Props {
   demandes: Demande[];
@@ -150,7 +151,7 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Pr
           )}
 
           <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg">
-            {([['kanban', LayoutGrid, 'Vue par statut'], ['week', CalendarDays, 'Vue semaine']] as [Vue, typeof LayoutGrid, string][]).map(([v, Icone, titre]) => (
+            {([['kanban', LayoutGrid, 'Vue par statut'], ['week', CalendarDays, 'Vue semaine'], ['tournee', Route, 'Tournée du jour']] as [Vue, typeof LayoutGrid, string][]).map(([v, Icone, titre]) => (
               <button
                 key={v}
                 type="button"
@@ -164,7 +165,10 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Pr
                   boxShadow: vue === v ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                 }}
               >
-                <Icone size={14} aria-hidden />
+                <span className="inline-flex items-center gap-1.5">
+                  <Icone size={14} aria-hidden />
+                  {v === 'tournee' && 'Tournée'}
+                </span>
               </button>
             ))}
           </div>
@@ -182,6 +186,10 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Pr
               <Colonne statut="annulee" items={annulees} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'annulee'} />
             )}
           </div>
+        </div>
+      ) : vue === 'tournee' ? (
+        <div className="flex-1 min-h-0">
+          <TourneeDuJour demandes={demandes} onOpen={onOpen} etats={etats} />
         </div>
       ) : (
         <div className="flex-1 min-h-0">
