@@ -57,18 +57,20 @@ export function memoriserChoix(nom: string) {
 
 // Chaque mot tapé doit commencer un mot du nom : « dol 1000 » trouve
 // « DOLIPRANE 1000 mg, comprimé ». Ordre : les plus choisis, puis ceux qui
-// commencent par la saisie, puis les noms les plus courts.
-export function rechercher(catalogue: Entree[], saisie: string, max = 8): string[] {
+// commencent par la saisie, puis l'ordre alphabétique (10 mg avant 100 mg).
+// Au-delà de `max`, seuls les premiers sont renvoyés, avec le nombre total.
+const tri = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' });
+
+export function rechercher(catalogue: Entree[], saisie: string, max = 200): { noms: string[]; total: number } {
   const requete = normaliser(saisie);
-  if (requete.length < MIN_CARACTERES) return [];
+  if (requete.length < MIN_CARACTERES) return { noms: [], total: 0 };
   const mots = requete.split(' ').map(m => ' ' + m);
   const debut = ' ' + requete;
   const f = frequents();
 
-  return catalogue
+  const trouves = catalogue
     .filter(e => mots.every(m => e.cle.includes(m)))
     .map(e => ({ nom: e.nom, freq: f[e.nom] ?? 0, debut: e.cle.startsWith(debut) ? 0 : 1 }))
-    .sort((a, b) => b.freq - a.freq || a.debut - b.debut || a.nom.length - b.nom.length || a.nom.localeCompare(b.nom, 'fr'))
-    .slice(0, max)
-    .map(e => e.nom);
+    .sort((a, b) => b.freq - a.freq || a.debut - b.debut || tri.compare(a.nom, b.nom));
+  return { noms: trouves.slice(0, max).map(e => e.nom), total: trouves.length };
 }
