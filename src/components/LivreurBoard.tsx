@@ -28,7 +28,7 @@ function MedicalCard({ demande, onClick, etatVu }: { demande: Demande; onClick: 
     <button
       type="button"
       onClick={onClick}
-      className={`card-new w-full text-left bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow group ${
+      className={`card-new w-full shrink-0 text-left bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow group ${
         annulee ? 'border-red-200 opacity-60' : 'border-black/5'
       } ${etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
     >

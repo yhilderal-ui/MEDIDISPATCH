@@ -18,21 +18,3 @@ export function urlPlans(adresse: string): string {
 export function estAppareilApple(): boolean {
   return /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
 }
-
-// Google Maps accepte 9 étapes intermédiaires + la destination dans un lien :
-// au-delà, la tournée est découpée en plusieurs parcours de 10 arrêts.
-export const ARRETS_PAR_PARCOURS = 10;
-
-export function urlsTourneeGoogle(adresses: string[]): { debut: number; fin: number; url: string }[] {
-  const parcours = [];
-  for (let i = 0; i < adresses.length; i += ARRETS_PAR_PARCOURS) {
-    const lot = adresses.slice(i, i + ARRETS_PAR_PARCOURS);
-    const destination = lot[lot.length - 1];
-    const etapes = lot.slice(0, -1);
-    const url =
-      `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving` +
-      (etapes.length ? `&waypoints=${etapes.map(encodeURIComponent).join('%7C')}` : '');
-    parcours.push({ debut: i + 1, fin: i + lot.length, url });
-  }
-  return parcours;
-}

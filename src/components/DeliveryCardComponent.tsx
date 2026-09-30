@@ -20,7 +20,7 @@ export default function DeliveryCardComponent({ demande, onOpen, etatVu = null }
     <button
       type="button"
       onClick={() => onOpen(demande)}
-      className={`card-new w-full text-left bg-white rounded-2xl border overflow-hidden select-none transition-shadow hover:shadow-md ${
+      className={`card-new w-full shrink-0 text-left bg-white rounded-2xl border overflow-hidden select-none transition-shadow hover:shadow-md ${
         annulee ? 'opacity-60 border-red-100' : 'border-black/5 shadow-sm'
       } ${etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
     >
