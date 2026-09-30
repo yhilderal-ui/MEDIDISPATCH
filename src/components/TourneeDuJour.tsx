@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowDown, ArrowUp, CircleCheck, MapPinned, Phone, RotateCcw, TriangleAlert } from 'lucide-react';
+import { ArrowDown, ArrowUp, CircleCheck, MapPin, MapPinned, Phone, RotateCcw, TriangleAlert } from 'lucide-react';
 import type { Demande, EtatVu } from '../types';
 import BadgeCriticite from './BadgeCriticite';
 import BadgeVu from './BadgeVu';
@@ -8,6 +8,8 @@ import { CRITICITE_ORDRE, STATUT_CONFIG } from '../data';
 import { aujourdhuiParis, formatJour } from '../lib/dates';
 import { ARRETS_PAR_PARCOURS, urlsTourneeGoogle } from '../lib/itineraire';
 import { villeDepuisAdresse } from '../lib/adresse';
+import { localiser, ordonner, type Position } from '../lib/geocodage';
+import { DEPART_TOURNEE } from '../config/tournee';
 
 interface Props {
   demandes: Demande[];
@@ -40,8 +42,8 @@ function ecrireOrdre(jour: string, ids: string[] | null) {
   }
 }
 
-// Ordre automatique : urgences d'abord, puis regroupement par code postal.
-function ordreAutomatique(a: Demande, b: Demande) {
+// Ordre de secours (carte indisponible) : urgences d'abord, puis par code postal.
+function ordreSecours(a: Demande, b: Demande) {
   return (
     CRITICITE_ORDRE[a.criticite] - CRITICITE_ORDRE[b.criticite] ||
     villeDepuisAdresse(a.patient_adresse).localeCompare(villeDepuisAdresse(b.patient_adresse), 'fr') ||
@@ -61,12 +63,44 @@ export default function TourneeDuJour({ demandes, onOpen, etats }: Props) {
     .filter(d => d.statut === 'livree')
     .sort((a, b) => (a.livree_le ?? '').localeCompare(b.livree_le ?? ''));
 
+  const restants = duJour.filter(d => d.statut === 'nouvelle' || d.statut === 'en_cours');
+
+  // Positions sur la carte (départ + arrêts), calculées dès que la liste change.
+  const [positions, setPositions] = useState<Map<string, Position | null>>(new Map());
+  const [localisation, setLocalisation] = useState<'en_cours' | 'ok' | 'indisponible'>('en_cours');
+  const adresses = [DEPART_TOURNEE, ...restants.map(d => d.patient_adresse)];
+  const cleAdresses = adresses.join('\n');
+  useEffect(() => {
+    let actif = true;
+    Promise.all(adresses.map(async a => [a, await localiser(a)] as const)).then(res => {
+      if (!actif) return;
+      setPositions(new Map(res));
+      setLocalisation(res[0][1] ? 'ok' : 'indisponible');
+    });
+    return () => {
+      actif = false;
+    };
+  }, [cleAdresses]);
+
+  const depart = positions.get(DEPART_TOURNEE) ?? null;
+  const pos = (d: Demande) => positions.get(d.patient_adresse) ?? null;
+
+  // Ordre automatique : depuis la pharmacie, les urgences d'abord, puis le trajet
+  // le plus court en revenant à la pharmacie. Adresses introuvables : à la fin.
+  const ordreAuto = (liste: Demande[]): Demande[] => {
+    const secours = [...liste].sort(ordreSecours);
+    if (!depart) return secours;
+    const localises = (l: Demande[]) => l.filter(d => pos(d)).map(d => ({ item: d, position: pos(d)! }));
+    const urgents = ordonner(depart, localises(secours.filter(d => d.criticite === 'urgent')));
+    const repartir = urgents.length ? pos(urgents[urgents.length - 1])! : depart;
+    const autres = ordonner(repartir, localises(secours.filter(d => d.criticite !== 'urgent')), depart);
+    return [...urgents, ...autres, ...secours.filter(d => !pos(d))];
+  };
+
   const aLivrer = (() => {
-    const restants = duJour.filter(d => d.statut === 'nouvelle' || d.statut === 'en_cours');
-    const position = new Map(ordre.map((id, i) => [id, i]));
-    const places = restants.filter(d => position.has(d.id)).sort((a, b) => position.get(a.id)! - position.get(b.id)!);
-    const nouveaux = restants.filter(d => !position.has(d.id)).sort(ordreAutomatique);
-    return [...places, ...nouveaux];
+    const rang = new Map(ordre.map((id, i) => [id, i]));
+    const places = restants.filter(d => rang.has(d.id)).sort((a, b) => rang.get(a.id)! - rang.get(b.id)!);
+    return [...places, ...ordreAuto(restants.filter(d => !rang.has(d.id)))];
   })();
 
   const deplacer = (index: number, sens: -1 | 1) => {
@@ -129,8 +163,13 @@ export default function TourneeDuJour({ demandes, onOpen, etats }: Props) {
             </div>
           )}
           {aLivrer.length > 1 && (
-            <p className="text-[10px] text-gray-400 mt-2">
-              Ordre par défaut : urgences d'abord, puis par ville. Les flèches permettent de le changer (mémorisé sur cet appareil pour la journée).
+            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">
+              {localisation === 'en_cours'
+                ? 'Calcul de l’ordre de passage…'
+                : localisation === 'ok'
+                  ? `Ordre calculé depuis la pharmacie (${DEPART_TOURNEE}) : urgences d’abord, puis le trajet le plus court avec retour à la pharmacie.`
+                  : 'Carte indisponible pour le moment : ordre par urgence puis par code postal.'}{' '}
+              Les flèches permettent de le changer (mémorisé sur cet appareil pour la journée).
               {parcours.length > 1 && ` Google Maps accepte ${ARRETS_PAR_PARCOURS} arrêts par parcours.`}
             </p>
           )}
@@ -172,6 +211,11 @@ export default function TourneeDuJour({ demandes, onOpen, etats }: Props) {
                     </div>
                     <p className="font-700 text-gray-900 text-[15px] leading-tight">{d.patient_nom}</p>
                     <p className="text-xs text-gray-600 leading-snug">{d.patient_adresse}</p>
+                    {localisation === 'ok' && !pos(d) && (
+                      <p className="text-[11px] text-amber-700 flex items-center gap-1">
+                        <MapPin size={12} aria-hidden /> Adresse introuvable sur la carte : placée en fin de tournée, à vérifier.
+                      </p>
+                    )}
                     <a href={`tel:${d.patient_telephone.replace(/\s/g, '')}`} className="inline-flex items-center gap-1.5 text-xs text-gray-600 underline decoration-gray-300">
                       <Phone size={12} className="text-gray-400" aria-hidden /> {d.patient_telephone}
                     </a>
