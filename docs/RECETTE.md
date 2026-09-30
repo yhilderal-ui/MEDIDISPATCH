@@ -4,8 +4,8 @@ La recette, c'est la vérification finale : on déroule des situations réelles,
 et on coche ce qui fonctionne. Tout ce qui ne fonctionne pas est noté (avec une capture
 d'écran) et corrigé avant la mise en service.
 
-**Qui ?** Florence (compte Dispatcheur) sur son ordinateur, et la pharmacie (compte
-Pharmacie) sur **un téléphone**, en même temps.
+**Qui ?** Florence (compte Dispatcheur) sur son ordinateur, la pharmacie (compte
+Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temps.
 **Où ?** Sur https://www.medi-dispatch.fr
 **Avec quoi ?** Uniquement des **patients et documents fictifs**.
 **Durée :** environ 45 minutes.
@@ -77,6 +77,15 @@ Pharmacie) sur **un téléphone**, en même temps.
 - [ ] Seule Florence voit **Supprimer définitivement** sur une demande annulée ; il faut
       taper le numéro de ticket.
 - [ ] La carte disparaît des deux écrans.
+
+## 7 bis. Compte Livreurs (téléphone du livreur)
+
+- [ ] À la connexion, l'écran **Tournée** s'affiche, avec le badge « Livreurs ».
+- [ ] Pas de bouton **Statistiques**, pas de bulle de **chat**, pas de **+ Nouvelle demande**.
+- [ ] Sur une demande : **Passer en cours**, **Ajouter une photo**, **Marquer comme livrée**,
+      **Reporter** et **ajouter une note** fonctionnent.
+- [ ] **Modifier les informations** et **Annuler la demande** n'apparaissent pas.
+- [ ] Côté Florence : le détail indique « Vue par Pharmacie … et Livreurs … » après consultation.
 
 ## 8. Robustesse
 

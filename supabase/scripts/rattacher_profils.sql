@@ -1,9 +1,9 @@
 -- =============================================================================
--- MEDIDISPATCH — Rattacher les deux comptes de connexion à leur rôle.
+-- MEDIDISPATCH — Rattacher les comptes de connexion à leur rôle.
 --
--- À exécuter APRÈS avoir créé les deux utilisateurs dans
+-- À exécuter APRÈS avoir créé les utilisateurs dans
 -- Supabase → Authentication → Users → Add user.
--- Remplacez les deux adresses e-mail ci-dessous par celles que vous avez choisies.
+-- Remplacez les adresses e-mail ci-dessous par celles que vous avez choisies.
 -- =============================================================================
 
 insert into profils (id, role, nom)
@@ -16,7 +16,13 @@ select id, 'livraison', 'Pharmacie'
 from auth.users
 where email = 'EMAIL_DE_LA_SOCIETE@exemple.fr';
 
--- Vérification : doit afficher 2 lignes.
+-- Compte partagé des livreurs (migration 0012) : voir aussi ajouter_compte_livreurs.sql.
+insert into profils (id, role, nom)
+select id, 'livreur', 'Livreurs'
+from auth.users
+where email = 'EMAIL_DES_LIVREURS@exemple.fr';
+
+-- Vérification : doit afficher 3 lignes.
 select p.nom, p.role, u.email
 from profils p
 join auth.users u on u.id = p.id;

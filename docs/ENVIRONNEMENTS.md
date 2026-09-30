@@ -29,6 +29,6 @@ Puis régénérer le fichier d'installation complète : `npm run sql:installatio
 1. Supabase → **New project** (région Europe) → attendre qu'il soit prêt.
 2. **SQL Editor** → coller `supabase/installation_complete.sql` → **Run**.
 3. **Authentication → Sign In / Providers** : désactiver « Allow new users to sign up ».
-4. **Authentication → Users → Add user** (×2, cocher « Auto Confirm User »).
-5. **SQL Editor** → `supabase/scripts/rattacher_profils.sql` avec les deux e-mails.
+4. **Authentication → Users → Add user** (×3, cocher « Auto Confirm User »).
+5. **SQL Editor** → `supabase/scripts/rattacher_profils.sql` avec les trois e-mails (Florence, Pharmacie, Livreurs).
 6. Reporter l'URL et la clé publishable dans les variables **Preview / Development** de Vercel.
