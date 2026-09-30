@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { chargerCatalogue, memoriserChoix, rechercher } from '../lib/catalogueMedicaments';
 
 interface Props {
@@ -28,10 +28,23 @@ export default function SaisieMedicament({ valeur, onChange, onKeyDown, inputRef
   const champRef = useRef<HTMLTextAreaElement | null>(null);
   const id = useId();
 
-  const suggestions = ouvert && catalogue ? rechercher(catalogue, valeur) : [];
+  const listeRef = useRef<HTMLUListElement>(null);
+
+  const { noms: suggestions, total } = useMemo(
+    () => (ouvert && catalogue ? rechercher(catalogue, valeur) : { noms: [], total: 0 }),
+    [ouvert, catalogue, valeur],
+  );
   const visible = suggestions.length > 0 && !(suggestions.length === 1 && suggestions[0] === valeur);
 
-  useEffect(() => setActif(-1), [valeur]);
+  useEffect(() => {
+    setActif(-1);
+    listeRef.current?.scrollTo({ top: 0 });
+  }, [valeur]);
+
+  // Au clavier, la suggestion en surbrillance reste visible dans la liste.
+  useEffect(() => {
+    if (actif >= 0) document.getElementById(`${id}-${actif}`)?.scrollIntoView({ block: 'nearest' });
+  }, [actif, id]);
 
   // Zone de texte d'une ligne qui s'agrandit : un nom long (« …, comprimé
   // effervescent sécable ») reste lisible en entier, surtout sur téléphone.
@@ -110,32 +123,44 @@ export default function SaisieMedicament({ valeur, onChange, onKeyDown, inputRef
         {children}
       </div>
       {visible && (
-        <ul id={id} role="listbox" aria-label="Suggestions" className="border-t border-gray-100 bg-violet-50/40 py-1">
-          {suggestions.map((nom, i) => {
-            const virgule = nom.indexOf(', ');
-            const marque = virgule > 0 ? nom.slice(0, virgule) : nom;
-            const forme = virgule > 0 ? nom.slice(virgule + 2) : '';
-            return (
-              <li
-                key={nom}
-                id={`${id}-${i}`}
-                role="option"
-                aria-selected={i === actif}
-                // mousedown empêché : le champ garde le focus jusqu'au clic
-                onMouseDown={e => e.preventDefault()}
-                onClick={() => choisir(nom)}
-                onMouseEnter={() => setActif(i)}
-                className={`px-3 py-2 text-sm cursor-pointer leading-snug ${i === actif ? 'bg-violet-100' : ''}`}
-              >
-                <span className="font-600 text-gray-800">{marque}</span>
-                {forme && <span className="text-gray-400">, {forme}</span>}
-              </li>
-            );
-          })}
-          <li role="presentation" className="px-3 pt-1 text-[10px] text-gray-300">
-            Source : Base de données publique des médicaments
-          </li>
-        </ul>
+        <div className="border-t border-gray-100 bg-violet-50/40">
+          <p className="px-3 pt-2 pb-1 text-[10px] text-gray-400">
+            {total} résultat{total > 1 ? 's' : ''}
+            {total > suggestions.length && ` — les ${suggestions.length} premiers, précisez la saisie`}
+            {suggestions.length > 5 && ' · faites défiler la liste'}
+          </p>
+          {/* Liste défilante ; mousedown empêché (même sur la barre de défilement) :
+              le champ garde le focus jusqu'au choix. */}
+          <ul
+            ref={listeRef}
+            id={id}
+            role="listbox"
+            aria-label="Suggestions"
+            onMouseDown={e => e.preventDefault()}
+            className="max-h-60 overflow-y-auto overscroll-contain pb-1"
+          >
+            {suggestions.map((nom, i) => {
+              const virgule = nom.indexOf(', ');
+              const marque = virgule > 0 ? nom.slice(0, virgule) : nom;
+              const forme = virgule > 0 ? nom.slice(virgule + 2) : '';
+              return (
+                <li
+                  key={nom}
+                  id={`${id}-${i}`}
+                  role="option"
+                  aria-selected={i === actif}
+                  onClick={() => choisir(nom)}
+                  onMouseEnter={() => setActif(i)}
+                  className={`px-3 py-2 text-sm cursor-pointer leading-snug border-b border-gray-100/70 last:border-b-0 ${i === actif ? 'bg-violet-100' : ''}`}
+                >
+                  <span className="font-600 text-gray-800">{marque}</span>
+                  {forme && <span className="text-gray-400">, {forme}</span>}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="px-3 py-1 text-[10px] text-gray-300 border-t border-gray-100">Source : Base de données publique des médicaments</p>
+        </div>
       )}
     </div>
   );
