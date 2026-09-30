@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarX2, CircleCheck, FilePlus2, Minus, Redo2, TrendingDown, TrendingUp } from 'lucide-react';
+import { CalendarX2, CircleCheck, Download, FilePlus2, Minus, Redo2, TrendingDown, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import GraphiqueColonnes, { type Colonne } from './GraphiqueColonnes';
+import { exporterStatistiques } from '../lib/exportExcel';
 import { ajouterJours, aujourdhuiParis, depuisJour, formatJour, moisCourt, versJour } from '../lib/dates';
 import {
   calculerPeriode,
@@ -88,6 +89,7 @@ export default function StatistiquesView() {
   const [stats, setStats] = useState<Statistiques | null>(null);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [export_, setExport] = useState<{ enCours: boolean; message: string | null }>({ enCours: false, message: null });
 
   useEffect(() => {
     if (!periodeValide) return;
@@ -111,6 +113,19 @@ export default function StatistiquesView() {
     .filter(j => j.jour < 7 || j.nombre > 0) // pas de colonne dimanche s'il est vide
     .map(j => ({ cle: String(j.jour), axe: JOURS_SEMAINE[j.jour].slice(0, 3) + '.', complet: JOURS_SEMAINE[j.jour], valeur: j.nombre }));
   const maxMedicament = Math.max(1, ...(stats?.medicaments ?? []).map(m => m.demandes));
+  const regroupement = granularite === 'day' ? 'Jour' : granularite === 'week' ? 'Semaine' : 'Mois';
+
+  const exporter = async () => {
+    if (!stats) return;
+    setExport({ enCours: true, message: null });
+    try {
+      const n = await exporterStatistiques(periode, stats, livraisons, regroupement, joursSemaine);
+      setExport({ enCours: false, message: `Fichier Excel téléchargé (${n} demande${n > 1 ? 's' : ''} dans le détail).` });
+    } catch (e) {
+      setExport({ enCours: false, message: `Export impossible : ${e instanceof Error ? e.message : String(e)}` });
+    }
+  };
+
   const libellePeriode =
     periode.debut === periode.fin ? formatJour(periode.debut) : `du ${formatJour(periode.debut)} au ${formatJour(periode.fin)}`;
 
@@ -149,9 +164,25 @@ export default function StatistiquesView() {
           )}
         </div>
 
-        <p className="text-xs text-gray-400">
-          {periodeValide ? <>Période : <span className="text-gray-600 font-600">{libellePeriode}</span></> : 'Choisissez une date de début antérieure à la date de fin (3 ans au plus).'}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-gray-400">
+            {periodeValide ? <>Période : <span className="text-gray-600 font-600">{libellePeriode}</span></> : 'Choisissez une date de début antérieure à la date de fin (3 ans au plus).'}
+          </p>
+          <button
+            type="button"
+            onClick={exporter}
+            disabled={!stats || chargement || export_.enCours || !periodeValide}
+            className="flex items-center gap-1.5 text-xs font-600 px-3 py-2 rounded-xl bg-emerald-700 text-white hover:bg-emerald-800 disabled:opacity-40 transition-colors"
+          >
+            <Download size={14} aria-hidden />
+            {export_.enCours ? 'Export en cours…' : 'Exporter (Excel)'}
+          </button>
+        </div>
+        {export_.message && (
+          <p role="status" className={`text-xs ${export_.message.startsWith('Export impossible') ? 'text-red-600' : 'text-emerald-700'}`}>
+            {export_.message}
+          </p>
+        )}
 
         {erreur && (
           <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">

@@ -9,16 +9,34 @@ export function aujourdhuiParis(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
 }
 
-// Instant de minuit aujourd'hui à Paris, en format ISO (UTC), pour comparer
-// avec les dates enregistrées en base. Gère l'heure d'été / d'hiver.
-export function minuitParisISO(): string {
-  const [a, m, j] = aujourdhuiParis().split('-').map(Number);
-  const midiUTC = new Date(Date.UTC(a, m - 1, j, 12));
-  const decalage = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Paris', timeZoneName: 'shortOffset' })
-    .formatToParts(midiUTC)
+// Décalage de Paris par rapport à UTC (en heures) à une date donnée : 1 en hiver, 2 en été.
+function decalageParis(instant: Date): number {
+  const nom = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Paris', timeZoneName: 'shortOffset' })
+    .formatToParts(instant)
     .find(p => p.type === 'timeZoneName')?.value ?? 'GMT+1'; // ex. « GMT+2 »
-  const heures = Number(decalage.replace('GMT', '') || '0');
-  return new Date(Date.UTC(a, m - 1, j, 0) - heures * 3600 * 1000).toISOString();
+  return Number(nom.replace('GMT', '') || '0');
+}
+
+// Instant de minuit à Paris pour un jour AAAA-MM-JJ, en format ISO (UTC), pour
+// comparer avec les dates enregistrées en base. Gère l'heure d'été / d'hiver.
+export function debutJourParisISO(jour: string): string {
+  const [a, m, j] = jour.split('-').map(Number);
+  const minuitUTC = Date.UTC(a, m - 1, j, 0);
+  // Le décalage est pris à l'instant même de minuit (et non à midi) : les jours
+  // de changement d'heure, il n'est pas le même le matin et l'après-midi.
+  const estimation = minuitUTC - decalageParis(new Date(minuitUTC)) * 3600 * 1000;
+  return new Date(minuitUTC - decalageParis(new Date(estimation)) * 3600 * 1000).toISOString();
+}
+
+export function minuitParisISO(): string {
+  return debutJourParisISO(aujourdhuiParis());
+}
+
+// Date « à l'heure de Paris » dont les champs UTC valent l'heure affichée à Paris :
+// c'est ce qu'attend un tableur, qui n'a pas de notion de fuseau horaire.
+export function heureMurParis(iso: string): Date {
+  const instant = new Date(iso);
+  return new Date(instant.getTime() + decalageParis(instant) * 3600 * 1000);
 }
 
 export function versJour(d: Date): string {
