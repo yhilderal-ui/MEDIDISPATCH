@@ -42,7 +42,7 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 
 ## V2 — évolutions
 
-- [ ] **Aide à la saisie des médicaments** (idée du 30/09) — suggestions dès 2 lettres, sans accents, « dol 1000 » trouve « DOLIPRANE 1000 mg, comprimé » ; les médicaments déjà choisis sur l'appareil remontent en tête ; saisie libre toujours possible. Catalogue : noms des médicaments **commercialisés** de la Base de données publique des médicaments (BDPM), dans `public/medicaments-bdpm.json`, mis à jour **le 3 de chaque mois** par GitHub (`.github/workflows/maj-medicaments.yml`, script `scripts/maj-medicaments.mjs`, garde-fous contre un fichier tronqué). Aucune donnée patient
+- [x] **Aide à la saisie des médicaments** (idée du 30/09, en service le 30/09) — suggestions dès 2 lettres, sans accents, « dol 1000 » trouve « DOLIPRANE 1000 mg, comprimé » ; les médicaments déjà choisis sur l'appareil remontent en tête ; saisie libre toujours possible. Catalogue : noms des médicaments **commercialisés** de la Base de données publique des médicaments (BDPM), dans `public/medicaments-bdpm.json`, mis à jour **le 3 de chaque mois** par GitHub (`.github/workflows/maj-medicaments.yml`, script `scripts/maj-medicaments.mjs`, garde-fous contre un fichier tronqué). Aucune donnée patient
 
 ## Écarts entre la maquette et le cahier des charges
 
