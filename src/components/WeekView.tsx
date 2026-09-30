@@ -22,7 +22,7 @@ function WeekCard({ demande, onClick, etatVu }: { demande: Demande; onClick: () 
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left bg-white rounded-xl border border-black/5 shadow-sm hover:shadow-md transition-shadow overflow-hidden ${etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
+      className={`carte-semaine w-full text-left bg-white rounded-xl border border-black/5 shadow-sm hover:shadow-md transition-shadow overflow-hidden ${etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
     >
       <div className="h-0.5" style={{ background: criticite.color }} />
       <div className="px-2.5 py-2">
@@ -95,7 +95,7 @@ export default function WeekView({ demandes, weekStart, onOpen, onDropCard, etat
                 </div>
               )}
               {items.map(d => (
-                <div key={d.id} draggable onDragStart={e => e.dataTransfer.setData('demandeId', d.id)}>
+                <div key={d.id} draggable onDragStart={e => e.dataTransfer.setData('demandeId', d.id)} className="shrink-0">
                   <WeekCard demande={d} onClick={() => onOpen(d)} etatVu={etats[d.id] ?? null} />
                 </div>
               ))}
