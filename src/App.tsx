@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Archive, Bell, BellOff, CalendarDays, CircleCheck, Headset, LayoutGrid, LogOut, Pill, Plus, TriangleAlert } from 'lucide-react';
+import { Archive, Bell, BellOff, CalendarDays, ChartColumn, CircleCheck, Headset, LayoutDashboard, LayoutGrid, LogOut, Pill, Plus, TriangleAlert } from 'lucide-react';
 import type { Demande, EtatVu, ModificationDemande, NouvelleDemande, Pieces, Statut, TypeDocument } from './types';
 import { publierBonGenere } from './lib/bonLivraison';
 import Board from './components/Board';
@@ -11,6 +11,7 @@ import WeekView from './components/WeekView';
 import DemandePanel from './components/DemandePanel';
 import BarreFiltres from './components/BarreFiltres';
 import ArchivesView from './components/ArchivesView';
+import StatistiquesView from './components/StatistiquesView';
 import { appliquerFiltres, FILTRES_VIDES, type Filtres } from './lib/filtres';
 import logo from './assets/logo.png';
 import { useAuth, type Role } from './lib/useAuth';
@@ -60,6 +61,7 @@ export default function App() {
   const [weekStart, setWeekStart] = useState<Date>(() => lundiDeLaSemaine(new Date()));
   const [filtres, setFiltres] = useState<Filtres>(FILTRES_VIDES);
   const [vueArchives, setVueArchives] = useState(false);
+  const [vueStatistiques, setVueStatistiques] = useState(false);
   const [archives, setArchives] = useState<Demande[]>([]);
   const [chargementArchives, setChargementArchives] = useState(false);
   const vueArchivesRef = useRef(false);
@@ -215,6 +217,7 @@ export default function App() {
     setOuverteId(null);
     setShowModal(false);
     setVueArchives(false);
+    setVueStatistiques(false);
     setDispatcherView('kanban');
     setWeekStart(lundiDeLaSemaine(new Date()));
     setFiltres(FILTRES_VIDES);
@@ -285,7 +288,7 @@ export default function App() {
           </div>
           <div className="min-w-0">
             <h1 className="text-sm sm:text-base font-700 text-gray-900 leading-tight">MediDispatch</h1>
-            <p className="hidden sm:block whitespace-nowrap text-[10px] text-gray-400 font-mono tracking-wide">Livraison médicale — Île-de-France</p>
+            <p className="hidden xl:block whitespace-nowrap text-[10px] text-gray-400 font-mono tracking-wide">Livraison médicale — Île-de-France</p>
           </div>
         </button>
 
@@ -297,11 +300,40 @@ export default function App() {
           {role === 'dispatcher' ? <Headset size={14} aria-hidden /> : <Pill size={14} aria-hidden />}
           <span className="hidden sm:inline">{role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie'}</span>
           {userName && userName !== (role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie') && (
-            <span className="hidden sm:inline opacity-60">— {userName}</span>
+            <span className="hidden xl:inline opacity-60">— {userName}</span>
           )}
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-3 xl:gap-4 shrink-0">
+          {/* Navigation principale : tableau des livraisons ou statistiques */}
+          <nav className="flex items-center gap-0.5 bg-gray-100 p-0.5 rounded-xl" aria-label="Navigation">
+            {([
+              [false, 'Tableau', LayoutDashboard, 'Tableau des livraisons'],
+              [true, 'Statistiques', ChartColumn, 'Statistiques'],
+            ] as [boolean, string, typeof ChartColumn, string][]).map(([stats, libelle, Icone, titre]) => {
+              const actif = vueStatistiques === stats;
+              return (
+                <button
+                  key={libelle}
+                  type="button"
+                  onClick={() => {
+                    setVueStatistiques(stats);
+                    setVueArchives(false);
+                    setOuverteId(null);
+                  }}
+                  aria-current={actif ? 'page' : undefined}
+                  title={titre}
+                  aria-label={titre}
+                  className={`flex items-center gap-1.5 text-xs font-600 px-1.5 py-1.5 md:px-2.5 rounded-lg transition-colors ${
+                    actif ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  <Icone size={16} aria-hidden />
+                  <span className="hidden md:inline">{libelle}</span>
+                </button>
+              );
+            })}
+          </nav>
           <button
             type="button"
             onClick={notif.basculerSon}
@@ -315,7 +347,7 @@ export default function App() {
             <button
               type="button"
               onClick={notif.autoriserNavigateur}
-              className="hidden xl:inline text-[11px] font-600 text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-2.5 py-1 rounded-full"
+              className="hidden 2xl:inline text-[11px] font-600 text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-2.5 py-1 rounded-full"
             >
               Recevoir les alertes même fenêtre réduite
             </button>
@@ -329,7 +361,7 @@ export default function App() {
               {nbNonVues}<span className="hidden sm:inline"> non vue{nbNonVues > 1 ? 's' : ''}</span>
             </span>
           )}
-          <div className="hidden lg:flex items-center gap-1.5 text-xs text-gray-500 whitespace-nowrap">
+          <div className="hidden xl:flex items-center gap-1.5 text-xs text-gray-500 whitespace-nowrap">
             <span className="pulse-dot w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
             <span className="font-mono">{actives.length} demandes actives</span>
           </div>
@@ -338,9 +370,9 @@ export default function App() {
               type="button"
               onClick={() => setShowModal(true)}
               aria-label="Nouvelle demande"
-              className="text-white text-xs font-600 px-2.5 sm:px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5 bg-[#2db8a0] hover:bg-[#25a08b]"
+              className="text-white text-xs font-600 px-2.5 lg:px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5 bg-[#2db8a0] hover:bg-[#25a08b]"
             >
-              <Plus size={15} aria-hidden /> <span className="hidden sm:inline">Nouvelle demande</span>
+              <Plus size={15} aria-hidden /> <span className="hidden lg:inline">Nouvelle demande</span>
             </button>
           )}
           <button
@@ -350,8 +382,8 @@ export default function App() {
             title="Déconnexion"
             className="text-xs text-gray-400 hover:text-gray-600 transition-colors font-500 p-1"
           >
-            <LogOut size={17} className="sm:hidden" aria-hidden />
-            <span className="hidden sm:inline">Déconnexion</span>
+            <LogOut size={17} className="lg:hidden" aria-hidden />
+            <span className="hidden lg:inline">Déconnexion</span>
           </button>
         </div>
       </header>
@@ -375,6 +407,23 @@ export default function App() {
         {chargement ? (
           <div className="h-full flex items-center justify-center">
             <p className="text-xs text-gray-400 font-mono">Chargement des demandes…</p>
+          </div>
+        ) : vueStatistiques ? (
+          <div className="h-full flex flex-col px-4 sm:px-6 pt-5">
+            <div className="flex items-center gap-2 mb-4 shrink-0">
+              <h2 className="text-xs font-700 uppercase tracking-widest text-gray-400">Statistiques</h2>
+              <div className="flex-1 h-px bg-gray-200" />
+              <button
+                type="button"
+                onClick={() => setVueStatistiques(false)}
+                className="text-xs font-600 px-3 py-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                ← Retour au tableau
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <StatistiquesView />
+            </div>
           </div>
         ) : vueArchives ? (
           <div className="h-full flex flex-col px-4 sm:px-6 pt-5 pb-6">
