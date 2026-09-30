@@ -106,6 +106,13 @@ export default function TourneeDuJour({ demandes, onOpen, etats }: Props) {
           </div>
 
           {aLivrer.length > 0 && (
+            // Waze n'accepte qu'une destination : on lui donne le prochain arrêt.
+            <div className="mt-3 bg-gray-50 rounded-xl px-3 py-2.5">
+              <BoutonsItineraire adresse={aLivrer[0].patient_adresse} libelle={`Prochain arrêt (n° 1 — ${aLivrer[0].numero_ticket})`} />
+            </div>
+          )}
+
+          {aLivrer.length > 1 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {parcours.map(p => (
                 <a
@@ -116,7 +123,7 @@ export default function TourneeDuJour({ demandes, onOpen, etats }: Props) {
                   className="inline-flex items-center gap-1.5 text-xs font-600 px-3 py-2 rounded-xl bg-gray-900 text-white hover:bg-gray-800"
                 >
                   <MapPinned size={14} aria-hidden />
-                  {parcours.length === 1 ? 'Lancer la tournée dans Google Maps' : `Arrêts ${p.debut} à ${p.fin} dans Google Maps`}
+                  {parcours.length === 1 ? 'Toute la tournée dans Google Maps' : `Arrêts ${p.debut} à ${p.fin} dans Google Maps`}
                 </a>
               ))}
             </div>

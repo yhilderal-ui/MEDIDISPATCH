@@ -6,7 +6,7 @@ const LIEN =
 
 // « Itinéraire : Google Maps · Waze · Plans » — ouvre l'application de navigation
 // (ou le site) avec l'adresse de livraison comme destination.
-export default function BoutonsItineraire({ adresse }: { adresse: string }) {
+export default function BoutonsItineraire({ adresse, libelle = 'Itinéraire' }: { adresse: string; libelle?: string }) {
   const applications: [string, string][] = [
     ['Google Maps', urlGoogleMaps(adresse)],
     ['Waze', urlWaze(adresse)],
@@ -15,7 +15,7 @@ export default function BoutonsItineraire({ adresse }: { adresse: string }) {
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
       <span className="inline-flex items-center gap-1 text-[11px] text-gray-500 mr-0.5">
-        <Navigation size={12} aria-hidden /> Itinéraire
+        <Navigation size={12} aria-hidden /> {libelle}
       </span>
       {applications.map(([nom, url]) => (
         <a key={nom} href={url} target="_blank" rel="noopener noreferrer" className={LIEN} aria-label={`Itinéraire avec ${nom}`}>
