@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Archive, Bell, BellOff, CalendarDays, CircleCheck, Headset, LayoutGrid, LogOut, Pill, Plus, TriangleAlert } from 'lucide-react';
+import { Archive, Bell, BellOff, CalendarDays, ChartColumn, CircleCheck, Headset, LayoutGrid, LogOut, Pill, Plus, TriangleAlert } from 'lucide-react';
 import type { Demande, EtatVu, ModificationDemande, NouvelleDemande, Pieces, Statut, TypeDocument } from './types';
 import { publierBonGenere } from './lib/bonLivraison';
 import Board from './components/Board';
@@ -11,6 +11,7 @@ import WeekView from './components/WeekView';
 import DemandePanel from './components/DemandePanel';
 import BarreFiltres from './components/BarreFiltres';
 import ArchivesView from './components/ArchivesView';
+import StatistiquesView from './components/StatistiquesView';
 import { appliquerFiltres, FILTRES_VIDES, type Filtres } from './lib/filtres';
 import logo from './assets/logo.png';
 import { useAuth, type Role } from './lib/useAuth';
@@ -60,6 +61,7 @@ export default function App() {
   const [weekStart, setWeekStart] = useState<Date>(() => lundiDeLaSemaine(new Date()));
   const [filtres, setFiltres] = useState<Filtres>(FILTRES_VIDES);
   const [vueArchives, setVueArchives] = useState(false);
+  const [vueStatistiques, setVueStatistiques] = useState(false);
   const [archives, setArchives] = useState<Demande[]>([]);
   const [chargementArchives, setChargementArchives] = useState(false);
   const vueArchivesRef = useRef(false);
@@ -215,6 +217,7 @@ export default function App() {
     setOuverteId(null);
     setShowModal(false);
     setVueArchives(false);
+    setVueStatistiques(false);
     setDispatcherView('kanban');
     setWeekStart(lundiDeLaSemaine(new Date()));
     setFiltres(FILTRES_VIDES);
@@ -304,6 +307,22 @@ export default function App() {
         <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
           <button
             type="button"
+            onClick={() => {
+              setVueStatistiques(v => !v);
+              setOuverteId(null);
+            }}
+            aria-pressed={vueStatistiques}
+            title={vueStatistiques ? 'Retour au tableau des livraisons' : 'Statistiques'}
+            aria-label="Statistiques"
+            className={`flex items-center gap-1.5 text-xs font-600 p-1 lg:px-2.5 lg:py-1.5 rounded-lg transition-colors ${
+              vueStatistiques ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            <ChartColumn size={18} aria-hidden />
+            <span className="hidden lg:inline">Statistiques</span>
+          </button>
+          <button
+            type="button"
             onClick={notif.basculerSon}
             title={notif.son ? 'Son des alertes activé (cliquer pour couper)' : 'Son des alertes coupé (cliquer pour activer)'}
             aria-label={notif.son ? 'Couper le son des alertes' : 'Activer le son des alertes'}
@@ -315,7 +334,7 @@ export default function App() {
             <button
               type="button"
               onClick={notif.autoriserNavigateur}
-              className="hidden xl:inline text-[11px] font-600 text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-2.5 py-1 rounded-full"
+              className="hidden 2xl:inline text-[11px] font-600 text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-2.5 py-1 rounded-full"
             >
               Recevoir les alertes même fenêtre réduite
             </button>
@@ -375,6 +394,23 @@ export default function App() {
         {chargement ? (
           <div className="h-full flex items-center justify-center">
             <p className="text-xs text-gray-400 font-mono">Chargement des demandes…</p>
+          </div>
+        ) : vueStatistiques ? (
+          <div className="h-full flex flex-col px-4 sm:px-6 pt-5">
+            <div className="flex items-center gap-2 mb-4 shrink-0">
+              <h2 className="text-xs font-700 uppercase tracking-widest text-gray-400">Statistiques</h2>
+              <div className="flex-1 h-px bg-gray-200" />
+              <button
+                type="button"
+                onClick={() => setVueStatistiques(false)}
+                className="text-xs font-600 px-3 py-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                ← Retour au tableau
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <StatistiquesView />
+            </div>
           </div>
         ) : vueArchives ? (
           <div className="h-full flex flex-col px-4 sm:px-6 pt-5 pb-6">
