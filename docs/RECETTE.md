@@ -28,8 +28,9 @@ Pharmacie) sur **un téléphone**, en même temps.
 - [ ] Un **dimanche** est refusé ; une date **passée** est refusée.
 - [ ] Un fichier Word est refusé ; un fichier de plus de 10 Mo est refusé.
 - [ ] La carte apparaît dans « Nouvelle » avec un numéro `MD-000xx`.
-- [ ] Le **bon de livraison généré** s'ouvre : en-tête FLOPHARMA, patient, médicaments,
+- [ ] Le **bon de commande** généré s'ouvre : en-tête FLOPHARMA, patient, médicaments,
       encart Notes, zone de signature.
+- [ ] Le **bon de livraison** généré s'ouvre : le même document, **sans** la liste des médicaments.
 
 ## 2. Réception côté pharmacie (téléphone)
 
@@ -50,8 +51,8 @@ Pharmacie) sur **un téléphone**, en même temps.
 
 ## 4. Modification et report
 
-- [ ] Florence corrige l'adresse (**Modifier les informations**) → le bon de livraison
-      est régénéré avec la nouvelle adresse ; l'historique indique « Modification : adresse ».
+- [ ] Florence corrige l'adresse (**Modifier les informations**) → le bon de commande et le
+      bon de livraison sont régénérés avec la nouvelle adresse ; l'historique indique « Modification : adresse ».
 - [ ] La pharmacie reporte une demande au lendemain → elle change de colonne dans la
       vue semaine ; l'historique indique le report.
 - [ ] Dans la vue semaine sur ordinateur, glisser une carte vers un autre jour la reporte.

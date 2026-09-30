@@ -58,7 +58,7 @@ function LigneDocument({ doc }: { doc: DocumentJoint }) {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-600 text-gray-800 leading-tight">
             {cfg.label}
-            {doc.type === 'bon_livraison' && (
+            {(doc.type === 'bon_livraison' || doc.type === 'bon_commande') && (
               <span className="ml-1.5 text-[9px] font-700 uppercase tracking-widest text-gray-400">{doc.genere ? 'généré' : 'joint'}</span>
             )}
           </p>
@@ -322,14 +322,14 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
               {documents.map(doc => <LigneDocument key={doc.id} doc={doc} />)}
               {documents.length === 0 && <p className="text-sm text-gray-400 py-3 text-center">Aucun document joint</p>}
             </div>
-            {!demande.documents.some(d => d.genere) && (
+            {!['bon_commande', 'bon_livraison'].every(t => demande.documents.some(d => d.genere && d.type === t)) && (
               <button
                 type="button"
                 disabled={occupe}
                 onClick={() => executer(onGenererBon)}
                 className="mt-2 w-full text-xs font-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl py-2 transition-colors disabled:opacity-50"
               >
-                <FileText size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Générer le bon de livraison
+                <FileText size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Générer le bon de commande et le bon de livraison
               </button>
             )}
             {/* Les deux rôles peuvent ajouter des pièces, à tout moment : le

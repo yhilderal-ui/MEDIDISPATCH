@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Archive, Bell, BellOff, CalendarDays, ChartColumn, CircleCheck, Headset, LayoutDashboard, LayoutGrid, LogOut, Pill, Plus, TriangleAlert } from 'lucide-react';
 import type { Demande, EtatVu, ModificationDemande, NouvelleDemande, Pieces, Statut, TypeDocument } from './types';
-import { publierBonGenere } from './lib/bonLivraison';
+import { publierBonsGeneres } from './lib/bonsGeneres';
 import Board from './components/Board';
 import LivreurBoard from './components/LivreurBoard';
 import CreateCardModal from './components/CreateCardModal';
@@ -175,15 +175,15 @@ export default function App() {
       const problemes: string[] = [];
       if (erreursFichiers.length) problemes.push(`certaines pièces jointes n'ont pas pu être envoyées (${erreursFichiers.join(' ; ')})`);
       try {
-        await publierBonGenere(id);
+        await publierBonsGeneres(id);
       } catch (e) {
-        problemes.push(`le bon de livraison n'a pas pu être généré (${(e as Error).message})`);
+        problemes.push(`les bons de commande et de livraison n'ont pas pu être générés (${(e as Error).message})`);
       }
       await recharger();
       if (problemes.length) {
         setErreur(`Demande ${numeroTicket} créée, mais ${problemes.join(' et ')}. Ouvrez la demande pour réessayer.`);
       } else {
-        setInfo(`Demande ${numeroTicket} créée, bon de livraison généré.`);
+        setInfo(`Demande ${numeroTicket} créée, bons de commande et de livraison générés.`);
       }
       return null;
     } catch (e) {
@@ -191,17 +191,17 @@ export default function App() {
     }
   };
 
-  // Toute modification du contenu du bon (informations, date) le régénère,
-  // en remplaçant l'ancien (décision du 29/09).
+  // Toute modification du contenu des bons (informations, date) les régénère,
+  // en remplaçant les anciens (décisions du 29/09 et du 30/09).
   const modifierPuisRegenerer = (id: string, ticket: string, action: () => Promise<void>, succes: string) =>
     agir(async () => {
       await action();
       try {
-        await publierBonGenere(id);
+        await publierBonsGeneres(id);
       } catch (e) {
-        throw new Error(`${succes.replace(/\.$/, '')}, mais le bon de livraison n'a pas pu être régénéré : ${(e as Error).message}`);
+        throw new Error(`${succes.replace(/\.$/, '')}, mais les bons n'ont pas pu être régénérés : ${(e as Error).message}`);
       }
-    }, `${succes} Bon de livraison ${ticket} mis à jour.`);
+    }, `${succes} Bons de commande et de livraison ${ticket} mis à jour.`);
 
   const handleDropCard = (id: string, jour: string) => {
     const d = demandes.find(x => x.id === id);
@@ -523,7 +523,7 @@ export default function App() {
           onModifier={(champs: ModificationDemande) =>
             modifierPuisRegenerer(ouverte.id, ouverte.numero_ticket, () => modifierDemande(ouverte.id, champs), `Demande ${ouverte.numero_ticket} modifiée.`)
           }
-          onGenererBon={() => agir(() => publierBonGenere(ouverte.id), 'Bon de livraison généré.')}
+          onGenererBon={() => agir(() => publierBonsGeneres(ouverte.id), 'Bons de commande et de livraison générés.')}
           onArchiver={async () => {
             const ticket = ouverte.numero_ticket;
             const ok = await agir(() => archiverDemande(ouverte.id), `Demande ${ticket} archivée.`);

@@ -7,9 +7,19 @@ import { formatJour } from './dates';
 import logoUrl from '../assets/logo.png';
 import type { Demande } from '../types';
 
-// Bon de livraison PDF généré à partir de la carte (décision du 29/09).
-// Il est rangé à un emplacement fixe (<id>/bon-genere.pdf) : le régénérer
-// remplace l'ancien.
+// Bons PDF générés à partir de la carte (décisions du 29/09 et du 30/09) :
+//   * bon de COMMANDE : avec la liste des médicaments, il va dans le carton,
+//     pour le patient ;
+//   * bon de LIVRAISON : le même document, sans la liste des médicaments.
+// Chacun est rangé à un emplacement fixe (<id>/bon-commande.pdf,
+// <id>/bon-livraison.pdf) : les régénérer remplace les anciens.
+
+export type ModeleBon = 'commande' | 'livraison';
+
+const MODELES: Record<ModeleBon, { titre: string; libelle: string; type: 'bon_commande' | 'bon_livraison'; fichier: string }> = {
+  commande: { titre: 'BON DE COMMANDE', libelle: 'Bon de commande', type: 'bon_commande', fichier: 'bon-commande.pdf' },
+  livraison: { titre: 'BON DE LIVRAISON', libelle: 'Bon de livraison', type: 'bon_livraison', fichier: 'bon-livraison.pdf' },
+};
 
 const MARGE = 18;
 const LARGEUR = 210 - 2 * MARGE;
@@ -47,13 +57,14 @@ type DonneesBon = Pick<
   'numero_ticket' | 'cree_le' | 'jour_livraison' | 'criticite' | 'patient_nom' | 'patient_adresse' | 'patient_telephone' | 'medicaments' | 'notes_initiales'
 >;
 
-export async function genererBonPdf(d: DonneesBon): Promise<Blob> {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+export async function genererBonPdf(d: DonneesBon, modele: ModeleBon): Promise<Blob> {
+  // compress + 'FAST' : le logo est compressé (≈ 1 Mo → quelques dizaines de Ko par bon).
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
   let y = MARGE;
 
   // En-tête émetteur
   const logo = await chargerLogo();
-  if (logo) doc.addImage(logo, 'PNG', MARGE, y, 16, 16);
+  if (logo) doc.addImage(logo, 'PNG', MARGE, y, 16, 16, 'logo', 'FAST');
   const xTexte = logo ? MARGE + 20 : MARGE;
   doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(17, 24, 39);
   doc.text(EMETTEUR.nom, xTexte, y + 5);
@@ -68,7 +79,7 @@ export async function genererBonPdf(d: DonneesBon): Promise<Blob> {
 
   // Titre et références
   doc.setFont('helvetica', 'bold').setFontSize(18).setTextColor(17, 24, 39);
-  doc.text('BON DE LIVRAISON', MARGE, y);
+  doc.text(MODELES[modele].titre, MARGE, y);
   doc.setFontSize(12).text(`N° ${d.numero_ticket}`, MARGE + LARGEUR, y, { align: 'right' });
   y += 7;
   doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(55, 65, 81);
@@ -100,22 +111,24 @@ export async function genererBonPdf(d: DonneesBon): Promise<Blob> {
   y += 4;
   separateur();
 
-  // Médicaments
-  doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(107, 114, 128);
-  doc.text('#', MARGE, y);
-  doc.text('MÉDICAMENT', MARGE + 10, y);
-  doc.text('QUANTITÉ', MARGE + LARGEUR, y, { align: 'right' });
-  y += 6;
-  doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(17, 24, 39);
-  d.medicaments.forEach((m, i) => {
-    const nom = doc.splitTextToSize(m.nom, LARGEUR - 50);
-    doc.text(String(i + 1), MARGE, y);
-    doc.text(nom, MARGE + 10, y);
-    if (m.quantite) doc.text(m.quantite, MARGE + LARGEUR, y, { align: 'right' });
-    y += nom.length * 5 + 2;
-  });
-  y += 2;
-  separateur();
+  // Médicaments : seulement sur le bon de commande
+  if (modele === 'commande') {
+    doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(107, 114, 128);
+    doc.text('#', MARGE, y);
+    doc.text('MÉDICAMENT', MARGE + 10, y);
+    doc.text('QUANTITÉ', MARGE + LARGEUR, y, { align: 'right' });
+    y += 6;
+    doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(17, 24, 39);
+    d.medicaments.forEach((m, i) => {
+      const nom = doc.splitTextToSize(m.nom, LARGEUR - 50);
+      doc.text(String(i + 1), MARGE, y);
+      doc.text(nom, MARGE + 10, y);
+      if (m.quantite) doc.text(m.quantite, MARGE + LARGEUR, y, { align: 'right' });
+      y += nom.length * 5 + 2;
+    });
+    y += 2;
+    separateur();
+  }
 
   // Encart notes (seulement s'il y en a)
   if (d.notes_initiales?.trim()) {
@@ -141,34 +154,44 @@ export async function genererBonPdf(d: DonneesBon): Promise<Blob> {
   return doc.output('blob');
 }
 
-// Génère le bon à partir de l'état actuel de la carte en base, puis le range
-// dans la carte (en remplaçant le précédent).
-export async function publierBonGenere(demandeId: string): Promise<void> {
-  const { data: d, error } = await supabase.from('demandes').select('*').eq('id', demandeId).single();
-  if (error) throw new Error(messageErreur(error));
-
-  const pdf = await genererBonPdf(d as Demande);
-  const chemin = `${demandeId}/bon-genere.pdf`;
-  const nom = `Bon de livraison ${d.numero_ticket}.pdf`;
+// Génère un bon à partir de la carte, puis le range dans la carte (en
+// remplaçant le précédent du même type).
+async function publierBon(d: Demande, modele: ModeleBon): Promise<void> {
+  const m = MODELES[modele];
+  const pdf = await genererBonPdf(d, modele);
+  const chemin = `${d.id}/${m.fichier}`;
 
   const envoi = await supabase.storage
     .from('documents')
     .upload(chemin, pdf, { contentType: 'application/pdf', upsert: true });
   if (envoi.error) throw new Error(messageErreur(envoi.error));
 
-  const fiche = { nom_fichier: nom, taille_octets: pdf.size, ajoute_le: new Date().toISOString() };
-  const existant = await supabase.from('documents').select('id').eq('demande_id', demandeId).eq('genere', true).maybeSingle();
+  const fiche = {
+    nom_fichier: `${m.libelle} ${d.numero_ticket}.pdf`,
+    chemin_fichier: chemin,
+    taille_octets: pdf.size,
+    ajoute_le: new Date().toISOString(),
+  };
+  const existant = await supabase
+    .from('documents')
+    .select('id')
+    .eq('demande_id', d.id)
+    .eq('genere', true)
+    .eq('type', m.type)
+    .maybeSingle();
   if (existant.error) throw new Error(messageErreur(existant.error));
 
   const ecriture = existant.data
     ? await supabase.from('documents').update(fiche).eq('id', existant.data.id)
-    : await supabase.from('documents').insert({
-        ...fiche,
-        demande_id: demandeId,
-        type: 'bon_livraison',
-        chemin_fichier: chemin,
-        type_mime: 'application/pdf',
-        genere: true,
-      });
+    : await supabase.from('documents').insert({ ...fiche, demande_id: d.id, type: m.type, type_mime: 'application/pdf', genere: true });
   if (ecriture.error) throw new Error(messageErreur(ecriture.error));
+}
+
+// Génère le bon de commande et le bon de livraison à partir de l'état actuel
+// de la carte en base.
+export async function publierBonsGeneres(demandeId: string): Promise<void> {
+  const { data: d, error } = await supabase.from('demandes').select('*').eq('id', demandeId).single();
+  if (error) throw new Error(messageErreur(error));
+  await publierBon(d as Demande, 'commande');
+  await publierBon(d as Demande, 'livraison');
 }

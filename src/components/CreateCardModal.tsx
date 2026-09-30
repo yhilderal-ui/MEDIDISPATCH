@@ -254,7 +254,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
             <span className={ETIQUETTE}>Pièces jointes (optionnelles)</span>
             <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 mb-2">
               <FileText size={13} className="inline -mt-0.5 mr-1" aria-hidden />
-              Un bon de livraison PDF sera généré automatiquement à partir de ces informations.
+              Deux PDF seront générés automatiquement : le bon de commande (avec les médicaments, à mettre dans le carton) et le bon de livraison (sans les médicaments).
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {PIECES.map(type => (

@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Camera, CircleCheck, CircleX, ClipboardList, CreditCard, FileText, ShieldCheck, Truck } from 'lucide-react';
+import { Camera, CircleCheck, CircleX, ClipboardList, CreditCard, FileText, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
 import type { Criticite, Statut, TypeDocument, TypePiece } from './types';
 
 // Section 7 du cahier des charges.
@@ -25,6 +25,7 @@ export const STATUT_CONFIG: Record<Statut, { label: string; court: string; color
 
 export const DOC_CONFIG: Record<TypeDocument, { Icone: LucideIcon; color: string; bg: string; label: string }> = {
   ordonnance: { Icone: FileText, color: '#7c3aed', bg: '#f5f3ff', label: 'Ordonnance' },
+  bon_commande: { Icone: ShoppingBag, color: '#b45309', bg: '#fffbeb', label: 'Bon de commande' },
   bon_livraison: { Icone: ClipboardList, color: '#0891b2', bg: '#ecfeff', label: 'Bon de livraison' },
   preuve_livraison: { Icone: Camera, color: '#059669', bg: '#f0fdf4', label: 'Preuve de livraison' },
   carte_vitale: { Icone: CreditCard, color: '#16a34a', bg: '#f0fdf4', label: 'Carte Vitale' },
