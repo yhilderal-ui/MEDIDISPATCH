@@ -40,6 +40,10 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [x] **12b. Recette** — déroulée avec Florence et la pharmacie ; **remise à zéro de la production le 29/09** (`supabase/scripts/nettoyer_donnees_test.sql` : 0 demande, 0 message, 2 comptes). Les essais se font désormais sur la base de test (`docs/ENVIRONNEMENTS.md`)
 - [x] **12c. Nom de domaine** — `medi-dispatch.fr` acheté chez OVH ; zone DNS : `@` A `216.198.79.1` et `www` CNAME vers Vercel ; `medi-dispatch.fr` redirige vers `www.medi-dispatch.fr` ; HTTPS automatique (Vercel). Renouvellement annuel chez OVH
 
+## V2 — évolutions
+
+- [ ] **Aide à la saisie des médicaments** (idée du 30/09) — suggestions dès 2 lettres, sans accents, « dol 1000 » trouve « DOLIPRANE 1000 mg, comprimé » ; les médicaments déjà choisis sur l'appareil remontent en tête ; saisie libre toujours possible. Catalogue : noms des médicaments **commercialisés** de la Base de données publique des médicaments (BDPM), dans `public/medicaments-bdpm.json`, mis à jour **le 3 de chaque mois** par GitHub (`.github/workflows/maj-medicaments.yml`, script `scripts/maj-medicaments.mjs`, garde-fous contre un fichier tronqué). Aucune donnée patient
+
 ## Écarts entre la maquette et le cahier des charges
 
 La maquette Figma Make est une bonne base visuelle, mais c'est un prototype : toutes les données

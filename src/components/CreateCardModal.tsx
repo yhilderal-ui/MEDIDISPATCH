@@ -3,6 +3,7 @@ import { FileText } from 'lucide-react';
 import type { Criticite, Medicament, NouvelleDemande, Pieces } from '../types';
 import { CRITICITE_CONFIG, DOC_CONFIG, LIBELLE_PIECE, PIECES } from '../data';
 import ChampPiece from './ChampPiece';
+import SaisieMedicament from './SaisieMedicament';
 import { aujourdhuiParis, erreurJourLivraison } from '../lib/dates';
 
 interface Props {
@@ -33,7 +34,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
   const [pieces, setPieces] = useState<Pieces>({});
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
-  const nomRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const nomRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   // Ligne à placer sous le curseur après le prochain affichage.
   const [aFocaliser, setAFocaliser] = useState<number | null>(null);
 
@@ -182,30 +183,31 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
                 {nbMedicaments} article{nbMedicaments !== 1 ? 's' : ''}
               </span>
             </div>
-            <div className="border border-gray-200 rounded-2xl overflow-hidden">
+            <div className="border border-gray-200 rounded-2xl overflow-hidden divide-y divide-gray-100">
               {medicaments.map((ligne, i) => (
-                <div key={ligne.cle} className="flex items-center border-b border-gray-100 last:border-b-0 group">
-                  <span className="pl-3 text-[11px] text-gray-300 font-mono w-6 shrink-0">{i + 1}</span>
+                <SaisieMedicament
+                  key={ligne.cle}
+                  valeur={ligne.nom}
+                  onChange={v => majLigne(i, 'nom', v)}
+                  inputRef={el => { nomRefs.current[i] = el; }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      ajouterLigne(i);
+                    }
+                    if (e.key === 'Backspace' && ligne.nom === '' && medicaments.length > 1) {
+                      e.preventDefault();
+                      retirerLigne(i);
+                      setAFocaliser(Math.max(0, i - 1));
+                    }
+                  }}
+                  ariaLabel={`Médicament ${i + 1}`}
+                  classeLigne="flex"
+                  classeChamp="flex-1 min-w-0 text-sm px-3 py-2.5 outline-none bg-transparent placeholder:text-gray-300"
+                  avant={<span className="pl-3 pt-3 text-[11px] text-gray-300 font-mono w-6 shrink-0">{i + 1}</span>}
+                >
                   <input
-                    ref={el => { nomRefs.current[i] = el; }}
-                    value={ligne.nom}
-                    onChange={e => majLigne(i, 'nom', e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        ajouterLigne(i);
-                      }
-                      if (e.key === 'Backspace' && ligne.nom === '' && medicaments.length > 1) {
-                        e.preventDefault();
-                        retirerLigne(i);
-                        setAFocaliser(Math.max(0, i - 1));
-                      }
-                    }}
-                    placeholder="Nom du médicament…"
-                    aria-label={`Médicament ${i + 1}`}
-                    className="flex-1 min-w-0 text-sm px-3 py-2.5 outline-none bg-transparent placeholder:text-gray-300"
-                  />
-                  <input
+                    data-quantite
                     value={ligne.quantite}
                     onChange={e => majLigne(i, 'quantite', e.target.value)}
                     placeholder="Qté"
@@ -222,7 +224,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
                       ×
                     </button>
                   )}
-                </div>
+                </SaisieMedicament>
               ))}
               <button
                 type="button"
