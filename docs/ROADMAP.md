@@ -36,9 +36,13 @@ Source fonctionnelle : `MEDISPATCH - CAHIER DES CHARGES.pages`.
 - [x] **10. Notifications in-app** — bandeau cliquable, son (plus insistant pour une demande urgente, coupable avec le bouton cloche), compteur dans le titre de l'onglet qui clignote en arrière-plan, notification du navigateur optionnelle ; uniquement pour les actions de l'autre compte
 - [x] **11. Archives** — une demande livrée reste dans le tableau **le jour de sa livraison** et bascule dans les Archives **à minuit** (heure de Paris), ou tout de suite avec le bouton « Archiver maintenant » (décision du 29/09, remplace le délai de 30 jours) ; vue « Archives » séparée avec recherche. la vue Archives affiche les **30 derniers jours**, les plus anciennes se retrouvent par la **recherche** (option B, décision du 29/09) ; **aucune suppression automatique** tant que la durée légale de conservation n'est pas fixée
 - [x] **12a. Affichage mobile** — en-tête compact, onglets de statut, filtres repliables, vue semaine verticale, chat plein écran, alertes en bas d'écran, installation sur l'écran d'accueil ; icônes Lucide à la place des émoticônes
-- [ ] **12d. Base de test séparée** — prévisualisations reliées à un second projet Supabase, bandeau « VERSION DE TEST » : voir `docs/ENVIRONNEMENTS.md`
-- [ ] **12b. Recette** — à dérouler avec Florence et la pharmacie, puis remise à zéro des données de test : voir `docs/RECETTE.md` (section 9) et `supabase/scripts/nettoyer_donnees_test.sql`
+- [x] **12d. Base de test séparée** — prévisualisations reliées au projet Supabase `medidispatch-test` (variables Vercel « All Pre-Production Environments »), bandeau « VERSION DE TEST » : voir `docs/ENVIRONNEMENTS.md`
+- [x] **12b. Recette** — déroulée avec Florence et la pharmacie ; **remise à zéro de la production le 29/09** (`supabase/scripts/nettoyer_donnees_test.sql` : 0 demande, 0 message, 2 comptes). Les essais se font désormais sur la base de test (`docs/ENVIRONNEMENTS.md`)
 - [x] **12c. Nom de domaine** — `medi-dispatch.fr` acheté chez OVH ; zone DNS : `@` A `216.198.79.1` et `www` CNAME vers Vercel ; `medi-dispatch.fr` redirige vers `www.medi-dispatch.fr` ; HTTPS automatique (Vercel). Renouvellement annuel chez OVH
+
+## V2 — évolutions
+
+- [ ] **Aide à la saisie des médicaments** (idée du 30/09) — suggestions dès 2 lettres, sans accents, « dol 1000 » trouve « DOLIPRANE 1000 mg, comprimé » ; les médicaments déjà choisis sur l'appareil remontent en tête ; saisie libre toujours possible. Catalogue : noms des médicaments **commercialisés** de la Base de données publique des médicaments (BDPM), dans `public/medicaments-bdpm.json`, mis à jour **le 3 de chaque mois** par GitHub (`.github/workflows/maj-medicaments.yml`, script `scripts/maj-medicaments.mjs`, garde-fous contre un fichier tronqué). Aucune donnée patient
 
 ## Écarts entre la maquette et le cahier des charges
 

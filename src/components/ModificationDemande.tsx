@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Criticite, Demande, Medicament, ModificationDemande as Champs } from '../types';
+import SaisieMedicament from './SaisieMedicament';
 import { CRITICITE_CONFIG } from '../data';
 
 interface Props {
@@ -85,17 +86,18 @@ export default function ModificationDemande({ demande, onAnnuler, onEnregistrer 
       </div>
       <div>
         <span className={ETIQUETTE}>Médicaments</span>
-        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white divide-y divide-gray-100">
           {medicaments.map((m, i) => (
-            <div key={i} className="flex items-center border-b border-gray-100 last:border-b-0">
+            <SaisieMedicament
+              key={i}
+              valeur={m.nom}
+              onChange={v => majLigne(i, 'nom', v)}
+              ariaLabel={`Médicament ${i + 1}`}
+              classeLigne="flex"
+              classeChamp="flex-1 min-w-0 text-sm px-3 py-2 outline-none bg-transparent placeholder:text-gray-300"
+            >
               <input
-                value={m.nom}
-                onChange={e => majLigne(i, 'nom', e.target.value)}
-                placeholder="Nom du médicament…"
-                aria-label={`Médicament ${i + 1}`}
-                className="flex-1 min-w-0 text-sm px-3 py-2 outline-none bg-transparent placeholder:text-gray-300"
-              />
-              <input
+                data-quantite
                 value={m.quantite}
                 onChange={e => majLigne(i, 'quantite', e.target.value)}
                 placeholder="Qté"
@@ -112,7 +114,7 @@ export default function ModificationDemande({ demande, onAnnuler, onEnregistrer 
                   ×
                 </button>
               )}
-            </div>
+            </SaisieMedicament>
           ))}
           <button
             type="button"

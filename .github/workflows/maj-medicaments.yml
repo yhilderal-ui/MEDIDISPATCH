@@ -1,0 +1,42 @@
+# Met à jour le catalogue des médicaments (BDPM) utilisé pour l'aide à la saisie.
+# - le 3 de chaque mois, sur main (le site se met à jour tout seul) ;
+# - à la demande : GitHub → Actions → « Catalogue des médicaments » → Run workflow ;
+# - quand le script change sur une branche de travail.
+name: Catalogue des médicaments
+
+on:
+  schedule:
+    - cron: '17 4 3 * *'
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths:
+      - scripts/maj-medicaments.mjs
+      - .github/workflows/maj-medicaments.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: maj-medicaments-${{ github.ref }}
+
+jobs:
+  maj:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/maj-medicaments.mjs
+      - name: Enregistrer le catalogue s'il a changé
+        run: |
+          git add public/medicaments-bdpm.json
+          if git diff --cached --quiet; then
+            echo "Catalogue inchangé."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Met à jour le catalogue des médicaments (BDPM)"
+          git push
