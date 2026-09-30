@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { villeDepuisAdresse } from './adresse';
 import { debutJourParisISO, depuisJour, formatJour, heureMurParis, versJour, ajouterJours } from './dates';
 import type { Chiffres, Periode, Statistiques } from './statistiques';
 import type { Medicament } from '../types';
@@ -66,11 +67,6 @@ async function chargerDemandes(p: Periode): Promise<DemandeExport[]> {
   }
 }
 
-// « 12 rue X, 75013 Paris » → « 75013 Paris ».
-export function villeDepuisAdresse(adresse: string): string {
-  const m = adresse.match(/\b(\d{5})\s+([^,\n]+?)\s*$/);
-  return m ? `${m[1]} ${m[2]}` : '';
-}
 
 function jourExcel(jour: string): Date {
   const [a, m, j] = jour.split('-').map(Number);

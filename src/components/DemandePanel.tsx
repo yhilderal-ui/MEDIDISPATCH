@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Archive, CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
 import type { Demande, DocumentJoint, ModificationDemande as Champs, Note, Statut, TypeDocument } from '../types';
+import BoutonsItineraire from './BoutonsItineraire';
 import ModificationDemande from './ModificationDemande';
 import HistoriqueDemande from './HistoriqueDemande';
 import { CRITICITE_CONFIG, DOC_CONFIG, LIBELLE_PIECE, PIECES, STATUT_CONFIG } from '../data';
@@ -248,6 +249,11 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
               <span className="mt-1 w-2 h-2 rounded-full bg-red-400 shrink-0" />
               <span>{demande.patient_adresse}</span>
             </p>
+            {demande.statut !== 'annulee' && demande.statut !== 'livree' && (
+              <div className="pl-4 pb-1">
+                <BoutonsItineraire adresse={demande.patient_adresse} />
+              </div>
+            )}
             <p className="flex items-center gap-2">
               <Phone size={13} className="text-gray-400 shrink-0" aria-hidden />
               <a href={`tel:${demande.patient_telephone.replace(/\s/g, '')}`} className="underline decoration-gray-300 hover:text-gray-900">
