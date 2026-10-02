@@ -14,14 +14,28 @@ export default function LoginScreen({ onSignIn, initialError, configMissing }: P
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [submitting, setSubmitting] = useState(false);
 
-  const submit = async (e: React.FormEvent) => {
+  // Les valeurs sont relues dans le formulaire au moment du clic : le
+  // remplissage automatique (gestionnaire de mots de passe, iPhone) ne prévient
+  // pas toujours l'application, qui croyait alors les champs vides.
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!email.trim() || !password) return;
+    const champs = new FormData(e.currentTarget);
+    const saisieEmail = String(champs.get('email') ?? '').trim();
+    const saisieMotDePasse = String(champs.get('password') ?? '');
+    if (!saisieEmail || !saisieMotDePasse) {
+      setError('Saisissez votre e-mail et votre mot de passe.');
+      return;
+    }
     setSubmitting(true);
     setError(null);
-    const err = await onSignIn(email.trim(), password);
-    setSubmitting(false);
-    if (err) setError(err);
+    try {
+      const err = await onSignIn(saisieEmail, saisieMotDePasse);
+      if (err) setError(err);
+    } catch (err) {
+      setError(`Connexion impossible : ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -44,7 +58,7 @@ export default function LoginScreen({ onSignIn, initialError, configMissing }: P
       >
         <p className="font-700 text-gray-900 text-base mb-1">Connexion</p>
         <p className="text-sm text-gray-400 leading-relaxed mb-5">
-          Votre rôle (Dispatcheur ou Pharmacie) est associé à votre compte.
+          Votre rôle (Dispatcheur, Pharmacie ou Livreurs) est associé à votre compte.
         </p>
 
         {configMissing && (
@@ -58,6 +72,7 @@ export default function LoginScreen({ onSignIn, initialError, configMissing }: P
         </label>
         <input
           id="email"
+          name="email"
           type="email"
           autoComplete="username"
           value={email}
@@ -70,6 +85,7 @@ export default function LoginScreen({ onSignIn, initialError, configMissing }: P
         </label>
         <input
           id="password"
+          name="password"
           type="password"
           autoComplete="current-password"
           value={password}
@@ -85,7 +101,7 @@ export default function LoginScreen({ onSignIn, initialError, configMissing }: P
 
         <button
           type="submit"
-          disabled={submitting || configMissing || !email.trim() || !password}
+          disabled={submitting || configMissing}
           className="w-full text-sm font-600 py-2.5 rounded-xl transition-colors text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-40"
         >
           {submitting ? 'Connexion…' : 'Se connecter →'}
