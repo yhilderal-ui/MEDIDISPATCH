@@ -2,7 +2,7 @@
 
 export type Criticite = 'urgent' | 'standard_prioritaire' | 'standard';
 export type Statut = 'nouvelle' | 'en_cours' | 'livree' | 'annulee';
-export type TypeDocument = 'ordonnance' | 'bon_livraison' | 'preuve_livraison' | 'carte_vitale' | 'mutuelle';
+export type TypeDocument = 'ordonnance' | 'bon_commande' | 'bon_livraison' | 'preuve_livraison' | 'carte_vitale' | 'mutuelle';
 
 // Pièces jointes proposées à la création et dans le détail (demande du 29/09).
 export type TypePiece = 'ordonnance' | 'carte_vitale' | 'mutuelle' | 'bon_livraison';
@@ -22,7 +22,7 @@ export interface DocumentJoint {
   taille_octets: number;
   type_mime: string;
   ajoute_le: string;
-  genere: boolean; // bon de livraison généré automatiquement
+  genere: boolean; // bon de commande ou de livraison généré automatiquement
 }
 
 export interface Demande {

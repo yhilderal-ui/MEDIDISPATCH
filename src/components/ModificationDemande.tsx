@@ -130,7 +130,7 @@ export default function ModificationDemande({ demande, onAnnuler, onEnregistrer 
         <textarea id="mod_notes" rows={2} value={form.notes_initiales} onChange={set('notes_initiales')} className={`${CHAMP} resize-none`} />
       </div>
       {erreur && <p role="alert" className="text-[11px] text-red-600">{erreur}</p>}
-      <p className="text-[10px] text-gray-400">Le bon de livraison généré sera mis à jour automatiquement.</p>
+      <p className="text-[10px] text-gray-400">Le bon de commande et le bon de livraison seront mis à jour automatiquement.</p>
       <div className="flex gap-2">
         <button
           type="button"

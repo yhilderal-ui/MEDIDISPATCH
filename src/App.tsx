@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Archive, Bell, BellOff, CalendarDays, ChartColumn, CircleCheck, Headset, LayoutDashboard, LayoutGrid, LogOut, Pill, Plus, TriangleAlert } from 'lucide-react';
+import { Archive, Bell, BellOff, CalendarDays, ChartColumn, CircleCheck, LayoutDashboard, LayoutGrid, LogOut, Plus, TriangleAlert } from 'lucide-react';
 import type { Demande, EtatVu, ModificationDemande, NouvelleDemande, Pieces, Statut, TypeDocument } from './types';
-import { publierBonGenere } from './lib/bonLivraison';
+import { publierBonsGeneres } from './lib/bonsGeneres';
 import Board from './components/Board';
 import LivreurBoard from './components/LivreurBoard';
 import CreateCardModal from './components/CreateCardModal';
@@ -15,7 +15,8 @@ import StatistiquesView from './components/StatistiquesView';
 import { appliquerFiltres, FILTRES_VIDES, type Filtres } from './lib/filtres';
 import logo from './assets/logo.png';
 import { useAuth, type Role } from './lib/useAuth';
-import { supabaseConfigured } from './lib/supabase';
+import { COULEUR_ROLE, droits as droitsDuRole, ICONE_ROLE, LIBELLE_ROLE } from './lib/roles';
+import { supabase, supabaseConfigured } from './lib/supabase';
 import {
   changerStatut,
   creerDemande,
@@ -49,7 +50,19 @@ export default function App() {
   const role: Role | null = auth.status === 'signed_in' ? auth.user.role : null;
   const userName = auth.status === 'signed_in' ? auth.user.name : '';
   const userId = auth.status === 'signed_in' ? auth.user.id : null;
-  const chat = useChat(userId);
+  const droits = role ? droitsDuRole(role) : null;
+  // Le compte Livreurs n'a pas de messagerie (décision du 30/09).
+  const chat = useChat(droits?.chat ? userId : null);
+
+  // Noms des comptes (Florence, Pharmacie, Livreurs), pour « Vue par … ».
+  const [comptes, setComptes] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!userId) return;
+    supabase
+      .from('profils')
+      .select('id, nom')
+      .then(({ data }) => setComptes(Object.fromEntries((data ?? []).map(p => [p.id, p.nom]))));
+  }, [userId]);
 
   const [demandes, setDemandes] = useState<Demande[]>([]);
   const [chargement, setChargement] = useState(true);
@@ -175,15 +188,15 @@ export default function App() {
       const problemes: string[] = [];
       if (erreursFichiers.length) problemes.push(`certaines pièces jointes n'ont pas pu être envoyées (${erreursFichiers.join(' ; ')})`);
       try {
-        await publierBonGenere(id);
+        await publierBonsGeneres(id);
       } catch (e) {
-        problemes.push(`le bon de livraison n'a pas pu être généré (${(e as Error).message})`);
+        problemes.push(`les bons de commande et de livraison n'ont pas pu être générés (${(e as Error).message})`);
       }
       await recharger();
       if (problemes.length) {
         setErreur(`Demande ${numeroTicket} créée, mais ${problemes.join(' et ')}. Ouvrez la demande pour réessayer.`);
       } else {
-        setInfo(`Demande ${numeroTicket} créée, bon de livraison généré.`);
+        setInfo(`Demande ${numeroTicket} créée, bons de commande et de livraison générés.`);
       }
       return null;
     } catch (e) {
@@ -191,17 +204,17 @@ export default function App() {
     }
   };
 
-  // Toute modification du contenu du bon (informations, date) le régénère,
-  // en remplaçant l'ancien (décision du 29/09).
+  // Toute modification du contenu des bons (informations, date) les régénère,
+  // en remplaçant les anciens (décisions du 29/09 et du 30/09).
   const modifierPuisRegenerer = (id: string, ticket: string, action: () => Promise<void>, succes: string) =>
     agir(async () => {
       await action();
       try {
-        await publierBonGenere(id);
+        await publierBonsGeneres(id);
       } catch (e) {
-        throw new Error(`${succes.replace(/\.$/, '')}, mais le bon de livraison n'a pas pu être régénéré : ${(e as Error).message}`);
+        throw new Error(`${succes.replace(/\.$/, '')}, mais les bons n'ont pas pu être régénérés : ${(e as Error).message}`);
       }
-    }, `${succes} Bon de livraison ${ticket} mis à jour.`);
+    }, `${succes} Bons de commande et de livraison ${ticket} mis à jour.`);
 
   const handleDropCard = (id: string, jour: string) => {
     const d = demandes.find(x => x.id === id);
@@ -292,20 +305,25 @@ export default function App() {
           </div>
         </button>
 
-        <div
-          className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-600 shrink-0"
-          style={role === 'dispatcher' ? { background: '#f3f4f6', color: '#111827' } : { background: '#f5f3ff', color: '#7c3aed' }}
-          title={role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie'}
-        >
-          {role === 'dispatcher' ? <Headset size={14} aria-hidden /> : <Pill size={14} aria-hidden />}
-          <span className="hidden sm:inline">{role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie'}</span>
-          {userName && userName !== (role === 'dispatcher' ? 'Dispatcheur' : 'Pharmacie') && (
-            <span className="hidden xl:inline opacity-60">— {userName}</span>
-          )}
-        </div>
+        {(() => {
+          const IconeRole = ICONE_ROLE[role];
+          const libelle = LIBELLE_ROLE[role];
+          return (
+            <div
+              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-600 shrink-0"
+              style={{ background: COULEUR_ROLE[role].fond, color: COULEUR_ROLE[role].texte }}
+              title={libelle}
+            >
+              <IconeRole size={14} aria-hidden />
+              <span className="hidden sm:inline">{libelle}</span>
+              {userName && userName !== libelle && <span className="hidden xl:inline opacity-60">— {userName}</span>}
+            </div>
+          );
+        })()}
 
         <div className="flex items-center gap-1 sm:gap-3 xl:gap-4 shrink-0">
           {/* Navigation principale : tableau des livraisons ou statistiques */}
+          {droits?.statistiques && (
           <nav className="flex items-center gap-0.5 bg-gray-100 p-0.5 rounded-xl" aria-label="Navigation">
             {([
               [false, 'Tableau', LayoutDashboard, 'Tableau des livraisons'],
@@ -334,6 +352,7 @@ export default function App() {
               );
             })}
           </nav>
+          )}
           <button
             type="button"
             onClick={notif.basculerSon}
@@ -365,7 +384,7 @@ export default function App() {
             <span className="pulse-dot w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
             <span className="font-mono">{actives.length} demandes actives</span>
           </div>
-          {role === 'dispatcher' && (
+          {droits?.creer && (
             <button
               type="button"
               onClick={() => setShowModal(true)}
@@ -408,7 +427,7 @@ export default function App() {
           <div className="h-full flex items-center justify-center">
             <p className="text-xs text-gray-400 font-mono">Chargement des demandes…</p>
           </div>
-        ) : vueStatistiques ? (
+        ) : vueStatistiques && droits?.statistiques ? (
           <div className="h-full flex flex-col px-4 sm:px-6 pt-5">
             <div className="flex items-center gap-2 mb-4 shrink-0">
               <h2 className="text-xs font-700 uppercase tracking-widest text-gray-400">Statistiques</h2>
@@ -498,7 +517,14 @@ export default function App() {
             </div>
             <div className="mb-3 shrink-0">{barreFiltres}</div>
             <div className="flex-1 min-h-0">
-              <LivreurBoard key={accueil} demandes={filtrees} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} />
+              <LivreurBoard
+                key={accueil}
+                demandes={filtrees}
+                onOpen={ouvrir}
+                onDropCard={handleDropCard}
+                etats={etats}
+                vueInitiale={role === 'livreur' ? 'tournee' : 'kanban'}
+              />
             </div>
           </div>
         )}
@@ -509,6 +535,7 @@ export default function App() {
           demande={ouverte}
           role={role}
           utilisateurId={userId}
+          comptes={comptes}
           onClose={() => setOuverteId(null)}
           onSupprimer={async () => {
             const ticket = ouverte.numero_ticket;
@@ -523,7 +550,7 @@ export default function App() {
           onModifier={(champs: ModificationDemande) =>
             modifierPuisRegenerer(ouverte.id, ouverte.numero_ticket, () => modifierDemande(ouverte.id, champs), `Demande ${ouverte.numero_ticket} modifiée.`)
           }
-          onGenererBon={() => agir(() => publierBonGenere(ouverte.id), 'Bon de livraison généré.')}
+          onGenererBon={() => agir(() => publierBonsGeneres(ouverte.id), 'Bons de commande et de livraison générés.')}
           onArchiver={async () => {
             const ticket = ouverte.numero_ticket;
             const ok = await agir(() => archiverDemande(ouverte.id), `Demande ${ticket} archivée.`);
@@ -540,6 +567,7 @@ export default function App() {
 
       <Alertes alertes={notif.alertes} onActiver={notif.activer} onFermer={notif.fermer} />
 
+      {droits?.chat && (
       <Chat
         utilisateurId={userId}
         role={role}
@@ -552,6 +580,7 @@ export default function App() {
         ouvrirSignal={chatSignal}
         onOuvertChange={setChatOuvert}
       />
+      )}
     </div>
   );
 }

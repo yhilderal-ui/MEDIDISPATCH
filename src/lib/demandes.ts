@@ -117,7 +117,7 @@ export async function deposerDocument(demandeId: string, type: TypeDocument, fic
 // Crée la demande puis envoie les pièces jointes. Si l'envoi d'un fichier
 // échoue, la demande est quand même enregistrée (rien ne se perd) et on
 // renvoie les erreurs pour que l'utilisateur ajoute les fichiers ensuite.
-// Le bon PDF généré est produit ensuite (voir bonLivraison.ts).
+// Les bons PDF générés (commande et livraison) sont produits ensuite (voir bonsGeneres.ts).
 export async function creerDemande(
   demande: NouvelleDemande,
   pieces: Pieces,

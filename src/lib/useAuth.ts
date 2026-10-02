@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
-// Rôles côté interface (hérités de la maquette) ↔ rôles en base.
-export type Role = 'dispatcher' | 'livreur';
+// Rôles côté interface ↔ rôles en base (le rôle « livraison » en base est,
+// pour des raisons historiques, le compte Pharmacie).
+export type Role = 'dispatcher' | 'pharmacie' | 'livreur';
 
 const ROLE_FROM_DB: Record<string, Role> = {
   dispatcheur: 'dispatcher',
-  livraison: 'livreur',
+  livraison: 'pharmacie',
+  livreur: 'livreur',
 };
 
 export interface CurrentUser {

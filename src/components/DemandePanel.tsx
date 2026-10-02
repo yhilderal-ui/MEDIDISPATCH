@@ -8,11 +8,14 @@ import { CRITICITE_CONFIG, DOC_CONFIG, LIBELLE_PIECE, PIECES, STATUT_CONFIG } fr
 import { aujourdhuiParis, erreurJourLivraison, formatHorodatage, formatJour } from '../lib/dates';
 import { ajouterNote, lienDocument, listerNotes, messageErreur, surveillerNotes } from '../lib/demandes';
 import type { Role } from '../lib/useAuth';
+import { droits } from '../lib/roles';
 
 interface Props {
   demande: Demande;
   role: Role;
   utilisateurId: string;
+  // Nom de chaque compte (Florence, Pharmacie, Livreurs), par identifiant.
+  comptes: Record<string, string>;
   onClose: () => void;
   onSupprimer: () => Promise<boolean>;
   // Chaque action renvoie true si elle a réussi ; les erreurs sont affichées par App.
@@ -58,7 +61,7 @@ function LigneDocument({ doc }: { doc: DocumentJoint }) {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-600 text-gray-800 leading-tight">
             {cfg.label}
-            {doc.type === 'bon_livraison' && (
+            {(doc.type === 'bon_livraison' || doc.type === 'bon_commande') && (
               <span className="ml-1.5 text-[9px] font-700 uppercase tracking-widest text-gray-400">{doc.genere ? 'généré' : 'joint'}</span>
             )}
           </p>
@@ -146,7 +149,7 @@ function FilNotes({ demandeId }: { demandeId: string }) {
   );
 }
 
-export default function DemandePanel({ demande, role, utilisateurId, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon, onArchiver }: Props) {
+export default function DemandePanel({ demande, role, utilisateurId, comptes, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon, onArchiver }: Props) {
   const [edition, setEdition] = useState(false);
   const criticite = CRITICITE_CONFIG[demande.criticite];
   const statut = STATUT_CONFIG[demande.statut];
@@ -197,10 +200,22 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
     executer(onSupprimer);
   };
 
-  // L'autre compte a-t-il consulté la carte depuis sa dernière modification ?
-  const autre = role === 'dispatcher' ? 'la pharmacie' : 'le dispatcheur';
-  const lectureAutre = demande.lectures_demandes.find(l => l.utilisateur_id !== utilisateurId);
-  const autreAJour = lectureAutre && lectureAutre.vu_le >= demande.derniere_activite_le;
+  const peut = droits(role);
+
+  // Les autres comptes ont-ils consulté la carte depuis sa dernière modification ?
+  const autres = Object.entries(comptes).filter(([id]) => id !== utilisateurId);
+  const vus = autres.flatMap(([id, nom]) => {
+    const l = demande.lectures_demandes.find(x => x.utilisateur_id === id);
+    return l && l.vu_le >= demande.derniere_activite_le ? [`${nom} le ${formatHorodatage(l.vu_le)}`] : [];
+  });
+  const pasVus = autres
+    .filter(([id]) => {
+      const l = demande.lectures_demandes.find(x => x.utilisateur_id === id);
+      return !(l && l.vu_le >= demande.derniere_activite_le);
+    })
+    .map(([, nom]) => nom);
+  const tousAJour = autres.length > 0 && pasVus.length === 0;
+  const enumerer = (noms: string[]) => (noms.length > 1 ? `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}` : noms[0]);
 
   const modifiable = demande.statut === 'nouvelle' || demande.statut === 'en_cours';
 
@@ -267,14 +282,14 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
           </div>
 
           {/* Utile seulement si c'est moi qui ai fait la dernière modification. */}
-          {demande.derniere_activite_par === utilisateurId && (
-            <p className={`mt-3 text-[11px] flex items-center gap-1.5 ${autreAJour ? 'text-emerald-600' : 'text-gray-400'}`}>
-              <Eye size={13} className="shrink-0" aria-hidden />
-              {autreAJour
-                ? `Vue par ${autre} le ${formatHorodatage(lectureAutre!.vu_le)}`
-                : lectureAutre
-                  ? `Dernière modification pas encore vue par ${autre}`
-                  : `Pas encore consultée par ${autre}`}
+          {demande.derniere_activite_par === utilisateurId && autres.length > 0 && (
+            <p className={`mt-3 text-[11px] flex items-start gap-1.5 ${tousAJour ? 'text-emerald-600' : 'text-gray-400'}`}>
+              <Eye size={13} className="shrink-0 mt-px" aria-hidden />
+              <span>
+                {vus.length > 0 && `Vue par ${enumerer(vus)}`}
+                {vus.length > 0 && pasVus.length > 0 && ' — '}
+                {pasVus.length > 0 && `${vus.length > 0 ? 'pas' : 'Pas'} encore vue par ${enumerer(pasVus)}`}
+              </span>
             </p>
           )}
 
@@ -288,7 +303,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
 
         {/* Corps */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-          {modifiable && !edition && (
+          {modifiable && !edition && peut.modifierInfos && (
             <button
               type="button"
               onClick={() => setEdition(true)}
@@ -322,14 +337,14 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
               {documents.map(doc => <LigneDocument key={doc.id} doc={doc} />)}
               {documents.length === 0 && <p className="text-sm text-gray-400 py-3 text-center">Aucun document joint</p>}
             </div>
-            {!demande.documents.some(d => d.genere) && (
+            {!['bon_commande', 'bon_livraison'].every(t => demande.documents.some(d => d.genere && d.type === t)) && (
               <button
                 type="button"
                 disabled={occupe}
                 onClick={() => executer(onGenererBon)}
                 className="mt-2 w-full text-xs font-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl py-2 transition-colors disabled:opacity-50"
               >
-                <FileText size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Générer le bon de livraison
+                <FileText size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Générer le bon de commande et le bon de livraison
               </button>
             )}
             {/* Les deux rôles peuvent ajouter des pièces, à tout moment : le
@@ -470,7 +485,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
             </div>
           )}
 
-          {demande.statut === 'annulee' && role === 'dispatcher' && (
+          {demande.statut === 'annulee' && peut.supprimer && (
             <button
               type="button"
               disabled={occupe}
@@ -481,7 +496,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
             </button>
           )}
 
-          {demande.statut === 'annulee' && (
+          {demande.statut === 'annulee' && peut.annuler && (
             <button
               type="button"
               disabled={occupe}
@@ -492,7 +507,7 @@ export default function DemandePanel({ demande, role, utilisateurId, onClose, on
             </button>
           )}
 
-          {modifiable && (
+          {modifiable && peut.annuler && (
             <button
               type="button"
               disabled={occupe}

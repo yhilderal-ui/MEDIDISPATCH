@@ -1,5 +1,5 @@
 -- =============================================================================
--- MEDIDISPATCH — Installation complète d'une base NEUVE (10 migrations).
+-- MEDIDISPATCH — Installation complète d'une base NEUVE (12 migrations).
 --
 -- ⚠️ FICHIER GÉNÉRÉ AUTOMATIQUEMENT à partir de supabase/migrations/.
 --    Ne pas le modifier à la main : lancer « npm run sql:installation ».
@@ -922,3 +922,135 @@ revoke execute on function statistiques(date, date, date, date, text) from publi
 revoke execute on function chiffres_periode(date, date) from public, anon;
 grant execute on function statistiques(date, date, date, date, text) to authenticated;
 grant execute on function chiffres_periode(date, date) to authenticated;
+
+
+-- >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+-- 0011_bon_de_commande.sql
+-- >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+-- =============================================================================
+-- MEDIDISPATCH — Bon de commande et bon de livraison générés (décision du 30/09).
+--
+-- Le document généré jusqu'ici (avec la liste des médicaments) est le BON DE
+-- COMMANDE : il va dans le carton, pour le patient. S'y ajoute le BON DE
+-- LIVRAISON : même document, sans la liste des médicaments.
+-- Les deux sont générés à partir de la carte et REMPLACÉS à chaque modification.
+--
+-- Sans danger si on le relance.
+-- =============================================================================
+
+-- Nouveau type de document.
+alter type type_document add value if not exists 'bon_commande';
+
+-- Un document généré par type et par demande (au lieu d'un seul par demande).
+drop index if exists documents_un_bon_genere_par_demande;
+create unique index if not exists documents_un_bon_genere_par_type
+  on documents (demande_id, type) where genere;
+
+-- Les fichiers générés portent un nom fixe : on les écrase à chaque mise à jour.
+-- (bon-genere.pdf : ancien nom, gardé pour les demandes déjà créées.)
+drop policy if exists "fichiers_remplacement_bon_genere" on storage.objects;
+create policy "fichiers_remplacement_bon_genere" on storage.objects
+  for update to authenticated
+  using (
+    bucket_id = 'documents'
+    and (name like '%/bon-genere.pdf' or name like '%/bon-commande.pdf' or name like '%/bon-livraison.pdf')
+    and public.est_utilisateur_autorise()
+  )
+  with check (
+    bucket_id = 'documents'
+    and (name like '%/bon-genere.pdf' or name like '%/bon-commande.pdf' or name like '%/bon-livraison.pdf')
+    and public.est_utilisateur_autorise()
+  );
+
+
+-- >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+-- 0012_compte_livreurs.sql
+-- >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+-- =============================================================================
+-- MEDIDISPATCH — Troisième compte « Livreurs » (décision du 30/09).
+--
+-- Compte partagé entre les livreurs, distinct du compte Pharmacie (comptoir).
+-- Droits limités à la livraison : passer une demande « En cours » puis
+-- « Livrée », ajouter photo et documents, écrire des notes, reporter,
+-- archiver. Pas d'annulation, pas de modification des informations, pas de
+-- chat (la messagerie reste entre Florence et la Pharmacie).
+--
+-- Sans danger si on le relance.
+-- =============================================================================
+
+alter type role_utilisateur add value if not exists 'livreur';
+
+-- Vrai si la personne connectée utilise le compte Livreurs.
+-- (Comparaison en texte : la nouvelle valeur ci-dessus n'est utilisable
+-- qu'après la fin de ce script.)
+create or replace function est_livreur()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from profils where id = auth.uid() and role::text = 'livreur');
+$$;
+
+
+-- -----------------------------------------------------------------------------
+-- 1. Garde-fou : ce que le compte Livreurs ne peut pas modifier.
+-- -----------------------------------------------------------------------------
+
+create or replace function limiter_livreurs()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if not est_livreur() then
+    return new;
+  end if;
+
+  if new.statut is distinct from old.statut and (new.statut = 'annulee' or old.statut = 'annulee') then
+    raise exception 'Le compte Livreurs ne peut pas annuler ni réactiver une demande.'
+      using errcode = 'insufficient_privilege';
+  end if;
+
+  if (new.patient_nom, new.patient_adresse, new.patient_telephone, new.medicaments,
+      new.criticite, new.notes_initiales)
+     is distinct from
+     (old.patient_nom, old.patient_adresse, old.patient_telephone, old.medicaments,
+      old.criticite, old.notes_initiales) then
+    raise exception 'Le compte Livreurs ne peut pas modifier les informations de la demande.'
+      using errcode = 'insufficient_privilege';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists demandes_limiter_livreurs on demandes;
+create trigger demandes_limiter_livreurs
+  before update on demandes
+  for each row execute function limiter_livreurs();
+
+
+-- -----------------------------------------------------------------------------
+-- 2. Chat : réservé à Florence et à la Pharmacie.
+-- -----------------------------------------------------------------------------
+
+drop policy if exists "messages_lecture" on messages;
+create policy "messages_lecture" on messages
+  for select to authenticated using (est_utilisateur_autorise() and not est_livreur());
+
+drop policy if exists "messages_envoi" on messages;
+create policy "messages_envoi" on messages
+  for insert to authenticated with check (est_utilisateur_autorise() and not est_livreur() and auteur = auth.uid());
+
+
+-- -----------------------------------------------------------------------------
+-- 3. Création de demandes : pas pour le compte Livreurs.
+-- -----------------------------------------------------------------------------
+
+drop policy if exists "demandes_creation" on demandes;
+create policy "demandes_creation" on demandes
+  for insert to authenticated with check (est_utilisateur_autorise() and not est_livreur() and cree_par = auth.uid());

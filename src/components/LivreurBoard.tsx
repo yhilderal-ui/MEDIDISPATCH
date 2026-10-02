@@ -17,6 +17,8 @@ interface Props {
   onOpen: (demande: Demande) => void;
   onDropCard: (demandeId: string, jour: string) => void;
   etats: Record<string, EtatVu>;
+  // Écran d'arrivée : la Tournée pour le compte Livreurs, le tableau sinon.
+  vueInitiale?: Vue;
 }
 
 function MedicalCard({ demande, onClick, etatVu }: { demande: Demande; onClick: () => void; etatVu: EtatVu }) {
@@ -107,9 +109,9 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile }: {
   );
 }
 
-export default function LivreurBoard({ demandes, onOpen, onDropCard, etats }: Props) {
+export default function LivreurBoard({ demandes, onOpen, onDropCard, etats, vueInitiale = 'kanban' }: Props) {
   const [tri, setTri] = useState<Tri>('date');
-  const [vue, setVue] = useState<Vue>('kanban');
+  const [vue, setVue] = useState<Vue>(vueInitiale);
   const [onglet, setOnglet] = useState<Statut>('nouvelle');
   const [debutSemaine, setDebutSemaine] = useState<Date>(() => lundiDeLaSemaine(new Date()));
 
