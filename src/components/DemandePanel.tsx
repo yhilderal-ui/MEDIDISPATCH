@@ -199,16 +199,15 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
   };
 
   const supprimer = () => {
-    const saisie = window.prompt(
-      `Suppression DÉFINITIVE de la demande ${demande.numero_ticket} et de ses documents.\n` +
-        `Cette action est irréversible.\n\nTapez ${demande.numero_ticket} pour confirmer :`,
-    );
-    if (saisie === null) return;
-    if (saisie.trim().toUpperCase() !== demande.numero_ticket) {
-      window.alert('Numéro de ticket incorrect : la demande n\'a pas été supprimée.');
-      return;
+    // Simple confirmation (décision du 03/10 : ne plus retaper le n° de ticket).
+    if (
+      window.confirm(
+        `Supprimer DÉFINITIVEMENT la demande ${demande.numero_ticket} (${demande.patient_nom}) et ses documents ?\n` +
+          'Cette action est irréversible.',
+      )
+    ) {
+      executer(onSupprimer);
     }
-    executer(onSupprimer);
   };
 
   const peut = droits(role);

@@ -74,8 +74,8 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 ## 7. Annulation et suppression
 
 - [ ] La pharmacie peut **annuler** une demande (avec confirmation).
-- [ ] Seule Florence voit **Supprimer définitivement** sur une demande annulée ; il faut
-      taper le numéro de ticket.
+- [ ] Seule Florence voit **Supprimer définitivement** sur une demande annulée ; une simple
+      confirmation (OK / Annuler) suffit, sans retaper le numéro de ticket.
 - [ ] La carte disparaît des deux écrans.
 
 ## 7 bis. Compte Livreurs (téléphone du livreur)
