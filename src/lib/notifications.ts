@@ -161,7 +161,10 @@ export function useNotifications({ utilisateurId, demandes, chargement, messages
       nouvelles.push({
         id: `${id}-${d.derniere_activite_le}`,
         genre: etat === 'nouvelle' ? 'nouvelle' : 'maj',
-        titre: etat === 'nouvelle' ? `Nouvelle demande ${d.numero_ticket}` : `Demande ${d.numero_ticket} mise à jour`,
+        titre:
+          d.nature === 'retour'
+            ? etat === 'nouvelle' ? `Nouveau retour ${d.numero_ticket}` : `Retour ${d.numero_ticket} mis à jour`
+            : etat === 'nouvelle' ? `Nouvelle demande ${d.numero_ticket}` : `Demande ${d.numero_ticket} mise à jour`,
         detail: `${d.patient_nom} — ${crit.label}`,
         urgente: d.criticite === 'urgent',
         demandeId: id,

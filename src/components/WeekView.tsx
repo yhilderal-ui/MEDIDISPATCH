@@ -1,7 +1,8 @@
 import type { Demande, EtatVu } from '../types';
 import BadgeCriticite from './BadgeCriticite';
 import BadgeVu from './BadgeVu';
-import { CRITICITE_CONFIG, STATUT_CONFIG } from '../data';
+import { CRITICITE_CONFIG, statutAffiche } from '../data';
+import BadgeNature from './BadgeNature';
 import { ajouterJours, aujourdhuiParis, moisCourt, versJour } from '../lib/dates';
 
 interface Props {
@@ -16,7 +17,7 @@ const JOURS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
 function WeekCard({ demande, onClick, etatVu }: { demande: Demande; onClick: () => void; etatVu: EtatVu }) {
   const criticite = CRITICITE_CONFIG[demande.criticite];
-  const statut = STATUT_CONFIG[demande.statut];
+  const statut = statutAffiche(demande);
 
   return (
     <button
@@ -36,6 +37,9 @@ function WeekCard({ demande, onClick, etatVu }: { demande: Demande; onClick: () 
           </span>
         </div>
         {etatVu && <div className="mb-1"><BadgeVu etat={etatVu} compact /></div>}
+        {(demande.nature === 'retour' || demande.reliquat_de) && (
+          <div className="mb-1 flex flex-wrap gap-1"><BadgeNature demande={demande} /></div>
+        )}
         <p className="font-600 text-gray-900 text-[11px] leading-tight truncate">{demande.patient_nom}</p>
         <p className="text-[10px] text-gray-400 truncate mt-0.5">{demande.patient_adresse}</p>
         <div className="mt-1.5 flex">

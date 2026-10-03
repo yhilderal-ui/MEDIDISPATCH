@@ -20,6 +20,8 @@ interface DemandeExport {
   cree_le: string;
   jour_livraison: string;
   statut: 'nouvelle' | 'en_cours' | 'livree' | 'annulee';
+  nature: 'livraison' | 'retour';
+  reliquat_de: string | null;
   livree_le: string | null;
   criticite: 'urgent' | 'standard_prioritaire' | 'standard';
   patient_adresse: string;
@@ -41,8 +43,9 @@ const CRITICITES: Record<DemandeExport['criticite'], string> = {
 };
 
 const INDICATEURS: [keyof Chiffres, string][] = [
-  ['creees', 'Demandes créées'],
+  ['creees', 'Livraisons créées'],
   ['livrees', 'Livrées'],
+  ['retours', 'Retours récupérés'],
   ['reportees', 'Reportées'],
   ['annulees', 'Annulées'],
 ];
@@ -57,7 +60,7 @@ async function chargerDemandes(p: Periode): Promise<DemandeExport[]> {
   for (let debut = 0; ; debut += PAR_PAGE) {
     const { data, error } = await supabase
       .from('demandes')
-      .select('numero_ticket, cree_le, jour_livraison, statut, livree_le, criticite, patient_adresse, medicaments, historique(evenement)')
+      .select('numero_ticket, cree_le, jour_livraison, statut, nature, reliquat_de, livree_le, criticite, patient_adresse, medicaments, historique(evenement)')
       .or(`and(cree_le.gte.${de},cree_le.lt.${a}),and(livree_le.gte.${de},livree_le.lt.${a})`)
       .order('cree_le')
       .range(debut, debut + PAR_PAGE - 1);
@@ -131,13 +134,23 @@ export async function exporterStatistiques(
     ...stats.medicaments.map((m, i) => [i + 1, m.nom, m.demandes]),
   ];
 
+  // N° de ticket des commandes d'origine des reliquats (colonne « Reliquat de »).
+  const idsOrigine = [...new Set(demandes.map(d => d.reliquat_de).filter((x): x is string => !!x))];
+  const ticketsOrigine = new Map<string, string>();
+  if (idsOrigine.length) {
+    const { data } = await supabase.from('demandes').select('id, numero_ticket').in('id', idsOrigine);
+    for (const o of data ?? []) ticketsOrigine.set(o.id as string, o.numero_ticket as string);
+  }
+
   const feuilleDemandes: SheetData = [
-    entete(['N° de ticket', 'Créée le', 'Livraison prévue', 'Statut', 'Livrée le', 'Criticité', 'Ville', 'Reports', 'Médicaments']),
+    entete(['N° de ticket', 'Type', 'Reliquat de', 'Créée le', 'Livraison prévue', 'Statut', 'Livrée le', 'Criticité', 'Ville', 'Reports', 'Médicaments']),
     ...demandes.map(d => [
       d.numero_ticket,
+      d.nature === 'retour' ? 'Retour' : 'Livraison',
+      d.reliquat_de ? (ticketsOrigine.get(d.reliquat_de) ?? 'oui') : '',
       { value: heureMurParis(d.cree_le), format: 'dd/mm/yyyy hh:mm' },
       { value: jourExcel(d.jour_livraison), format: 'dd/mm/yyyy' },
-      STATUTS[d.statut],
+      d.nature === 'retour' && d.statut === 'livree' ? 'Récupéré' : STATUTS[d.statut],
       d.livree_le ? { value: heureMurParis(d.livree_le), format: 'dd/mm/yyyy hh:mm' } : null,
       CRITICITES[d.criticite],
       villeDepuisAdresse(d.patient_adresse),
@@ -153,7 +166,7 @@ export async function exporterStatistiques(
     {
       data: feuilleDemandes,
       sheet: 'Détail des demandes',
-      columns: [{ width: 12 }, { width: 17 }, { width: 15 }, { width: 20 }, { width: 17 }, { width: 19 }, { width: 26 }, { width: 8 }, { width: 80 }],
+      columns: [{ width: 12 }, { width: 10 }, { width: 12 }, { width: 17 }, { width: 15 }, { width: 20 }, { width: 17 }, { width: 19 }, { width: 26 }, { width: 8 }, { width: 80 }],
       stickyRowsCount: 1,
     },
   ]).toFile(`MediDispatch statistiques ${periode.debut} au ${periode.fin}.xlsx`);

@@ -10,6 +10,7 @@ export type Preset = 'semaine' | 'mois' | 'mois_precedent' | '90_jours' | 'annee
 export interface Chiffres {
   creees: number;
   livrees: number;
+  retours: number; // retours récupérés (migration 0013)
   reportees: number;
   annulees: number;
 }

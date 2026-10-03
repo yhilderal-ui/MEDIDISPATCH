@@ -2,6 +2,8 @@
 
 export type Criticite = 'urgent' | 'standard_prioritaire' | 'standard';
 export type Statut = 'nouvelle' | 'en_cours' | 'livree' | 'annulee';
+// Livraison chez le patient, ou retour (aller récupérer des médicaments), décision du 03/10.
+export type Nature = 'livraison' | 'retour';
 export type TypeDocument = 'ordonnance' | 'bon_commande' | 'bon_livraison' | 'preuve_livraison' | 'carte_vitale' | 'mutuelle';
 
 // Pièces jointes proposées à la création et dans le détail (demande du 29/09).
@@ -35,6 +37,8 @@ export interface Demande {
   criticite: Criticite;
   jour_livraison: string; // AAAA-MM-JJ
   statut: Statut;
+  nature: Nature;
+  reliquat_de: string | null; // carte d'origine quand celle-ci est un reliquat
   notes_initiales: string | null;
   cree_le: string;
   mis_a_jour_le: string;
@@ -58,6 +62,7 @@ export interface NouvelleDemande {
   criticite: Criticite;
   jour_livraison: string;
   notes_initiales: string | null;
+  nature: Nature;
 }
 
 export type ModificationDemande = Pick<

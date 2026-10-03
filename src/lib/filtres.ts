@@ -1,4 +1,4 @@
-import type { Criticite, Demande, Statut } from '../types';
+import type { Criticite, Demande, Nature, Statut } from '../types';
 import { ajouterJours, aujourdhuiParis, depuisJour, lundiDeLaSemaine, versJour } from './dates';
 
 // Recherche et filtres communs aux deux rôles (cahier des charges, section 7bis).
@@ -9,14 +9,15 @@ export interface Filtres {
   recherche: string;
   statut: Statut | 'tous';
   criticite: Criticite | 'toutes';
+  nature: Nature | 'toutes'; // livraisons ou retours (décision du 03/10)
   date: FiltreDate;
   jour: string; // utilisé quand date === 'jour'
 }
 
-export const FILTRES_VIDES: Filtres = { recherche: '', statut: 'tous', criticite: 'toutes', date: 'toutes', jour: '' };
+export const FILTRES_VIDES: Filtres = { recherche: '', statut: 'tous', criticite: 'toutes', nature: 'toutes', date: 'toutes', jour: '' };
 
 export function filtresActifs(f: Filtres): boolean {
-  return f.recherche.trim() !== '' || f.statut !== 'tous' || f.criticite !== 'toutes' || f.date !== 'toutes';
+  return f.recherche.trim() !== '' || f.statut !== 'tous' || f.criticite !== 'toutes' || f.nature !== 'toutes' || f.date !== 'toutes';
 }
 
 // Enlève les accents et la casse : « Hélène » se trouve en tapant « helene ».
@@ -49,6 +50,7 @@ export function appliquerFiltres(demandes: Demande[], f: Filtres): Demande[] {
       (!q || normaliser(d.patient_nom).includes(q) || normaliser(d.numero_ticket).includes(q)) &&
       (f.statut === 'tous' || d.statut === f.statut) &&
       (f.criticite === 'toutes' || d.criticite === f.criticite) &&
+      (f.nature === 'toutes' || d.nature === f.nature) &&
       correspondDate(d.jour_livraison, f),
   );
 }

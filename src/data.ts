@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
-import { Camera, CircleCheck, CircleX, ClipboardList, CreditCard, FileText, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
-import type { Criticite, Statut, TypeDocument, TypePiece } from './types';
+import { Camera, CircleCheck, CircleX, ClipboardList, CreditCard, FileText, PackageCheck, ShieldCheck, ShoppingBag, Truck, Undo2 } from 'lucide-react';
+import type { Criticite, Demande, Nature, Statut, TypeDocument, TypePiece } from './types';
 
 // Section 7 du cahier des charges.
 export const CRITICITE_CONFIG: Record<Criticite, { label: string; color: string; bg: string }> = {
@@ -40,3 +40,19 @@ export const LIBELLE_PIECE: Record<TypePiece, string> = {
   mutuelle: 'Mutuelle',
   bon_livraison: 'Bon de livraison complémentaire',
 };
+
+// Livraison ou retour (décision du 03/10).
+export const NATURE_CONFIG: Record<Nature, { label: string; Icone: LucideIcon; color: string; bg: string }> = {
+  livraison: { label: 'Livraison', Icone: PackageCheck, color: '#0f766e', bg: '#f0fdfa' },
+  retour: { label: 'Retour', Icone: Undo2, color: '#b45309', bg: '#fffbeb' },
+};
+
+// Statut tel qu'affiché : pour un retour, « En cours de récupération » puis
+// « Récupéré » au lieu de « En cours de livraison » et « Livrée ».
+export function statutAffiche(d: Pick<Demande, 'statut' | 'nature'>) {
+  const cfg = STATUT_CONFIG[d.statut];
+  if (d.nature !== 'retour') return cfg;
+  if (d.statut === 'livree') return { ...cfg, label: 'Récupéré', court: 'Récupéré' };
+  if (d.statut === 'en_cours') return { ...cfg, label: 'En cours de récupération' };
+  return cfg;
+}

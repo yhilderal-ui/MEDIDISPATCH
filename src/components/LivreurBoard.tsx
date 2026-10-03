@@ -3,6 +3,7 @@ import { CalendarDays, FileText, LayoutGrid, Pill, Route, TriangleAlert } from '
 import BadgeCriticite from './BadgeCriticite';
 import type { Demande, EtatVu, Statut } from '../types';
 import BadgeVu from './BadgeVu';
+import BadgeNature from './BadgeNature';
 import OngletsStatut from './OngletsStatut';
 import { CRITICITE_CONFIG, CRITICITE_ORDRE, STATUT_CONFIG } from '../data';
 import WeekView from './WeekView';
@@ -40,6 +41,7 @@ function MedicalCard({ demande, onClick, etatVu }: { demande: Demande; onClick: 
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-mono text-[11px] text-gray-400 tracking-widest">{demande.numero_ticket}</span>
             <BadgeVu etat={etatVu} />
+            <BadgeNature demande={demande} />
           </div>
           <span className="text-[11px] text-gray-500 font-500 shrink-0">{formatJour(demande.jour_livraison)}</span>
         </div>

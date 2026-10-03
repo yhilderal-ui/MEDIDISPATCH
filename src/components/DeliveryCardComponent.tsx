@@ -1,7 +1,8 @@
 import type { Demande, EtatVu } from '../types';
 import BadgeCriticite from './BadgeCriticite';
 import BadgeVu from './BadgeVu';
-import { CRITICITE_CONFIG, STATUT_CONFIG } from '../data';
+import { CRITICITE_CONFIG, statutAffiche } from '../data';
+import BadgeNature from './BadgeNature';
 import { formatJour } from '../lib/dates';
 
 interface Props {
@@ -13,7 +14,7 @@ interface Props {
 // Carte compacte du tableau dispatcheur : ticket, patient, criticité, statut.
 export default function DeliveryCardComponent({ demande, onOpen, etatVu = null }: Props) {
   const criticite = CRITICITE_CONFIG[demande.criticite];
-  const statut = STATUT_CONFIG[demande.statut];
+  const statut = statutAffiche(demande);
   const annulee = demande.statut === 'annulee';
 
   return (
@@ -31,6 +32,7 @@ export default function DeliveryCardComponent({ demande, onOpen, etatVu = null }
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-mono text-[11px] text-gray-400 tracking-widest">{demande.numero_ticket}</span>
             <BadgeVu etat={etatVu} />
+            <BadgeNature demande={demande} />
           </div>
           <span className="text-[11px] text-gray-500 font-500 shrink-0">{formatJour(demande.jour_livraison)}</span>
         </div>
