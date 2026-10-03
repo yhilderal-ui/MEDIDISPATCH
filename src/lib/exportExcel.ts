@@ -2,11 +2,12 @@ import { supabase } from './supabase';
 import { villeDepuisAdresse } from './adresse';
 import { debutJourParisISO, depuisJour, formatJour, heureMurParis, versJour, ajouterJours } from './dates';
 import type { Chiffres, Periode, Statistiques } from './statistiques';
+import type { Kilometres } from './kilometres';
 import type { Medicament } from '../types';
 import type { CellObject, SheetData } from 'write-excel-file/browser';
 
-// Export Excel de la page Statistiques : un fichier .xlsx de quatre onglets
-// (synthèse, livraisons, médicaments, détail des demandes).
+// Export Excel de la page Statistiques : un fichier .xlsx (synthèse, livraisons,
+// kilomètres, médicaments, détail des demandes).
 // Par discrétion, le détail ne contient ni nom, ni téléphone, ni adresse
 // complète du patient : seulement le code postal et la ville.
 
@@ -91,6 +92,7 @@ export async function exporterStatistiques(
   livraisons: LigneGraphique[],
   libelleRegroupement: string,
   joursSemaine: LigneGraphique[],
+  km: Kilometres | null, // déjà calculé par la page ; null si pas encore disponible
 ) {
   const [{ default: writeExcelFile }, demandes] = await Promise.all([
     import('write-excel-file/browser'),
@@ -117,6 +119,7 @@ export async function exporterStatistiques(
         avant === 0 ? '—' : { value: (actuel - avant) / avant, format: '+0%;-0%;0%' },
       ];
     }),
+    ['Km estimés (total)', km ? { value: km.total, format: '0.0' } : 'non calculé', '—', '—'],
     [],
     [{ value: 'Livraisons selon le jour de la semaine', ...GRAS }],
     entete(['Jour', 'Livraisons']),
@@ -128,6 +131,21 @@ export async function exporterStatistiques(
     ...livraisons.map(l => [l.complet, l.valeur]),
     [{ value: 'Total', ...GRAS }, { value: livraisons.reduce((t, l) => t + l.valeur, 0), ...GRAS }],
   ];
+
+  const feuilleKm: SheetData = km
+    ? [
+        entete(['Jour', 'Passages', 'Km estimés', 'Méthode']),
+        ...km.jours.map(j => [
+          { value: jourExcel(j.jour), format: 'dd/mm/yyyy' },
+          j.passages,
+          { value: j.km, format: '0.0' },
+          j.methode === 'route' ? 'Itinéraire routier (IGN)' : 'Vol d’oiseau × 1,3',
+        ]),
+        [{ value: 'Total', ...GRAS }, { value: km.passages, ...GRAS }, { value: km.total, format: '0.0', ...GRAS }, null],
+        [],
+        ['Estimation : pharmacie → adresses dans l’ordre des passages terminés (livraisons et retours) → retour à la pharmacie.'],
+      ]
+    : [['Kilomètres pas encore calculés au moment de l’export : relancez l’export une fois le calcul terminé.']];
 
   const feuilleMedicaments: SheetData = [
     entete(['Rang', 'Médicament', 'Demandes livrées qui le contenaient']),
@@ -162,6 +180,7 @@ export async function exporterStatistiques(
   await writeExcelFile([
     { data: synthese, sheet: 'Synthèse', columns: [{ width: 38 }, { width: 14 }, { width: 20 }, { width: 12 }] },
     { data: feuilleLivraisons, sheet: 'Livraisons', columns: [{ width: 42 }, { width: 12 }], stickyRowsCount: 1 },
+    { data: feuilleKm, sheet: 'Kilomètres', columns: [{ width: 14 }, { width: 10 }, { width: 12 }, { width: 26 }], stickyRowsCount: 1 },
     { data: feuilleMedicaments, sheet: 'Médicaments', columns: [{ width: 6 }, { width: 70 }, { width: 18 }], stickyRowsCount: 1 },
     {
       data: feuilleDemandes,

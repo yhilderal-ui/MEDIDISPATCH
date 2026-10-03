@@ -99,6 +99,20 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
       « Reliquat à suivre », ceux du reliquat « Reliquat de la commande … ».
 - [ ] Le compte Livreurs ne voit pas **Créer un reliquat**.
 
+## 7 quater. Kilomètres estimés (Statistiques)
+
+- [ ] Sur la base de test : lancer `supabase/scripts/demo_tournee_77.sql`, puis marquer 3 ou 4 passages
+      **Livrée** / **Récupéré** dans un ordre choisi.
+- [ ] **Statistiques → Ce mois** : « Calcul des kilomètres… » puis la tuile **Km estimés** (et le km
+      par passage) et le graphique « Kilomètres estimés ».
+- [ ] Ordre de grandeur cohérent avec Google Maps / Waze pour le trajet pharmacie → adresses dans
+      l'ordre des passages → retour à la pharmacie.
+- [ ] Recharger la page : les kilomètres s'affichent tout de suite (calcul gardé en mémoire).
+- [ ] Marquer un passage de plus : le total augmente.
+- [ ] **Exporter (Excel)** : onglet **Kilomètres** (jour, passages, km, méthode) et ligne « Km estimés »
+      dans la Synthèse.
+- [ ] Si un message signale une adresse « non reconnue », vérifier l'orthographe de l'adresse.
+
 ## 8. Robustesse
 
 - [ ] Recharger la page (F5) : rien n'est perdu.
@@ -118,6 +132,9 @@ Ces points ne sont **pas techniques** mais sont **bloquants** (cahier des charge
 - [ ] **RGPD** : base légale du traitement, information des patients, registre des
       traitements.
 - [ ] **Durée de conservation** des demandes et documents archivés.
+- [ ] **Adresses envoyées à l'extérieur** : Waze / Google Maps (bouton itinéraire) et les services
+      publics de l'IGN (kilomètres estimés, sans nom de patient) ; positions gardées dans la table
+      `adresses_geocodees`. À mentionner au registre des traitements.
 - [ ] **Mots de passe** forts et propres à chaque compte, jamais partagés par message.
 
 ---

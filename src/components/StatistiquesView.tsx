@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarX2, CircleCheck, Download, FilePlus2, Minus, Redo2, TrendingDown, TrendingUp, Undo2 } from 'lucide-react';
+import { CalendarX2, CircleCheck, Download, FilePlus2, Minus, Redo2, Route, TrendingDown, TrendingUp, Undo2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import GraphiqueColonnes, { type Colonne } from './GraphiqueColonnes';
 import { exporterStatistiques } from '../lib/exportExcel';
-import { ajouterJours, aujourdhuiParis, depuisJour, formatJour, moisCourt, versJour } from '../lib/dates';
+import { kilometresPeriode, type Kilometres } from '../lib/kilometres';
+import { ajouterJours, aujourdhuiParis, depuisJour, formatJour, lundiDeLaSemaine, moisCourt, versJour } from '../lib/dates';
 import {
   calculerPeriode,
   chargerStatistiques,
@@ -72,6 +73,18 @@ function colonnesLivraisons(stats: Statistiques, g: Granularite): Colonne[] {
   });
 }
 
+// Kilomètres regroupés sur les mêmes colonnes que le graphique des livraisons.
+function colonnesKm(km: Kilometres, livraisons: Colonne[], g: Granularite): Colonne[] {
+  const parCle = new Map<string, number>();
+  for (const j of km.jours) {
+    const cle = g === 'day' ? j.jour : g === 'week' ? versJour(lundiDeLaSemaine(depuisJour(j.jour))) : `${j.jour.slice(0, 7)}-01`;
+    parCle.set(cle, (parCle.get(cle) ?? 0) + j.km);
+  }
+  return livraisons.map(c => ({ ...c, valeur: Math.round(parCle.get(c.cle) ?? 0) }));
+}
+
+const formatKm = (km: number) => km.toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+
 export default function StatistiquesView() {
   const aujourdhui = aujourdhuiParis();
   const [preset, setPreset] = useState<Preset>('mois');
@@ -91,6 +104,25 @@ export default function StatistiquesView() {
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
   const [export_, setExport] = useState<{ enCours: boolean; message: string | null }>({ enCours: false, message: null });
+
+  // Kilomètres : calcul plus long (services de l'IGN), affiché à part, sans
+  // bloquer le reste de la page. Les jours déjà calculés viennent du cache.
+  const [km, setKm] = useState<{ resultat: Kilometres | null; progression: [number, number] | null; erreur: string | null }>({
+    resultat: null,
+    progression: null,
+    erreur: null,
+  });
+  useEffect(() => {
+    if (!periodeValide) return;
+    let actif = true;
+    setKm({ resultat: null, progression: [0, 0], erreur: null });
+    kilometresPeriode(periode, (fait, total) => actif && setKm(k => ({ ...k, progression: [fait, total] })))
+      .then(resultat => actif && setKm({ resultat, progression: null, erreur: null }))
+      .catch(e => actif && setKm({ resultat: null, progression: null, erreur: e instanceof Error ? e.message : String(e) }));
+    return () => {
+      actif = false;
+    };
+  }, [periode, periodeValide]);
 
   useEffect(() => {
     if (!periodeValide) return;
@@ -120,7 +152,7 @@ export default function StatistiquesView() {
     if (!stats) return;
     setExport({ enCours: true, message: null });
     try {
-      const n = await exporterStatistiques(periode, stats, livraisons, regroupement, joursSemaine);
+      const n = await exporterStatistiques(periode, stats, livraisons, regroupement, joursSemaine, km.resultat);
       setExport({ enCours: false, message: `Fichier Excel téléchargé (${n} demande${n > 1 ? 's' : ''} dans le détail).` });
     } catch (e) {
       setExport({ enCours: false, message: `Export impossible : ${e instanceof Error ? e.message : String(e)}` });
@@ -197,7 +229,7 @@ export default function StatistiquesView() {
           // Pendant un rechargement, la page garde l'affichage précédent, estompé.
           <div className={`space-y-4 transition-opacity ${chargement ? 'opacity-50' : ''}`} aria-busy={chargement}>
             {/* Chiffres clés */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {TUILES.map(({ cle, libelle, Icone, sens }) => (
                 <div key={cle} className={CARTE}>
                   <p className="text-xs text-gray-500 flex items-center gap-1.5">
@@ -208,6 +240,24 @@ export default function StatistiquesView() {
                   <Evolution actuel={stats.chiffres[cle]} precedent={stats.precedent[cle]} sens={sens} comparaison={periode.comparaison} />
                 </div>
               ))}
+              <div className={CARTE}>
+                <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                  <Route size={14} className="text-gray-400" aria-hidden />
+                  Km estimés
+                </p>
+                {km.resultat ? (
+                  <>
+                    <p className="text-3xl font-700 text-gray-900 mt-1.5 leading-none">{formatKm(km.resultat.total)}</p>
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      {km.resultat.passages > 0
+                        ? `${(km.resultat.total / km.resultat.passages).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} km par passage`
+                        : 'aucun passage'}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-2.5">{km.erreur ? 'Indisponible' : 'Calcul…'}</p>
+                )}
+              </div>
             </div>
 
             {/* Livraisons par jour / semaine / mois */}
@@ -243,6 +293,35 @@ export default function StatistiquesView() {
                 <p className="text-xs text-gray-400 text-center py-10">Aucune livraison sur cette période.</p>
               ) : (
                 <GraphiqueColonnes colonnes={livraisons} unite={['livraison', 'livraisons']} />
+              )}
+            </section>
+
+            {/* Kilomètres estimés */}
+            <section className={CARTE} aria-labelledby="titre-km">
+              <h3 id="titre-km" className={TITRE}>Kilomètres estimés</h3>
+              <p className="text-[11px] text-gray-400 mb-4">
+                Par {granularite === 'day' ? 'jour' : granularite === 'week' ? 'semaine' : 'mois'} : pharmacie → adresses dans l'ordre des passages terminés (livraisons et retours) → retour à la pharmacie
+              </p>
+              {km.erreur ? (
+                <p role="alert" className="text-xs text-red-700 text-center py-10">Impossible d'estimer les kilomètres : {km.erreur}</p>
+              ) : !km.resultat ? (
+                <p role="status" className="text-xs text-gray-400 font-mono text-center py-10">
+                  Calcul des kilomètres…{km.progression && km.progression[1] > 0 && ` ${km.progression[0]} / ${km.progression[1]} jours`}
+                </p>
+              ) : km.resultat.passages === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-10">Aucun passage terminé sur cette période.</p>
+              ) : (
+                <>
+                  <GraphiqueColonnes colonnes={colonnesKm(km.resultat, livraisons, granularite)} unite={['km', 'km']} />
+                  {(km.resultat.joursVolOiseau > 0 || km.resultat.nonLocalises > 0) && (
+                    <p className="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-2.5 py-1.5 mt-3 leading-snug">
+                      {km.resultat.joursVolOiseau > 0 &&
+                        `${km.resultat.joursVolOiseau} jour${km.resultat.joursVolOiseau > 1 ? 's' : ''} estimé${km.resultat.joursVolOiseau > 1 ? 's' : ''} à vol d'oiseau × 1,3 (service d'itinéraire indisponible, nouvel essai au prochain affichage). `}
+                      {km.resultat.nonLocalises > 0 &&
+                        `${km.resultat.nonLocalises} adresse${km.resultat.nonLocalises > 1 ? 's' : ''} non reconnue${km.resultat.nonLocalises > 1 ? 's' : ''}, non comptée${km.resultat.nonLocalises > 1 ? 's' : ''}.`}
+                    </p>
+                  )}
+                </>
               )}
             </section>
 
@@ -286,7 +365,7 @@ export default function StatistiquesView() {
             </div>
 
             <p className="text-[10px] text-gray-400 pb-2">
-              Une demande supprimée définitivement n'est plus comptée. « Reportées » et « Annulées » comptent les demandes reportées ou annulées pendant la période.
+              Une demande supprimée définitivement n'est plus comptée. « Reportées » et « Annulées » comptent les demandes reportées ou annulées pendant la période. Les kilomètres sont une estimation (itinéraire routier de l'IGN), pas un relevé du compteur.
             </p>
           </div>
         )}
