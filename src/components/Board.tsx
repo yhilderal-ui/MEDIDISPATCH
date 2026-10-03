@@ -3,18 +3,21 @@ import type { Demande, EtatVu, Statut } from '../types';
 import OngletsStatut from './OngletsStatut';
 import { STATUT_CONFIG } from '../data';
 import DeliveryCardComponent from './DeliveryCardComponent';
+import { useGlisserStatut } from '../lib/useGlisserStatut';
 
 interface Props {
   demandes: Demande[];
   onOpen: (demande: Demande) => void;
   etats: Record<string, EtatVu>;
+  onDeposerStatut?: (demande: Demande, statut: Statut) => void;
 }
 
 const COLONNES: Statut[] = ['nouvelle', 'en_cours', 'livree'];
 
-export default function Board({ demandes, onOpen, etats }: Props) {
+export default function Board({ demandes, onOpen, etats, onDeposerStatut }: Props) {
   const annulees = demandes.filter(d => d.statut === 'annulee');
   const [onglet, setOnglet] = useState<Statut>('nouvelle');
+  const glisser = useGlisserStatut(onDeposerStatut);
 
   return (
     <div className="flex flex-col gap-6 h-full min-h-0 overflow-y-auto pb-24 md:pb-4">
@@ -23,8 +26,9 @@ export default function Board({ demandes, onOpen, etats }: Props) {
         {COLONNES.map(statut => {
           const items = demandes.filter(d => d.statut === statut);
           const cfg = STATUT_CONFIG[statut];
+          const depot = glisser.colonne(statut);
           return (
-            <div key={statut} className={`${statut === onglet ? 'flex' : 'hidden'} md:flex flex-col w-full md:min-w-[240px] md:w-[240px]`}>
+            <div key={statut} {...depot.props} className={`${statut === onglet ? 'flex' : 'hidden'} md:flex flex-col w-full md:min-w-[240px] md:w-[240px]`}>
               <div className="hidden md:flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
                   <cfg.Icone size={15} style={{ color: cfg.color }} aria-hidden />
@@ -39,14 +43,19 @@ export default function Board({ demandes, onOpen, etats }: Props) {
                   {items.length}
                 </span>
               </div>
-              <div className="flex flex-col gap-3">
+              <div
+                className={`flex flex-col gap-3 rounded-2xl transition-colors ${depot.possible ? 'outline-2 outline-dashed outline-offset-4 min-h-24' : ''}`}
+                style={depot.possible ? { outlineColor: cfg.color + (depot.survolee ? '' : '66'), background: depot.survolee ? cfg.color + '0f' : undefined } : undefined}
+              >
                 {items.length === 0 && (
                   <div className="flex items-center justify-center h-20 border-2 border-dashed border-gray-200 rounded-2xl">
                     <span className="text-xs text-gray-300 font-500">Aucune demande</span>
                   </div>
                 )}
                 {items.map(d => (
-                  <DeliveryCardComponent key={d.id} demande={d} onOpen={onOpen} etatVu={etats[d.id]} />
+                  <div key={d.id} {...glisser.carte(d)} className={`shrink-0 ${glisser.glisse?.id === d.id ? 'opacity-40' : ''}`}>
+                    <DeliveryCardComponent demande={d} onOpen={onOpen} etatVu={etats[d.id]} />
+                  </div>
                 ))}
               </div>
             </div>

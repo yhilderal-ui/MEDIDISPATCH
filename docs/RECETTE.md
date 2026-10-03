@@ -48,6 +48,9 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] Ajouter une **deuxième** ordonnance (verso) : acceptée.
 - [ ] **Ajouter une photo de preuve** (optionnel), puis **Marquer comme livrée**.
 - [ ] L'historique de la carte liste chaque étape, avec l'auteur et l'heure.
+- [ ] Sur **ordinateur**, glisser une carte de « Nouvelle » vers « En cours », puis de « En cours »
+      vers « Livrée » : la colonne d'arrivée s'entoure de pointillés et la carte change de statut.
+      Glisser directement de « Nouvelle » vers « Livrée » n'est pas possible (une étape à la fois).
 
 ## 4. Modification et report
 
