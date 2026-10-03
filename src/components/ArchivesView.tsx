@@ -1,5 +1,6 @@
 import type { Demande } from '../types';
 import BadgeCriticite from './BadgeCriticite';
+import BadgeNature from './BadgeNature';
 import { formatHorodatage, formatJour } from '../lib/dates';
 import { JOURS_ARCHIVES_AFFICHES } from '../lib/demandes';
 
@@ -54,7 +55,10 @@ export default function ArchivesView({ demandes, chargement, onOpen, recherche }
             >
               <span className="font-mono text-[11px] text-gray-400 tracking-widest">{d.numero_ticket}</span>
               <span className="min-w-0">
-                <span className="block text-sm font-600 text-gray-900 truncate">{d.patient_nom}</span>
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-sm font-600 text-gray-900 truncate">{d.patient_nom}</span>
+                  <BadgeNature demande={d} />
+                </span>
                 <span className="block text-[11px] text-gray-400 truncate">{d.patient_adresse}</span>
               </span>
               <span className="col-start-2 sm:col-start-auto">
@@ -62,7 +66,11 @@ export default function ArchivesView({ demandes, chargement, onOpen, recherche }
               </span>
               <span className="text-[11px] text-gray-500 col-start-2 sm:col-start-auto">
                 Prévue {formatJour(d.jour_livraison)}
-                {d.livree_le && <span className="block text-emerald-600">Livrée {formatHorodatage(d.livree_le)}</span>}
+                {d.livree_le && (
+                  <span className="block text-emerald-600">
+                    {d.nature === 'retour' ? 'Récupéré' : 'Livrée'} {formatHorodatage(d.livree_le)}
+                  </span>
+                )}
               </span>
             </button>
           );

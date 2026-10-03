@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarX2, CircleCheck, Download, FilePlus2, Minus, Redo2, TrendingDown, TrendingUp } from 'lucide-react';
+import { CalendarX2, CircleCheck, Download, FilePlus2, Minus, Redo2, TrendingDown, TrendingUp, Undo2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import GraphiqueColonnes, { type Colonne } from './GraphiqueColonnes';
 import { exporterStatistiques } from '../lib/exportExcel';
@@ -26,8 +26,9 @@ const TITRE = 'text-sm font-700 text-gray-900';
 type Sens = 'hausse_bonne' | 'hausse_mauvaise' | 'neutre';
 
 const TUILES: { cle: keyof Chiffres; libelle: string; Icone: LucideIcon; sens: Sens }[] = [
-  { cle: 'creees', libelle: 'Demandes créées', Icone: FilePlus2, sens: 'neutre' },
+  { cle: 'creees', libelle: 'Livraisons créées', Icone: FilePlus2, sens: 'neutre' },
   { cle: 'livrees', libelle: 'Livrées', Icone: CircleCheck, sens: 'hausse_bonne' },
+  { cle: 'retours', libelle: 'Retours récupérés', Icone: Undo2, sens: 'neutre' },
   { cle: 'reportees', libelle: 'Reportées', Icone: Redo2, sens: 'hausse_mauvaise' },
   { cle: 'annulees', libelle: 'Annulées', Icone: CalendarX2, sens: 'hausse_mauvaise' },
 ];
@@ -196,7 +197,7 @@ export default function StatistiquesView() {
           // Pendant un rechargement, la page garde l'affichage précédent, estompé.
           <div className={`space-y-4 transition-opacity ${chargement ? 'opacity-50' : ''}`} aria-busy={chargement}>
             {/* Chiffres clés */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
               {TUILES.map(({ cle, libelle, Icone, sens }) => (
                 <div key={cle} className={CARTE}>
                   <p className="text-xs text-gray-500 flex items-center gap-1.5">

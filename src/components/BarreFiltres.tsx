@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
-import type { Criticite, Statut } from '../types';
+import type { Criticite, Nature, Statut } from '../types';
 import { CRITICITE_CONFIG, STATUT_CONFIG } from '../data';
 import { FILTRES_VIDES, filtresActifs, type FiltreDate, type Filtres } from '../lib/filtres';
 
@@ -34,7 +34,7 @@ export default function BarreFiltres({ filtres, onChange, nbResultats, nbTotal, 
   const actifs = filtresActifs(filtres);
   // Sur téléphone, les listes déroulantes sont repliées derrière « Filtres ».
   const [deplie, setDeplie] = useState(false);
-  const nbFiltres = [filtres.statut !== 'tous', filtres.criticite !== 'toutes', filtres.date !== 'toutes'].filter(Boolean).length;
+  const nbFiltres = [filtres.statut !== 'tous', filtres.criticite !== 'toutes', filtres.nature !== 'toutes', filtres.date !== 'toutes'].filter(Boolean).length;
 
   return (
     <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
@@ -71,6 +71,12 @@ export default function BarreFiltres({ filtres, onChange, nbResultats, nbTotal, 
             ))}
           </select>
         )}
+
+        <select aria-label="Filtrer par type" value={filtres.nature} onChange={e => set('nature', e.target.value as Nature | 'toutes')} className={SELECT}>
+          <option value="toutes">Livraisons et retours</option>
+          <option value="livraison">Livraisons</option>
+          <option value="retour">Retours</option>
+        </select>
 
         <select aria-label="Filtrer par criticité" value={filtres.criticite} onChange={e => set('criticite', e.target.value as Criticite | 'toutes')} className={SELECT}>
           <option value="toutes">Toutes criticités</option>

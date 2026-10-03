@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { minuitParisISO } from './dates';
-import type { Demande, DocumentJoint, EtatVu, EvenementHistorique, ModificationDemande, NouvelleDemande, Note, Pieces, Statut, TypeDocument, TypePiece } from '../types';
+import type { Demande, DocumentJoint, EtatVu, EvenementHistorique, ModificationDemande, NouvelleDemande, Note, Pieces, Statut, TypeDocument, TypePiece, Medicament } from '../types';
 
 // Toutes les lectures et écritures des demandes passent par ce fichier.
 // Les règles (date, preuve de livraison, droits) sont vérifiées par la base ;
@@ -133,6 +133,23 @@ export async function creerDemande(
     }
   }
   return { id: data.id as string, numeroTicket: data.numero_ticket as string, erreursFichiers };
+}
+
+// Reliquat (décision du 03/10) : la carte d'origine garde `restants`, une
+// nouvelle carte liée reçoit `reliquat` pour le jour choisi. Une seule
+// opération en base (fonction creer_reliquat, migration 0013).
+export async function creerReliquat(
+  origineId: string,
+  restants: Medicament[],
+  reliquat: Medicament[],
+  jour: string,
+): Promise<{ id: string; numeroTicket: string }> {
+  const { data, error } = await supabase
+    .rpc('creer_reliquat', { p_demande: origineId, p_restants: restants, p_reliquat: reliquat, p_jour: jour })
+    .single();
+  if (error) echouer(error);
+  const r = data as { nouvel_id: string; nouveau_ticket: string };
+  return { id: r.nouvel_id, numeroTicket: r.nouveau_ticket };
 }
 
 // Étape 6 : corriger les informations d'une demande (les deux rôles).

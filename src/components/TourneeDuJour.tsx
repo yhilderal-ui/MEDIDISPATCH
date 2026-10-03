@@ -2,7 +2,8 @@ import { CircleCheck, Navigation, Phone, TriangleAlert } from 'lucide-react';
 import type { Demande, EtatVu } from '../types';
 import BadgeCriticite from './BadgeCriticite';
 import BadgeVu from './BadgeVu';
-import { CRITICITE_ORDRE, STATUT_CONFIG } from '../data';
+import { CRITICITE_ORDRE, statutAffiche } from '../data';
+import BadgeNature from './BadgeNature';
 import { aujourdhuiParis, formatJour } from '../lib/dates';
 import { urlWaze } from '../lib/itineraire';
 
@@ -31,8 +32,17 @@ export default function TourneeDuJour({ demandes, onOpen, etats }: Props) {
         <div className="bg-white rounded-2xl border border-black/5 p-4">
           <h3 className="text-sm font-700 text-gray-900">Tournée du {formatJour(jour)}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            <span className="font-600 text-gray-800">{aLivrer.length}</span> à livrer
-            {livrees.length > 0 && <> · <span className="font-600 text-emerald-700">{livrees.length}</span> livrée{livrees.length > 1 ? 's' : ''}</>}
+            {(() => {
+              const nbRetours = aLivrer.filter(d => d.nature === 'retour').length;
+              const nbLivraisons = aLivrer.length - nbRetours;
+              return (
+                <>
+                  <span className="font-600 text-gray-800">{nbLivraisons}</span> à livrer
+                  {nbRetours > 0 && <> · <span className="font-600 text-amber-700">{nbRetours}</span> à récupérer</>}
+                </>
+              );
+            })()}
+            {livrees.length > 0 && <> · <span className="font-600 text-emerald-700">{livrees.length}</span> terminée{livrees.length > 1 ? 's' : ''}</>}
           </p>
         </div>
 
@@ -44,12 +54,13 @@ export default function TourneeDuJour({ demandes, onOpen, etats }: Props) {
 
         <ul className="space-y-3">
           {aLivrer.map(d => {
-            const statut = STATUT_CONFIG[d.statut];
+            const statut = statutAffiche(d);
             return (
               <li key={d.id} className="bg-white rounded-2xl border border-black/5 shadow-sm p-4 space-y-2">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="font-mono text-[11px] text-gray-400 tracking-widest">{d.numero_ticket}</span>
                   <BadgeVu etat={etats[d.id] ?? null} />
+                  <BadgeNature demande={d} />
                   <span className="text-[10px] font-600 px-2 py-0.5 rounded-full" style={{ color: statut.color, background: statut.color + '14' }}>
                     {statut.label}
                   </span>
@@ -57,6 +68,12 @@ export default function TourneeDuJour({ demandes, onOpen, etats }: Props) {
                 </div>
                 <p className="font-700 text-gray-900 text-[15px] leading-tight">{d.patient_nom}</p>
                 <p className="text-xs text-gray-600 leading-snug">{d.patient_adresse}</p>
+                {d.nature === 'retour' && (
+                  <p className="text-[11px] text-amber-800 bg-amber-50 rounded-lg px-2.5 py-1.5 leading-snug">
+                    <span className="font-600">À récupérer :</span>{' '}
+                    {d.medicaments.map(m => (m.quantite ? `${m.nom} (${m.quantite})` : m.nom)).join(', ')}
+                  </p>
+                )}
                 <a href={`tel:${d.patient_telephone.replace(/\s/g, '')}`} className="inline-flex items-center gap-1.5 text-xs text-gray-600 underline decoration-gray-300">
                   <Phone size={12} className="text-gray-400" aria-hidden /> {d.patient_telephone}
                 </a>
@@ -87,7 +104,7 @@ export default function TourneeDuJour({ demandes, onOpen, etats }: Props) {
         {livrees.length > 0 && (
           <details className="bg-white rounded-2xl border border-black/5 p-4">
             <summary className="text-xs font-600 text-gray-600 cursor-pointer select-none inline-flex items-center gap-1.5">
-              <CircleCheck size={14} className="text-emerald-600" aria-hidden /> Livrées aujourd’hui ({livrees.length})
+              <CircleCheck size={14} className="text-emerald-600" aria-hidden /> Terminées aujourd’hui ({livrees.length})
             </summary>
             <ul className="mt-3 divide-y divide-gray-100">
               {livrees.map(d => (

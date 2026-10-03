@@ -57,7 +57,14 @@ type DonneesBon = Pick<
   'numero_ticket' | 'cree_le' | 'jour_livraison' | 'criticite' | 'patient_nom' | 'patient_adresse' | 'patient_telephone' | 'medicaments' | 'notes_initiales'
 >;
 
-export async function genererBonPdf(d: DonneesBon, modele: ModeleBon): Promise<Blob> {
+// Reliquats (décision du 03/10) : commande d'origine d'un reliquat, et
+// reliquats à suivre d'une commande, mentionnés sous le titre.
+export interface LiensReliquat {
+  origine?: string; // n° de ticket de la commande d'origine
+  reliquats: { ticket: string; jour: string }[];
+}
+
+export async function genererBonPdf(d: DonneesBon, modele: ModeleBon, liens: LiensReliquat = { reliquats: [] }): Promise<Blob> {
   // compress + 'FAST' : le logo est compressé (≈ 1 Mo → quelques dizaines de Ko par bon).
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
   let y = MARGE;
@@ -90,6 +97,17 @@ export async function genererBonPdf(d: DonneesBon, modele: ModeleBon): Promise<B
   doc.setFont('helvetica', 'bold').setTextColor(r, v, b);
   doc.text(`Criticité : ${CRITICITE_CONFIG[d.criticite].label}`, MARGE, y);
   y += 5;
+  const mentions = [
+    ...(liens.origine ? [`Reliquat de la commande ${liens.origine}`] : []),
+    ...liens.reliquats.map(r => `Reliquat à suivre : ${r.ticket} — ${formatJour(r.jour)}`),
+  ];
+  if (mentions.length) {
+    doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(3, 105, 161);
+    mentions.forEach(t => {
+      doc.text(t, MARGE, y);
+      y += 5;
+    });
+  }
 
   const separateur = () => {
     doc.setDrawColor(209, 213, 219).setLineWidth(0.3).line(MARGE, y, MARGE + LARGEUR, y);
@@ -156,9 +174,9 @@ export async function genererBonPdf(d: DonneesBon, modele: ModeleBon): Promise<B
 
 // Génère un bon à partir de la carte, puis le range dans la carte (en
 // remplaçant le précédent du même type).
-async function publierBon(d: Demande, modele: ModeleBon): Promise<void> {
+async function publierBon(d: Demande, modele: ModeleBon, liens: LiensReliquat): Promise<void> {
   const m = MODELES[modele];
-  const pdf = await genererBonPdf(d, modele);
+  const pdf = await genererBonPdf(d, modele, liens);
   const chemin = `${d.id}/${m.fichier}`;
 
   const envoi = await supabase.storage
@@ -192,6 +210,23 @@ async function publierBon(d: Demande, modele: ModeleBon): Promise<void> {
 export async function publierBonsGeneres(demandeId: string): Promise<void> {
   const { data: d, error } = await supabase.from('demandes').select('*').eq('id', demandeId).single();
   if (error) throw new Error(messageErreur(error));
-  await publierBon(d as Demande, 'commande');
-  await publierBon(d as Demande, 'livraison');
+  if ((d as Demande).nature === 'retour') return; // pas de PDF pour un retour (décision du 03/10)
+
+  // Reliquats liés, pour les mentions sous le titre.
+  const liens: LiensReliquat = { reliquats: [] };
+  if (d.reliquat_de) {
+    const o = await supabase.from('demandes').select('numero_ticket').eq('id', d.reliquat_de).maybeSingle();
+    if (o.data) liens.origine = o.data.numero_ticket as string;
+  }
+  const enfants = await supabase
+    .from('demandes')
+    .select('numero_ticket, jour_livraison')
+    .eq('reliquat_de', demandeId)
+    .neq('statut', 'annulee')
+    .order('jour_livraison');
+  if (enfants.error) throw new Error(messageErreur(enfants.error));
+  liens.reliquats = (enfants.data ?? []).map(e => ({ ticket: e.numero_ticket as string, jour: e.jour_livraison as string }));
+
+  await publierBon(d as Demande, 'commande', liens);
+  await publierBon(d as Demande, 'livraison', liens);
 }

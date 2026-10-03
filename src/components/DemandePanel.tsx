@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Archive, CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
-import type { Demande, DocumentJoint, ModificationDemande as Champs, Note, Statut, TypeDocument } from '../types';
+import { Archive, CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Split, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
+import type { Demande, DocumentJoint, Medicament, ModificationDemande as Champs, Note, Statut, TypeDocument } from '../types';
 import BoutonsItineraire from './BoutonsItineraire';
 import ModificationDemande from './ModificationDemande';
+import CreerReliquat from './CreerReliquat';
+import BadgeNature from './BadgeNature';
 import HistoriqueDemande from './HistoriqueDemande';
-import { CRITICITE_CONFIG, DOC_CONFIG, LIBELLE_PIECE, PIECES, STATUT_CONFIG } from '../data';
+import { CRITICITE_CONFIG, DOC_CONFIG, LIBELLE_PIECE, PIECES, statutAffiche } from '../data';
 import { aujourdhuiParis, erreurJourLivraison, formatHorodatage, formatJour } from '../lib/dates';
 import { ajouterNote, lienDocument, listerNotes, messageErreur, surveillerNotes } from '../lib/demandes';
 import type { Role } from '../lib/useAuth';
@@ -25,6 +27,11 @@ interface Props {
   onModifier: (champs: Champs) => Promise<boolean>;
   onGenererBon: () => Promise<boolean>;
   onArchiver: () => Promise<boolean>;
+  // Reliquats (décision du 03/10) : cartes chargées, pour retrouver les cartes
+  // liées, ouverture d'une autre carte et création d'un reliquat.
+  demandes: Demande[];
+  onOuvrir: (id: string) => void;
+  onCreerReliquat: (restants: Medicament[], reliquat: Medicament[], jour: string) => Promise<boolean>;
 }
 
 const TITRE = 'text-[10px] font-700 uppercase tracking-widest text-gray-400 mb-2';
@@ -149,10 +156,14 @@ function FilNotes({ demandeId }: { demandeId: string }) {
   );
 }
 
-export default function DemandePanel({ demande, role, utilisateurId, comptes, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon, onArchiver }: Props) {
+export default function DemandePanel({ demande, role, utilisateurId, comptes, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon, onArchiver, demandes, onOuvrir, onCreerReliquat }: Props) {
   const [edition, setEdition] = useState(false);
+  const [reliquatOuvert, setReliquatOuvert] = useState(false);
   const criticite = CRITICITE_CONFIG[demande.criticite];
-  const statut = STATUT_CONFIG[demande.statut];
+  const statut = statutAffiche(demande);
+  const retour = demande.nature === 'retour';
+  const origine = demande.reliquat_de ? demandes.find(d => d.id === demande.reliquat_de) : undefined;
+  const reliquats = demandes.filter(d => d.reliquat_de === demande.id);
   const [occupe, setOccupe] = useState(false);
   const [nouveauJour, setNouveauJour] = useState('');
   const [erreurReport, setErreurReport] = useState<string | null>(null);
@@ -239,6 +250,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
               >
                 {statut.label}
               </span>
+              <BadgeNature demande={demande} />
             </div>
             <button
               type="button"
@@ -277,7 +289,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
             </p>
             <p className="flex items-center gap-2">
               <CalendarDays size={13} className="text-gray-400 shrink-0" aria-hidden />
-              <span>Livraison prévue : <span className="font-600 text-gray-800">{formatJour(demande.jour_livraison)}</span></span>
+              <span>{retour ? 'Passage prévu' : 'Livraison prévue'} : <span className="font-600 text-gray-800">{formatJour(demande.jour_livraison)}</span></span>
             </p>
           </div>
 
@@ -316,8 +328,50 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
             <ModificationDemande demande={demande} onAnnuler={() => setEdition(false)} onEnregistrer={onModifier} />
           )}
 
+          {/* Reliquats : liens vers la commande d'origine et vers ses reliquats */}
+          {(demande.reliquat_de || reliquats.length > 0) && (
+            <section className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2.5 space-y-1.5">
+              {demande.reliquat_de && (
+                <p className="text-xs text-sky-900 flex items-center gap-1.5">
+                  <Split size={13} className="shrink-0" aria-hidden />
+                  Reliquat de{' '}
+                  {origine ? (
+                    <button type="button" onClick={() => onOuvrir(origine.id)} className="font-600 underline decoration-sky-300 hover:text-sky-700">
+                      {origine.numero_ticket} →
+                    </button>
+                  ) : (
+                    <span className="font-600">la commande d'origine (archivée)</span>
+                  )}
+                </p>
+              )}
+              {reliquats.map(r => (
+                <p key={r.id} className="text-xs text-sky-900 flex items-center gap-1.5 flex-wrap">
+                  <Split size={13} className="shrink-0" aria-hidden />
+                  Reliquat à suivre :
+                  <button type="button" onClick={() => onOuvrir(r.id)} className="font-600 underline decoration-sky-300 hover:text-sky-700">
+                    {r.numero_ticket} — {formatJour(r.jour_livraison)} →
+                  </button>
+                  <span className="text-[10px] text-sky-700/70">({statutAffiche(r).label})</span>
+                </p>
+              ))}
+            </section>
+          )}
+
+          {peut.reliquat && !retour && demande.statut !== 'annulee' && !edition && !reliquatOuvert && (
+            <button
+              type="button"
+              onClick={() => setReliquatOuvert(true)}
+              className="w-full text-xs font-600 py-2 rounded-xl bg-white border border-sky-200 text-sky-700 hover:bg-sky-50 transition-colors"
+            >
+              <Split size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Créer un reliquat (livrer en deux fois)
+            </button>
+          )}
+          {reliquatOuvert && (
+            <CreerReliquat demande={demande} onAnnuler={() => setReliquatOuvert(false)} onEnregistrer={onCreerReliquat} />
+          )}
+
           <section>
-            <p className={TITRE}>Médicaments ({demande.medicaments.length})</p>
+            <p className={TITRE}>{retour ? 'Médicaments à récupérer' : 'Médicaments'} ({demande.medicaments.length})</p>
             <div className="border border-gray-100 rounded-xl overflow-hidden">
               {demande.medicaments.map((m, i) => (
                 <div key={i} className="flex items-center justify-between px-3 py-2 border-b border-gray-50 last:border-b-0 gap-3">
@@ -337,7 +391,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
               {documents.map(doc => <LigneDocument key={doc.id} doc={doc} />)}
               {documents.length === 0 && <p className="text-sm text-gray-400 py-3 text-center">Aucun document joint</p>}
             </div>
-            {!['bon_commande', 'bon_livraison'].every(t => demande.documents.some(d => d.genere && d.type === t)) && (
+            {!retour && !['bon_commande', 'bon_livraison'].every(t => demande.documents.some(d => d.genere && d.type === t)) && (
               <button
                 type="button"
                 disabled={occupe}
@@ -384,7 +438,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
 
           {modifiable && (
             <section>
-              <p className={TITRE}>Reporter la livraison</p>
+              <p className={TITRE}>{retour ? 'Reporter le passage' : 'Reporter la livraison'}</p>
               <div className="flex items-center gap-2">
                 <input
                   type="date"
@@ -414,7 +468,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
 
           <section>
             <p className={TITRE}>Historique</p>
-            <HistoriqueDemande demandeId={demande.id} version={demande.mis_a_jour_le} />
+            <HistoriqueDemande demandeId={demande.id} version={demande.mis_a_jour_le} nature={demande.nature} />
           </section>
         </div>
 
@@ -427,7 +481,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
               onClick={() => executer(() => onChangerStatut('en_cours'))}
               className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white font-600 text-sm py-2.5 rounded-xl transition-colors"
             >
-              <Truck size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />Passer « En cours de livraison »
+              <Truck size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />{retour ? 'Passer « En cours » (en route)' : 'Passer « En cours de livraison »'}
             </button>
           )}
 
@@ -463,7 +517,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
               onClick={() => executer(() => onChangerStatut('livree'))}
               className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-600 text-sm py-2.5 rounded-xl transition-colors"
             >
-              <Check size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />Marquer comme livrée
+              <Check size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />{retour ? 'Marquer comme récupéré' : 'Marquer comme livrée'}
             </button>
           )}
 
@@ -481,7 +535,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
 
           {demande.statut === 'livree' && (
             <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-600 text-sm py-2.5 rounded-xl text-center">
-              <CircleCheck size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />Livrée
+              <CircleCheck size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />{retour ? 'Récupéré' : 'Livrée'}
             </div>
           )}
 

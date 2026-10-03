@@ -28,6 +28,7 @@ export interface Droits {
   annuler: boolean; // annuler ou réactiver une demande
   modifierInfos: boolean; // patient, médicaments, criticité, notes initiales
   supprimer: boolean; // suppression définitive d'une demande annulée
+  reliquat: boolean; // créer un reliquat (livraison en deux fois)
   chat: boolean;
   statistiques: boolean;
 }
@@ -38,6 +39,7 @@ export function droits(role: Role): Droits {
     annuler: role !== 'livreur',
     modifierInfos: role !== 'livreur',
     supprimer: role === 'dispatcher',
+    reliquat: role !== 'livreur',
     chat: role !== 'livreur',
     statistiques: role !== 'livreur',
   };

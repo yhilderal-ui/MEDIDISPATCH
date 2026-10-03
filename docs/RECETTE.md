@@ -87,6 +87,18 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] **Modifier les informations** et **Annuler la demande** n'apparaissent pas.
 - [ ] Côté Florence : le détail indique « Vue par Pharmacie … et Livreurs … » après consultation.
 
+## 7 ter. Retours et reliquats
+
+- [ ] **+ Nouvelle demande** → **Retour** : « Jour de passage », « Médicaments à récupérer », aucun PDF
+      généré ; la carte porte l'étiquette **Retour**.
+- [ ] Côté Livreurs, la Tournée indique « à récupérer » et la liste des médicaments à reprendre ;
+      **Marquer comme récupéré** passe la carte en « Récupéré ».
+- [ ] Sur une livraison : **Créer un reliquat** → un médicament « Partagé » (2 + 2), un autre « Plus tard »,
+      date au choix → une carte « Reliquat de MD-… » est créée et s'ouvre.
+- [ ] Les deux cartes se renvoient l'une à l'autre ; les bons de la carte d'origine indiquent
+      « Reliquat à suivre », ceux du reliquat « Reliquat de la commande … ».
+- [ ] Le compte Livreurs ne voit pas **Créer un reliquat**.
+
 ## 8. Robustesse
 
 - [ ] Recharger la page (F5) : rien n'est perdu.

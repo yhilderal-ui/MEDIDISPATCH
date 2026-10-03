@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { FileText } from 'lucide-react';
-import type { Criticite, Medicament, NouvelleDemande, Pieces } from '../types';
-import { CRITICITE_CONFIG, DOC_CONFIG, LIBELLE_PIECE, PIECES } from '../data';
+import type { Criticite, Medicament, Nature, NouvelleDemande, Pieces } from '../types';
+import { CRITICITE_CONFIG, DOC_CONFIG, LIBELLE_PIECE, NATURE_CONFIG, PIECES } from '../data';
 import ChampPiece from './ChampPiece';
 import SaisieMedicament from './SaisieMedicament';
 import { aujourdhuiParis, erreurJourLivraison } from '../lib/dates';
@@ -32,6 +32,9 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
   });
   const [medicaments, setMedicaments] = useState<LigneMedicament[]>([{ cle: prochaineCle++, nom: '', quantite: '' }]);
   const [pieces, setPieces] = useState<Pieces>({});
+  // Livraison ou retour (aller récupérer des médicaments), décision du 03/10.
+  const [nature, setNature] = useState<Nature>('livraison');
+  const retour = nature === 'retour';
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const nomRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
@@ -90,6 +93,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
         criticite: form.criticite,
         medicaments: lignes,
         notes_initiales: form.notes_initiales.trim() || null,
+        nature,
       },
       pieces,
     );
@@ -123,6 +127,32 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
         </div>
 
         <form onSubmit={soumettre} noValidate className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+          {/* Livraison ou retour */}
+          <div className="grid grid-cols-2 gap-1 bg-gray-100 p-1 rounded-xl" role="radiogroup" aria-label="Type de demande">
+            {(Object.keys(NATURE_CONFIG) as Nature[]).map(n => {
+              const cfg = NATURE_CONFIG[n];
+              const actif = nature === n;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  role="radio"
+                  aria-checked={actif}
+                  onClick={() => setNature(n)}
+                  className={`flex items-center justify-center gap-1.5 text-sm font-600 py-2 rounded-lg transition-all ${actif ? 'bg-white shadow-sm' : 'text-gray-500'}`}
+                  style={actif ? { color: cfg.color } : undefined}
+                >
+                  <cfg.Icone size={15} aria-hidden /> {cfg.label}
+                </button>
+              );
+            })}
+          </div>
+          {retour && (
+            <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 -mt-2">
+              Retour : le livreur va <strong>récupérer</strong> des médicaments chez le patient.
+            </p>
+          )}
+
           {/* Patient */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -152,7 +182,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
           {/* Date + criticité */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className={ETIQUETTE} htmlFor="jour_livraison">Jour de livraison</label>
+              <label className={ETIQUETTE} htmlFor="jour_livraison">{retour ? 'Jour de passage' : 'Jour de livraison'}</label>
               <input
                 id="jour_livraison"
                 type="date"
@@ -178,7 +208,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
           {/* Médicaments */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className={ETIQUETTE.replace(' block mb-1', '')}>Médicaments</span>
+              <span className={ETIQUETTE.replace(' block mb-1', '')}>{retour ? 'Médicaments à récupérer' : 'Médicaments'}</span>
               <span className="text-[10px] text-gray-400 font-mono">
                 {nbMedicaments} article{nbMedicaments !== 1 ? 's' : ''}
               </span>
@@ -254,7 +284,9 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
             <span className={ETIQUETTE}>Pièces jointes (optionnelles)</span>
             <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 mb-2">
               <FileText size={13} className="inline -mt-0.5 mr-1" aria-hidden />
-              Deux PDF seront générés automatiquement : le bon de commande (avec les médicaments, à mettre dans le carton) et le bon de livraison (sans les médicaments).
+              {retour
+                ? 'Aucun document n’est généré pour un retour.'
+                : 'Deux PDF seront générés automatiquement : le bon de commande (avec les médicaments, à mettre dans le carton) et le bon de livraison (sans les médicaments).'}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {PIECES.map(type => (

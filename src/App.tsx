@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Archive, Bell, BellOff, CalendarDays, ChartColumn, CircleCheck, LayoutDashboard, LayoutGrid, LogOut, Plus, TriangleAlert } from 'lucide-react';
-import type { Demande, EtatVu, ModificationDemande, NouvelleDemande, Pieces, Statut, TypeDocument } from './types';
+import type { Demande, EtatVu, Medicament, ModificationDemande, NouvelleDemande, Pieces, Statut, TypeDocument } from './types';
 import { publierBonsGeneres } from './lib/bonsGeneres';
 import Board from './components/Board';
 import LivreurBoard from './components/LivreurBoard';
@@ -20,6 +20,7 @@ import { supabase, supabaseConfigured } from './lib/supabase';
 import {
   changerStatut,
   creerDemande,
+  creerReliquat,
   deposerDocument,
   etatVu,
   archiverDemande,
@@ -187,16 +188,21 @@ export default function App() {
       const { id, numeroTicket, erreursFichiers } = await creerDemande(demande, pieces);
       const problemes: string[] = [];
       if (erreursFichiers.length) problemes.push(`certaines pièces jointes n'ont pas pu être envoyées (${erreursFichiers.join(' ; ')})`);
-      try {
-        await publierBonsGeneres(id);
-      } catch (e) {
-        problemes.push(`les bons de commande et de livraison n'ont pas pu être générés (${(e as Error).message})`);
+      // Pas de PDF pour un retour (décision du 03/10).
+      const retour = demande.nature === 'retour';
+      if (!retour) {
+        try {
+          await publierBonsGeneres(id);
+        } catch (e) {
+          problemes.push(`les bons de commande et de livraison n'ont pas pu être générés (${(e as Error).message})`);
+        }
       }
       await recharger();
+      const quoi = retour ? 'Retour' : 'Demande';
       if (problemes.length) {
-        setErreur(`Demande ${numeroTicket} créée, mais ${problemes.join(' et ')}. Ouvrez la demande pour réessayer.`);
+        setErreur(`${quoi} ${numeroTicket} créé${retour ? '' : 'e'}, mais ${problemes.join(' et ')}. Ouvrez la demande pour réessayer.`);
       } else {
-        setInfo(`Demande ${numeroTicket} créée, bons de commande et de livraison générés.`);
+        setInfo(retour ? `Retour ${numeroTicket} créé.` : `Demande ${numeroTicket} créée, bons de commande et de livraison générés.`);
       }
       return null;
     } catch (e) {
@@ -204,22 +210,56 @@ export default function App() {
     }
   };
 
+  // Bons d'une carte, plus ceux de sa carte d'origine si c'est un reliquat
+  // (son bon annonce la date du reliquat). Rien pour un retour.
+  const regenererBons = async (d: Pick<Demande, 'id' | 'nature' | 'reliquat_de'>) => {
+    if (d.nature === 'retour') return;
+    await publierBonsGeneres(d.id);
+    if (d.reliquat_de) await publierBonsGeneres(d.reliquat_de);
+  };
+
   // Toute modification du contenu des bons (informations, date) les régénère,
   // en remplaçant les anciens (décisions du 29/09 et du 30/09).
-  const modifierPuisRegenerer = (id: string, ticket: string, action: () => Promise<void>, succes: string) =>
+  const modifierPuisRegenerer = (d: Demande, action: () => Promise<void>, succes: string) =>
     agir(async () => {
       await action();
       try {
-        await publierBonsGeneres(id);
+        await regenererBons(d);
       } catch (e) {
         throw new Error(`${succes.replace(/\.$/, '')}, mais les bons n'ont pas pu être régénérés : ${(e as Error).message}`);
       }
-    }, `${succes} Bons de commande et de livraison ${ticket} mis à jour.`);
+    }, d.nature === 'retour' ? succes : `${succes} Bons de commande et de livraison ${d.numero_ticket} mis à jour.`);
+
+  // Reliquat : la nouvelle carte est ouverte une fois créée, avec ses bons
+  // et ceux, mis à jour, de la carte d'origine.
+  const handleReliquat = async (origine: Demande, restants: Medicament[], reliquat: Medicament[], jour: string): Promise<boolean> => {
+    try {
+      const { id, numeroTicket } = await creerReliquat(origine.id, restants, reliquat, jour);
+      let probleme: string | null = null;
+      try {
+        await publierBonsGeneres(id);
+        await publierBonsGeneres(origine.id);
+      } catch (e) {
+        probleme = (e as Error).message;
+      }
+      await recharger();
+      setOuverteId(id);
+      if (probleme) setErreur(`Reliquat ${numeroTicket} créé, mais les bons n'ont pas pu être générés : ${probleme}`);
+      else {
+        setErreur(null);
+        setInfo(`Reliquat ${numeroTicket} créé (reste de ${origine.numero_ticket}).`);
+      }
+      return true;
+    } catch (e) {
+      setErreur(messageErreur(e));
+      return false;
+    }
+  };
 
   const handleDropCard = (id: string, jour: string) => {
     const d = demandes.find(x => x.id === id);
     if (!d || d.jour_livraison === jour) return;
-    modifierPuisRegenerer(id, d.numero_ticket, () => reporter(id, jour), `Demande ${d.numero_ticket} reportée.`);
+    modifierPuisRegenerer(d, () => reporter(id, jour), `Demande ${d.numero_ticket} reportée.`);
   };
 
   const shiftWeek = (n: number) => setWeekStart(d => ajouterJours(d, n * 7));
@@ -532,10 +572,14 @@ export default function App() {
 
       {ouverte && (
         <DemandePanel
+          key={ouverte.id}
           demande={ouverte}
           role={role}
           utilisateurId={userId}
           comptes={comptes}
+          demandes={archives.length ? [...demandes, ...archives] : demandes}
+          onOuvrir={setOuverteId}
+          onCreerReliquat={(restants, reliquat, jour) => handleReliquat(ouverte, restants, reliquat, jour)}
           onClose={() => setOuverteId(null)}
           onSupprimer={async () => {
             const ticket = ouverte.numero_ticket;
@@ -545,10 +589,10 @@ export default function App() {
           }}
           onChangerStatut={(statut: Statut) => agir(() => changerStatut(ouverte.id, statut), `Demande ${ouverte.numero_ticket} mise à jour.`)}
           onReporter={(jour: string) =>
-            modifierPuisRegenerer(ouverte.id, ouverte.numero_ticket, () => reporter(ouverte.id, jour), `Demande ${ouverte.numero_ticket} reportée.`)
+            modifierPuisRegenerer(ouverte, () => reporter(ouverte.id, jour), `Demande ${ouverte.numero_ticket} reportée.`)
           }
           onModifier={(champs: ModificationDemande) =>
-            modifierPuisRegenerer(ouverte.id, ouverte.numero_ticket, () => modifierDemande(ouverte.id, champs), `Demande ${ouverte.numero_ticket} modifiée.`)
+            modifierPuisRegenerer(ouverte, () => modifierDemande(ouverte.id, champs), `Demande ${ouverte.numero_ticket} modifiée.`)
           }
           onGenererBon={() => agir(() => publierBonsGeneres(ouverte.id), 'Bons de commande et de livraison générés.')}
           onArchiver={async () => {
