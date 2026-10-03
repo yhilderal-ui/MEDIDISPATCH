@@ -14,6 +14,7 @@ import ArchivesView from './components/ArchivesView';
 import StatistiquesView from './components/StatistiquesView';
 import { appliquerFiltres, FILTRES_VIDES, type Filtres } from './lib/filtres';
 import logo from './assets/logo.png';
+import { statutAffiche } from './data';
 import { useAuth, type Role } from './lib/useAuth';
 import { COULEUR_ROLE, droits as droitsDuRole, ICONE_ROLE, LIBELLE_ROLE } from './lib/roles';
 import { supabase, supabaseConfigured } from './lib/supabase';
@@ -254,6 +255,11 @@ export default function App() {
       setErreur(messageErreur(e));
       return false;
     }
+  };
+
+  // Glisser-déposer d'une colonne de statut à la suivante (Nouvelle → En cours → Livrée).
+  const handleDeposerStatut = (d: Demande, statut: Statut) => {
+    agir(() => changerStatut(d.id, statut), `Demande ${d.numero_ticket} : ${statutAffiche({ statut, nature: d.nature }).label}.`);
   };
 
   const handleDropCard = (id: string, jour: string) => {
@@ -542,7 +548,7 @@ export default function App() {
 
             <div className="flex-1 overflow-hidden px-4 sm:px-6 pb-6">
               {dispatcherView === 'kanban' ? (
-                <Board key={accueil} demandes={filtrees} onOpen={ouvrir} etats={etats} />
+                <Board key={accueil} demandes={filtrees} onOpen={ouvrir} etats={etats} onDeposerStatut={handleDeposerStatut} />
               ) : (
                 <WeekView demandes={filtrees.filter(d => d.statut !== 'annulee')} weekStart={weekStart} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} />
               )}
@@ -562,6 +568,7 @@ export default function App() {
                 demandes={filtrees}
                 onOpen={ouvrir}
                 onDropCard={handleDropCard}
+                onDeposerStatut={handleDeposerStatut}
                 etats={etats}
                 vueInitiale={role === 'livreur' ? 'tournee' : 'kanban'}
               />
