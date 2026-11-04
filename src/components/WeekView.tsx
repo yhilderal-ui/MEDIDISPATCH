@@ -4,6 +4,8 @@ import BadgeVu from './BadgeVu';
 import { CRITICITE_CONFIG, statutAffiche } from '../data';
 import BadgeNature from './BadgeNature';
 import { ajouterJours, aujourdhuiParis, moisCourt, versJour } from '../lib/dates';
+import type { Selection } from '../lib/selection';
+import { CaseCarte, CaseGroupe } from './Selection';
 
 interface Props {
   demandes: Demande[];
@@ -11,11 +13,12 @@ interface Props {
   onOpen: (demande: Demande) => void;
   onDropCard: (demandeId: string, jour: string) => void;
   etats: Record<string, EtatVu>;
+  selection: Selection;
 }
 
 const JOURS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
-function WeekCard({ demande, onClick, etatVu }: { demande: Demande; onClick: () => void; etatVu: EtatVu }) {
+function WeekCard({ demande, onClick, etatVu, selectionnee }: { demande: Demande; onClick: () => void; etatVu: EtatVu; selectionnee?: boolean }) {
   const criticite = CRITICITE_CONFIG[demande.criticite];
   const statut = statutAffiche(demande);
 
@@ -23,12 +26,13 @@ function WeekCard({ demande, onClick, etatVu }: { demande: Demande; onClick: () 
     <button
       type="button"
       onClick={onClick}
-      className={`carte-semaine w-full text-left bg-white rounded-xl border border-black/5 shadow-sm hover:shadow-md transition-shadow overflow-hidden ${etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
+      aria-pressed={selectionnee}
+      className={`carte-semaine w-full text-left bg-white rounded-xl border border-black/5 shadow-sm hover:shadow-md transition-shadow overflow-hidden ${selectionnee ? 'ring-2 ring-sky-500' : etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
     >
       <div className="h-0.5" style={{ background: criticite.color }} />
       <div className="px-2.5 py-2">
         <div className="flex items-start justify-between gap-1 mb-1">
-          <span className="font-mono text-[9px] text-gray-400 tracking-widest leading-tight">{demande.numero_ticket}</span>
+          <span className={`font-mono text-[9px] text-gray-400 tracking-widest leading-tight ${selectionnee !== undefined ? 'pl-6' : ''}`}>{demande.numero_ticket}</span>
           <span
             className="text-[8px] font-700 uppercase tracking-wide px-1.5 py-0.5 rounded-full shrink-0"
             style={{ color: statut.color, background: statut.color + '18' }}
@@ -52,12 +56,12 @@ function WeekCard({ demande, onClick, etatVu }: { demande: Demande; onClick: () 
 
 // Vue hebdomadaire : une colonne par jour, du lundi au samedi.
 // Glisser une carte vers un autre jour la reporte (la base vérifie la date).
-export default function WeekView({ demandes, weekStart, onOpen, onDropCard, etats }: Props) {
+export default function WeekView({ demandes, weekStart, onOpen, onDropCard, etats, selection }: Props) {
   const jours = Array.from({ length: 6 }, (_, i) => ajouterJours(weekStart, i));
   const aujourdhui = aujourdhuiParis();
 
   return (
-    <div className="flex flex-col md:flex-row gap-3 h-full min-h-0 overflow-y-auto md:overflow-y-visible md:overflow-x-auto pb-24 md:pb-0">
+    <div className={`flex flex-col md:flex-row gap-3 h-full min-h-0 overflow-y-auto md:overflow-y-visible md:overflow-x-auto ${selection.actif ? 'pb-48 md:pb-24' : 'pb-24 md:pb-0'}`}>
       {jours.map((jour, i) => {
         const iso = versJour(jour);
         const items = demandes.filter(d => d.jour_livraison === iso);
@@ -67,10 +71,10 @@ export default function WeekView({ demandes, weekStart, onOpen, onDropCard, etat
           <div
             key={iso}
             className="flex flex-col shrink-0 md:shrink md:min-w-[160px] md:flex-1"
-            onDragOver={e => e.preventDefault()}
+            onDragOver={e => !selection.actif && e.preventDefault()}
             onDrop={e => {
               const id = e.dataTransfer.getData('demandeId');
-              if (id) onDropCard(id, iso);
+              if (id && !selection.actif) onDropCard(id, iso);
             }}
           >
             <div className={`flex items-center justify-between mb-2 px-2 py-1.5 rounded-xl ${estAujourdhui ? 'bg-gray-900' : 'bg-white border border-gray-100'}`}>
@@ -93,14 +97,26 @@ export default function WeekView({ demandes, weekStart, onOpen, onDropCard, etat
             </div>
 
             <div className="md:flex-1 md:overflow-y-auto flex flex-col gap-2 rounded-xl md:min-h-[80px] p-1 border-2 border-dashed border-transparent hover:border-gray-200 transition-colors">
+              <CaseGroupe ids={items.map(d => d.id)} selection={selection} />
               {items.length === 0 && (
                 <div className="flex items-center justify-center flex-1 min-h-[28px] md:min-h-[60px]">
                   <p className="text-[10px] text-gray-300 font-500">Aucune livraison</p>
                 </div>
               )}
               {items.map(d => (
-                <div key={d.id} draggable onDragStart={e => e.dataTransfer.setData('demandeId', d.id)} className="shrink-0">
-                  <WeekCard demande={d} onClick={() => onOpen(d)} etatVu={etats[d.id] ?? null} />
+                <div
+                  key={d.id}
+                  draggable={!selection.actif}
+                  onDragStart={e => e.dataTransfer.setData('demandeId', d.id)}
+                  className="shrink-0 relative"
+                >
+                  <WeekCard
+                    demande={d}
+                    onClick={() => (selection.actif ? selection.basculer(d.id) : onOpen(d))}
+                    etatVu={etats[d.id] ?? null}
+                    selectionnee={selection.actif ? selection.ids.has(d.id) : undefined}
+                  />
+                  {selection.actif && <CaseCarte coche={selection.ids.has(d.id)} />}
                 </div>
               ))}
             </div>

@@ -9,10 +9,12 @@ interface Props {
   demande: Demande;
   onOpen: (demande: Demande) => void;
   etatVu?: EtatVu;
+  // En mode sélection : la carte se coche au lieu de s'ouvrir.
+  selectionnee?: boolean;
 }
 
 // Carte compacte du tableau dispatcheur : ticket, patient, criticité, statut.
-export default function DeliveryCardComponent({ demande, onOpen, etatVu = null }: Props) {
+export default function DeliveryCardComponent({ demande, onOpen, etatVu = null, selectionnee }: Props) {
   const criticite = CRITICITE_CONFIG[demande.criticite];
   const statut = statutAffiche(demande);
   const annulee = demande.statut === 'annulee';
@@ -21,15 +23,16 @@ export default function DeliveryCardComponent({ demande, onOpen, etatVu = null }
     <button
       type="button"
       onClick={() => onOpen(demande)}
+      aria-pressed={selectionnee}
       className={`card-new w-full shrink-0 text-left bg-white rounded-2xl border overflow-hidden select-none transition-shadow hover:shadow-md ${
         annulee ? 'opacity-60 border-red-100' : 'border-black/5 shadow-sm'
-      } ${etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
+      } ${selectionnee ? 'ring-2 ring-sky-500' : etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
     >
       <div className="h-1" style={{ background: annulee ? statut.color : criticite.color }} />
 
       <div className="p-3">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className={`flex items-center gap-1.5 flex-wrap ${selectionnee !== undefined ? 'pl-6' : ''}`}>
             <span className="font-mono text-[11px] text-gray-400 tracking-widest">{demande.numero_ticket}</span>
             <BadgeVu etat={etatVu} />
             <BadgeNature demande={demande} />

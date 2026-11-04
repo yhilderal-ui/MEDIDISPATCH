@@ -122,6 +122,17 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
       dans la Synthèse.
 - [ ] Si un message signale une adresse « non reconnue », vérifier l'orthographe de l'adresse.
 
+## 7 quinquies. Sélection de plusieurs cartes
+
+- [ ] **Sélectionner** (à côté du titre du tableau) : une case apparaît sur chaque carte ; un clic coche
+      la carte au lieu d'ouvrir sa fiche. **Échap** ou **✕** quitte le mode sélection.
+- [ ] **Tout sélectionner** coche une colonne (ou un jour dans la vue semaine).
+- [ ] La barre indique pour chaque action le nombre de cartes concernées, par ex. « Archiver (1) ».
+- [ ] **Reporter au…** : toutes les cartes cochées passent au jour choisi ; leur bon de commande est mis à jour.
+- [ ] **Annuler** et **Supprimer** demandent une confirmation listant les tickets.
+- [ ] Pharmacie : pas de **Supprimer**. Livreurs : seulement **Passer en cours** et **Marquer livrées**
+      (la Tournée bascule sur le tableau en mode sélection).
+
 ## 8. Robustesse
 
 - [ ] Recharger la page (F5) : rien n'est perdu.
