@@ -101,6 +101,9 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
       **Marquer comme récupéré** passe la carte en « Récupéré ».
 - [ ] Sur une livraison : **Créer un reliquat** → seule la date est demandée → une carte « Reliquat de MD-… »
       est créée et s'ouvre ; y joindre le bon de livraison correspondant.
+- [ ] **+ Nouvelle demande** → cocher **Livrer en deux fois**, choisir un second jour après le premier →
+      deux cartes sont créées : la demande et son « Reliquat de MD-… », chacune avec son bon de commande.
+      Un second jour égal ou antérieur au premier est refusé ; la case n'apparaît pas pour un retour.
 - [ ] Les deux cartes se renvoient l'une à l'autre ; le bon de commande de la carte d'origine
       indique « Reliquat à suivre », celui du reliquat « Reliquat de la commande … ».
 - [ ] Le compte Livreurs ne voit pas **Créer un reliquat**.

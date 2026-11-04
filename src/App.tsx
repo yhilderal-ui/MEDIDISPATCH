@@ -39,7 +39,7 @@ import { useChat } from './lib/chat';
 import { useNotifications } from './lib/notifications';
 import Alertes from './components/Alertes';
 import BandeauEnvironnement from './components/BandeauEnvironnement';
-import { ajouterJours, aujourdhuiParis, lundiDeLaSemaine, moisCourt } from './lib/dates';
+import { ajouterJours, aujourdhuiParis, formatJour, lundiDeLaSemaine, moisCourt } from './lib/dates';
 
 type DispatcherView = 'kanban' | 'week';
 
@@ -184,16 +184,27 @@ export default function App() {
     }
   };
 
-  const handleCreate = async (demande: NouvelleDemande, pieces: Pieces): Promise<string | null> => {
+  const handleCreate = async (demande: NouvelleDemande, pieces: Pieces, jourReliquat: string | null): Promise<string | null> => {
     try {
       const { id, numeroTicket, erreursFichiers } = await creerDemande(demande, pieces);
       const problemes: string[] = [];
       if (erreursFichiers.length) problemes.push(`certaines pièces jointes n'ont pas pu être envoyées (${erreursFichiers.join(' ; ')})`);
+      // Livraison en deux fois connue dès la création (décision du 04/11) : le
+      // reliquat est créé avant les bons, pour que celui d'origine l'annonce.
+      let reliquat: { id: string; numeroTicket: string } | null = null;
+      if (jourReliquat) {
+        try {
+          reliquat = await creerReliquat(id, demande.medicaments, [], jourReliquat);
+        } catch (e) {
+          problemes.push(`le reliquat n'a pas pu être créé (${messageErreur(e)}) : créez-le depuis la fiche`);
+        }
+      }
       // Pas de PDF pour un retour (décision du 03/10).
       const retour = demande.nature === 'retour';
       if (!retour) {
         try {
           await publierBonsGeneres(id);
+          if (reliquat) await publierBonsGeneres(reliquat.id);
         } catch (e) {
           problemes.push(`le bon de commande n'a pas pu être généré (${(e as Error).message})`);
         }
@@ -203,7 +214,13 @@ export default function App() {
       if (problemes.length) {
         setErreur(`${quoi} ${numeroTicket} créé${retour ? '' : 'e'}, mais ${problemes.join(' et ')}. Ouvrez la demande pour réessayer.`);
       } else {
-        setInfo(retour ? `Retour ${numeroTicket} créé.` : `Demande ${numeroTicket} créée, bon de commande généré.`);
+        setInfo(
+          retour
+            ? `Retour ${numeroTicket} créé.`
+            : reliquat
+              ? `Demande ${numeroTicket} créée, avec son reliquat ${reliquat.numeroTicket} (${formatJour(jourReliquat as string)}).`
+              : `Demande ${numeroTicket} créée, bon de commande généré.`,
+        );
       }
       return null;
     } catch (e) {
