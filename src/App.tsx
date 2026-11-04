@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Archive, Bell, BellOff, CalendarDays, ChartColumn, CircleCheck, LayoutDashboard, LayoutGrid, LogOut, Plus, TriangleAlert } from 'lucide-react';
+import { Archive, Bell, BellOff, CalendarDays, ChartColumn, CircleCheck, LayoutDashboard, LayoutGrid, LogOut, Plus, SquareCheck, TriangleAlert } from 'lucide-react';
 import type { Demande, EtatVu, Medicament, ModificationDemande, NouvelleDemande, Pieces, Statut, TypeDocument } from './types';
 import { publierBonsGeneres } from './lib/bonsGeneres';
 import Board from './components/Board';
@@ -15,6 +15,8 @@ import StatistiquesView from './components/StatistiquesView';
 import { appliquerFiltres, FILTRES_VIDES, type Filtres } from './lib/filtres';
 import logo from './assets/logo.png';
 import { statutAffiche } from './data';
+import { BarreSelection } from './components/Selection';
+import type { ActionGroupee, Selection } from './lib/selection';
 import { useAuth, type Role } from './lib/useAuth';
 import { COULEUR_ROLE, droits as droitsDuRole, ICONE_ROLE, LIBELLE_ROLE } from './lib/roles';
 import { supabase, supabaseConfigured } from './lib/supabase';
@@ -274,6 +276,112 @@ export default function App() {
     }
   };
 
+  // Sélection de plusieurs cartes (décision du 04/11), dans le tableau et la vue semaine.
+  const [modeSelection, setModeSelection] = useState(false);
+  const [selectionIds, setSelectionIds] = useState<Set<string>>(() => new Set());
+  const [actionEnCours, setActionEnCours] = useState(false);
+  const quitterSelection = useCallback(() => {
+    setModeSelection(false);
+    setSelectionIds(new Set());
+  }, []);
+  const selection: Selection = {
+    actif: modeSelection,
+    ids: selectionIds,
+    basculer: id =>
+      setSelectionIds(s => {
+        const n = new Set(s);
+        if (n.has(id)) n.delete(id);
+        else n.add(id);
+        return n;
+      }),
+    basculerGroupe: ids =>
+      setSelectionIds(s => {
+        const tous = ids.every(id => s.has(id));
+        const n = new Set(s);
+        for (const id of ids) {
+          if (tous) n.delete(id);
+          else n.add(id);
+        }
+        return n;
+      }),
+  };
+  // Archives et Statistiques n'ont pas de sélection.
+  useEffect(() => {
+    if (vueArchives || vueStatistiques) quitterSelection();
+  }, [vueArchives, vueStatistiques, quitterSelection]);
+  useEffect(() => {
+    if (!modeSelection) return;
+    const touche = (e: KeyboardEvent) => e.key === 'Escape' && quitterSelection();
+    window.addEventListener('keydown', touche);
+    return () => window.removeEventListener('keydown', touche);
+  }, [modeSelection, quitterSelection]);
+
+  // Applique une action aux cartes concernées, une par une, puis fait le bilan.
+  const actionGroupee = async (action: ActionGroupee, cibles: Demande[], jour?: string) => {
+    setActionEnCours(true);
+    const echecs: string[] = [];
+    const bonsEnEchec: string[] = [];
+    let faites = 0;
+    for (const d of cibles) {
+      try {
+        if (action === 'en_cours' || action === 'livree') await changerStatut(d.id, action);
+        else if (action === 'annuler') await changerStatut(d.id, 'annulee');
+        else if (action === 'archiver') await archiverDemande(d.id);
+        else if (action === 'supprimer') await supprimerDemande(d);
+        else if (action === 'reporter' && jour) {
+          await reporter(d.id, jour);
+          try {
+            await regenererBons(d);
+          } catch {
+            bonsEnEchec.push(d.numero_ticket);
+          }
+        }
+        faites++;
+      } catch (e) {
+        echecs.push(`${d.numero_ticket} (${messageErreur(e)})`);
+      }
+    }
+    await recharger();
+    setSelectionIds(new Set());
+    setActionEnCours(false);
+    const pluriel = faites > 1 ? 's' : '';
+    const quoi: Record<ActionGroupee, string> = {
+      en_cours: `passée${pluriel} en cours`,
+      livree: `marquée${pluriel} livrée${pluriel}`,
+      reporter: `reportée${pluriel}${jour ? ` au ${formatJour(jour)}` : ''}`,
+      archiver: `archivée${pluriel}`,
+      annuler: `annulée${pluriel}`,
+      supprimer: `supprimée${pluriel} définitivement`,
+    };
+    const bilan = `${faites} carte${pluriel} ${quoi[action]}`.replace(/\.?$/, '.'); // « 7 nov. » ne prend pas un second point
+    if (echecs.length || bonsEnEchec.length) {
+      setErreur(
+        [
+          faites ? bilan : null,
+          echecs.length ? `Échec pour ${echecs.join(' ; ')}.` : null,
+          bonsEnEchec.length ? `Bon de commande non mis à jour : ${bonsEnEchec.join(', ')} (ouvrez la fiche pour le régénérer).` : null,
+        ]
+          .filter(Boolean)
+          .join(' '),
+      );
+    } else {
+      setErreur(null);
+      setInfo(bilan);
+    }
+  };
+  const boutonSelection = (
+    <button
+      type="button"
+      onClick={() => (modeSelection ? quitterSelection() : setModeSelection(true))}
+      aria-pressed={modeSelection}
+      className={`inline-flex items-center gap-1.5 text-xs font-600 px-2.5 py-1 rounded-lg transition-colors ${
+        modeSelection ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+      }`}
+    >
+      <SquareCheck size={14} aria-hidden /> {modeSelection ? 'Terminer' : 'Sélectionner'}
+    </button>
+  );
+
   // Glisser-déposer d'une colonne de statut à la suivante (Nouvelle → En cours → Livrée).
   const handleDeposerStatut = (d: Demande, statut: Statut) => {
     agir(() => changerStatut(d.id, statut), `Demande ${d.numero_ticket} : ${statutAffiche({ statut, nature: d.nature }).label}.`);
@@ -298,6 +406,7 @@ export default function App() {
     setWeekStart(lundiDeLaSemaine(new Date()));
     setFiltres(FILTRES_VIDES);
     setAccueil(n => n + 1); // réinitialise les onglets et la vue du tableau Pharmacie
+    quitterSelection();
   };
 
   if (auth.status === 'loading') {
@@ -322,6 +431,8 @@ export default function App() {
   const ouvrir = (d: Demande) => setOuverteId(d.id);
   const actives = demandes.filter(d => d.statut !== 'annulee');
   const filtrees = appliquerFiltres(demandes, filtres);
+  // Cartes cochées encore visibles (filtres, cartes passées en archives…).
+  const selectionnees = filtrees.filter(d => selectionIds.has(d.id));
   const archivesFiltrees = appliquerFiltres(archives, filtres);
 
   const barreFiltres = (
@@ -539,6 +650,7 @@ export default function App() {
                 )}
 
                 <span className="text-xs text-gray-400 font-mono">{nbNouvelles} en attente</span>
+                {boutonSelection}
 
                 <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg ml-2">
                   {([['kanban', LayoutGrid, 'Vue par statut'], ['week', CalendarDays, 'Vue semaine']] as [DispatcherView, typeof LayoutGrid, string][]).map(([v, Icone, titre]) => (
@@ -565,9 +677,9 @@ export default function App() {
 
             <div className="flex-1 overflow-hidden px-4 sm:px-6 pb-6">
               {dispatcherView === 'kanban' ? (
-                <Board key={accueil} demandes={filtrees} onOpen={ouvrir} etats={etats} onDeposerStatut={handleDeposerStatut} />
+                <Board key={accueil} demandes={filtrees} onOpen={ouvrir} etats={etats} onDeposerStatut={handleDeposerStatut} selection={selection} />
               ) : (
-                <WeekView demandes={filtrees.filter(d => d.statut !== 'annulee')} weekStart={weekStart} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} />
+                <WeekView demandes={filtrees.filter(d => d.statut !== 'annulee')} weekStart={weekStart} onOpen={ouvrir} onDropCard={handleDropCard} etats={etats} selection={selection} />
               )}
             </div>
           </div>
@@ -577,6 +689,7 @@ export default function App() {
               <h2 className="text-xs font-700 uppercase tracking-widest text-gray-400">Tableau des livraisons</h2>
               <div className="flex-1 h-px bg-gray-200" />
               <span className="text-xs text-gray-400 font-mono">{nbNouvelles} nouvelle{nbNouvelles !== 1 ? 's' : ''}</span>
+              {boutonSelection}
             </div>
             <div className="mb-3 shrink-0">{barreFiltres}</div>
             <div className="flex-1 min-h-0">
@@ -587,6 +700,7 @@ export default function App() {
                 onDropCard={handleDropCard}
                 onDeposerStatut={handleDeposerStatut}
                 etats={etats}
+                selection={selection}
                 vueInitiale={role === 'livreur' ? 'tournee' : 'kanban'}
               />
             </div>
@@ -632,6 +746,10 @@ export default function App() {
       )}
 
       {showModal && <CreateCardModal onClose={() => setShowModal(false)} onSubmit={handleCreate} />}
+
+      {modeSelection && (
+        <BarreSelection role={role} selectionnees={selectionnees} occupe={actionEnCours} onAction={actionGroupee} onQuitter={quitterSelection} />
+      )}
 
       <Alertes alertes={notif.alertes} onActiver={notif.activer} onFermer={notif.fermer} />
 

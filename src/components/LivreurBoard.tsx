@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CalendarDays, FileText, LayoutGrid, Pill, Route, TriangleAlert } from 'lucide-react';
 import BadgeCriticite from './BadgeCriticite';
 import type { Demande, EtatVu, Statut } from '../types';
@@ -10,6 +10,8 @@ import WeekView from './WeekView';
 import TourneeDuJour from './TourneeDuJour';
 import { ajouterJours, formatJour, lundiDeLaSemaine, moisCourt } from '../lib/dates';
 import { useGlisserStatut } from '../lib/useGlisserStatut';
+import type { Selection } from '../lib/selection';
+import { CaseCarte, CaseGroupe } from './Selection';
 import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 
 type Tri = 'date' | 'criticite';
@@ -21,11 +23,12 @@ interface Props {
   onDropCard: (demandeId: string, jour: string) => void;
   onDeposerStatut?: (demande: Demande, statut: Statut) => void;
   etats: Record<string, EtatVu>;
+  selection: Selection;
   // Écran d'arrivée : la Tournée pour le compte Livreurs, le tableau sinon.
   vueInitiale?: Vue;
 }
 
-function MedicalCard({ demande, onClick, etatVu }: { demande: Demande; onClick: () => void; etatVu: EtatVu }) {
+function MedicalCard({ demande, onClick, etatVu, selectionnee }: { demande: Demande; onClick: () => void; etatVu: EtatVu; selectionnee?: boolean }) {
   const criticite = CRITICITE_CONFIG[demande.criticite];
   const annulee = demande.statut === 'annulee';
   const nbMedicaments = demande.medicaments.length;
@@ -34,14 +37,15 @@ function MedicalCard({ demande, onClick, etatVu }: { demande: Demande; onClick: 
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={selectionnee}
       className={`card-new w-full shrink-0 text-left bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow group ${
         annulee ? 'border-red-200 opacity-60' : 'border-black/5'
-      } ${etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
+      } ${selectionnee ? 'ring-2 ring-sky-500' : etatVu ? 'ring-2 ring-violet-400/60' : ''}`}
     >
       <div className="h-1" style={{ background: annulee ? '#ef4444' : criticite.color }} />
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className={`flex items-center gap-1.5 flex-wrap ${selectionnee !== undefined ? 'pl-6' : ''}`}>
             <span className="font-mono text-[11px] text-gray-400 tracking-widest">{demande.numero_ticket}</span>
             <BadgeVu etat={etatVu} />
             <BadgeNature demande={demande} />
@@ -89,9 +93,9 @@ function TriBouton({ actif, onClick, children }: { actif: boolean; onClick: () =
   );
 }
 
-function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser }: {
+function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser, selection }: {
   statut: Statut; items: Demande[]; onOpen: (d: Demande) => void; etats: Record<string, EtatVu>; visibleMobile: boolean;
-  glisser: ReturnType<typeof useGlisserStatut>;
+  glisser: ReturnType<typeof useGlisserStatut>; selection: Selection;
 }) {
   const cfg = STATUT_CONFIG[statut];
   const depot = glisser.colonne(statut);
@@ -108,14 +112,21 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser }: {
         className={`flex flex-col gap-3 overflow-y-auto flex-1 pr-1 rounded-2xl transition-colors ${depot.possible ? 'outline-2 outline-dashed -outline-offset-2 p-1' : ''}`}
         style={depot.possible ? { outlineColor: cfg.color + (depot.survolee ? '' : '66'), background: depot.survolee ? cfg.color + '0f' : undefined } : undefined}
       >
+        <CaseGroupe ids={items.map(d => d.id)} selection={selection} />
         {items.length === 0 && (
           <div className="flex items-center justify-center h-24 border-2 border-dashed rounded-2xl" style={{ borderColor: cfg.color + '40' }}>
             <span className="text-xs font-500" style={{ color: cfg.color + '99' }}>Aucune demande</span>
           </div>
         )}
         {items.map(d => (
-          <div key={d.id} {...glisser.carte(d)} className={`shrink-0 ${glisser.glisse?.id === d.id ? 'opacity-40' : ''}`}>
-            <MedicalCard demande={d} onClick={() => onOpen(d)} etatVu={etats[d.id] ?? null} />
+          <div key={d.id} {...glisser.carte(d)} className={`shrink-0 relative ${glisser.glisse?.id === d.id ? 'opacity-40' : ''}`}>
+            <MedicalCard
+              demande={d}
+              onClick={() => (selection.actif ? selection.basculer(d.id) : onOpen(d))}
+              etatVu={etats[d.id] ?? null}
+              selectionnee={selection.actif ? selection.ids.has(d.id) : undefined}
+            />
+            {selection.actif && <CaseCarte coche={selection.ids.has(d.id)} />}
           </div>
         ))}
       </div>
@@ -123,12 +134,16 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser }: {
   );
 }
 
-export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, vueInitiale = 'kanban' }: Props) {
-  const glisser = useGlisserStatut(onDeposerStatut);
+export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, vueInitiale = 'kanban' }: Props) {
+  const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut);
   const [tri, setTri] = useState<Tri>('date');
   const [vue, setVue] = useState<Vue>(vueInitiale);
   const [onglet, setOnglet] = useState<Statut>('nouvelle');
   const [debutSemaine, setDebutSemaine] = useState<Date>(() => lundiDeLaSemaine(new Date()));
+  // La Tournée n'a pas de cases à cocher : le mode sélection ouvre le tableau.
+  useEffect(() => {
+    if (selection.actif && vue === 'tournee') setVue('kanban');
+  }, [selection.actif, vue]);
 
   const trier = (items: Demande[]) =>
     [...items].sort((a, b) =>
@@ -195,12 +210,12 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
       {vue === 'kanban' ? (
         <div className="flex flex-col flex-1 min-h-0">
           <OngletsStatut demandes={demandes} etats={etats} actif={onglet} onChange={setOnglet} />
-          <div className="flex gap-5 flex-1 min-h-0 md:overflow-x-auto pb-24 md:pb-4">
-            <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'nouvelle'} glisser={glisser} />
-            <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'en_cours'} glisser={glisser} />
-            <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'livree'} glisser={glisser} />
+          <div className={`flex gap-5 flex-1 min-h-0 md:overflow-x-auto ${selection.actif ? 'pb-48 md:pb-24' : 'pb-24 md:pb-4'}`}>
+            <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'nouvelle'} glisser={glisser} selection={selection} />
+            <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'en_cours'} glisser={glisser} selection={selection} />
+            <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'livree'} glisser={glisser} selection={selection} />
             {(annulees.length > 0 || onglet === 'annulee') && (
-              <Colonne statut="annulee" items={annulees} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'annulee'} glisser={glisser} />
+              <Colonne statut="annulee" items={annulees} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'annulee'} glisser={glisser} selection={selection} />
             )}
           </div>
         </div>
@@ -216,6 +231,7 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
             onOpen={onOpen}
             onDropCard={onDropCard}
             etats={etats}
+            selection={selection}
           />
         </div>
       )}

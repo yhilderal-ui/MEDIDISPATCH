@@ -4,23 +4,34 @@ import OngletsStatut from './OngletsStatut';
 import { STATUT_CONFIG } from '../data';
 import DeliveryCardComponent from './DeliveryCardComponent';
 import { useGlisserStatut } from '../lib/useGlisserStatut';
+import type { Selection } from '../lib/selection';
+import { CaseCarte, CaseGroupe } from './Selection';
 
 interface Props {
   demandes: Demande[];
   onOpen: (demande: Demande) => void;
   etats: Record<string, EtatVu>;
   onDeposerStatut?: (demande: Demande, statut: Statut) => void;
+  selection: Selection;
 }
 
 const COLONNES: Statut[] = ['nouvelle', 'en_cours', 'livree'];
 
-export default function Board({ demandes, onOpen, etats, onDeposerStatut }: Props) {
+export default function Board({ demandes, onOpen, etats, onDeposerStatut, selection }: Props) {
   const annulees = demandes.filter(d => d.statut === 'annulee');
   const [onglet, setOnglet] = useState<Statut>('nouvelle');
-  const glisser = useGlisserStatut(onDeposerStatut);
+  // Pas de glisser-déposer pendant une sélection.
+  const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut);
+  const ouvrir = (d: Demande) => (selection.actif ? selection.basculer(d.id) : onOpen(d));
+  const carte = (d: Demande) => (
+    <div className="relative">
+      <DeliveryCardComponent demande={d} onOpen={ouvrir} etatVu={etats[d.id]} selectionnee={selection.actif ? selection.ids.has(d.id) : undefined} />
+      {selection.actif && <CaseCarte coche={selection.ids.has(d.id)} />}
+    </div>
+  );
 
   return (
-    <div className="flex flex-col gap-6 h-full min-h-0 overflow-y-auto pb-24 md:pb-4">
+    <div className={`flex flex-col gap-6 h-full min-h-0 overflow-y-auto ${selection.actif ? 'pb-48 md:pb-24' : 'pb-24 md:pb-4'}`}>
       <OngletsStatut demandes={demandes} etats={etats} actif={onglet} onChange={setOnglet} />
       <div className={`${onglet === 'annulee' ? 'hidden' : 'flex'} md:flex gap-5 shrink-0 md:overflow-x-auto -mt-6 md:mt-0`}>
         {COLONNES.map(statut => {
@@ -47,6 +58,7 @@ export default function Board({ demandes, onOpen, etats, onDeposerStatut }: Prop
                 className={`flex flex-col gap-3 rounded-2xl transition-colors ${depot.possible ? 'outline-2 outline-dashed outline-offset-4 min-h-24' : ''}`}
                 style={depot.possible ? { outlineColor: cfg.color + (depot.survolee ? '' : '66'), background: depot.survolee ? cfg.color + '0f' : undefined } : undefined}
               >
+                <CaseGroupe ids={items.map(d => d.id)} selection={selection} />
                 {items.length === 0 && (
                   <div className="flex items-center justify-center h-20 border-2 border-dashed border-gray-200 rounded-2xl">
                     <span className="text-xs text-gray-300 font-500">Aucune demande</span>
@@ -54,7 +66,7 @@ export default function Board({ demandes, onOpen, etats, onDeposerStatut }: Prop
                 )}
                 {items.map(d => (
                   <div key={d.id} {...glisser.carte(d)} className={`shrink-0 ${glisser.glisse?.id === d.id ? 'opacity-40' : ''}`}>
-                    <DeliveryCardComponent demande={d} onOpen={onOpen} etatVu={etats[d.id]} />
+                    {carte(d)}
                   </div>
                 ))}
               </div>
@@ -73,10 +85,11 @@ export default function Board({ demandes, onOpen, etats, onDeposerStatut }: Prop
             <span className="text-[10px] font-700 uppercase tracking-widest text-gray-400">Annulées</span>
             <div className="h-px flex-1 bg-gray-200" />
           </div>
+          <div className="mb-2"><CaseGroupe ids={annulees.map(d => d.id)} selection={selection} /></div>
           <div className="flex gap-4 flex-wrap">
             {annulees.map(d => (
               <div key={d.id} className="w-full md:w-[240px]">
-                <DeliveryCardComponent demande={d} onOpen={onOpen} etatVu={etats[d.id]} />
+                {carte(d)}
               </div>
             ))}
           </div>
