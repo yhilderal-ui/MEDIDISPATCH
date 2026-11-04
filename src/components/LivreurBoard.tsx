@@ -24,6 +24,7 @@ interface Props {
   onDeposerStatut?: (demande: Demande, statut: Statut) => void;
   etats: Record<string, EtatVu>;
   selection: Selection;
+  boutonSelection?: React.ReactNode; // à gauche de la barre d'outils, au-dessus des cartes
   // Écran d'arrivée : la Tournée pour le compte Livreurs, le tableau sinon.
   vueInitiale?: Vue;
 }
@@ -134,7 +135,7 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser, selecti
   );
 }
 
-export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, vueInitiale = 'kanban' }: Props) {
+export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, boutonSelection, vueInitiale = 'kanban' }: Props) {
   const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut);
   const [tri, setTri] = useState<Tri>('date');
   const [vue, setVue] = useState<Vue>(vueInitiale);
@@ -159,6 +160,7 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-3 mb-4 flex-wrap shrink-0">
+        {boutonSelection}
         <div className="flex items-center gap-2 ml-auto flex-wrap">
           {vue === 'kanban' && (
             <>
