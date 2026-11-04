@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Criticite, Demande, Medicament, ModificationDemande as Champs } from '../types';
 import SaisieMedicament from './SaisieMedicament';
+import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 import { CRITICITE_CONFIG } from '../data';
 
 interface Props {
@@ -40,7 +41,7 @@ export default function ModificationDemande({ demande, onAnnuler, onEnregistrer 
       (!form.patient_nom.trim() && 'Indiquez le nom du patient.') ||
       (!form.patient_telephone.trim() && 'Indiquez le téléphone du patient.') ||
       (!form.patient_adresse.trim() && "Indiquez l'adresse de livraison.") ||
-      (lignes.length === 0 && 'Ajoutez au moins un médicament.') ||
+      (MEDICAMENTS_ACTIFS && lignes.length === 0 && 'Ajoutez au moins un médicament.') ||
       null;
     if (probleme) {
       setErreur(probleme);
@@ -54,7 +55,8 @@ export default function ModificationDemande({ demande, onAnnuler, onEnregistrer 
       patient_adresse: form.patient_adresse.trim(),
       criticite: form.criticite as Criticite,
       notes_initiales: form.notes_initiales.trim() || null,
-      medicaments: lignes,
+      // Liste masquée : les médicaments déjà saisis sont gardés tels quels.
+      medicaments: MEDICAMENTS_ACTIFS ? lignes : demande.medicaments,
     });
     setEnvoi(false);
     if (ok) onAnnuler();
@@ -84,6 +86,7 @@ export default function ModificationDemande({ demande, onAnnuler, onEnregistrer 
           ))}
         </select>
       </div>
+      {MEDICAMENTS_ACTIFS && (
       <div>
         <span className={ETIQUETTE}>Médicaments</span>
         <div className="border border-gray-200 rounded-xl overflow-hidden bg-white divide-y divide-gray-100">
@@ -125,6 +128,7 @@ export default function ModificationDemande({ demande, onAnnuler, onEnregistrer 
           </button>
         </div>
       </div>
+      )}
       <div>
         <label className={ETIQUETTE} htmlFor="mod_notes">Notes</label>
         <textarea id="mod_notes" rows={2} value={form.notes_initiales} onChange={set('notes_initiales')} className={`${CHAMP} resize-none`} />

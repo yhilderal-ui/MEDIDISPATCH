@@ -3,6 +3,7 @@ import { villeDepuisAdresse } from './adresse';
 import { debutJourParisISO, depuisJour, formatJour, heureMurParis, versJour, ajouterJours } from './dates';
 import type { Chiffres, Periode, Statistiques } from './statistiques';
 import type { Kilometres } from './kilometres';
+import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 import type { Medicament } from '../types';
 import type { CellObject, SheetData } from 'write-excel-file/browser';
 
@@ -181,7 +182,7 @@ export async function exporterStatistiques(
     { data: synthese, sheet: 'Synthèse', columns: [{ width: 38 }, { width: 14 }, { width: 20 }, { width: 12 }] },
     { data: feuilleLivraisons, sheet: 'Livraisons', columns: [{ width: 42 }, { width: 12 }], stickyRowsCount: 1 },
     { data: feuilleKm, sheet: 'Kilomètres', columns: [{ width: 14 }, { width: 10 }, { width: 12 }, { width: 26 }], stickyRowsCount: 1 },
-    { data: feuilleMedicaments, sheet: 'Médicaments', columns: [{ width: 6 }, { width: 70 }, { width: 18 }], stickyRowsCount: 1 },
+    ...(MEDICAMENTS_ACTIFS ? [{ data: feuilleMedicaments, sheet: 'Médicaments', columns: [{ width: 6 }, { width: 70 }, { width: 18 }], stickyRowsCount: 1 }] : []),
     {
       data: feuilleDemandes,
       sheet: 'Détail des demandes',

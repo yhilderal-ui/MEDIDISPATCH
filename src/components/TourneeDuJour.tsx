@@ -6,6 +6,7 @@ import { CRITICITE_ORDRE, statutAffiche } from '../data';
 import BadgeNature from './BadgeNature';
 import { aujourdhuiParis, formatJour } from '../lib/dates';
 import { urlWaze } from '../lib/itineraire';
+import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 
 interface Props {
   demandes: Demande[];
@@ -68,7 +69,7 @@ export default function TourneeDuJour({ demandes, onOpen, etats }: Props) {
                 </div>
                 <p className="font-700 text-gray-900 text-[15px] leading-tight">{d.patient_nom}</p>
                 <p className="text-xs text-gray-600 leading-snug">{d.patient_adresse}</p>
-                {d.nature === 'retour' && (
+                {MEDICAMENTS_ACTIFS && d.nature === 'retour' && d.medicaments.length > 0 && (
                   <p className="text-[11px] text-amber-800 bg-amber-50 rounded-lg px-2.5 py-1.5 leading-snug">
                     <span className="font-600">À récupérer :</span>{' '}
                     {d.medicaments.map(m => (m.quantite ? `${m.nom} (${m.quantite})` : m.nom)).join(', ')}

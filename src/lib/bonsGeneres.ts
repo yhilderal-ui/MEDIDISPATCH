@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 import { supabase } from './supabase';
 import { messageErreur } from './demandes';
 import { EMETTEUR } from '../config/emetteur';
@@ -129,8 +130,9 @@ export async function genererBonPdf(d: DonneesBon, modele: ModeleBon, liens: Lie
   y += 4;
   separateur();
 
-  // Médicaments : seulement sur le bon de commande
-  if (modele === 'commande') {
+  // Médicaments : seulement sur le bon de commande, et seulement s'il y en a
+  // (liste masquée depuis le 04/11, voir config/fonctionnalites.ts).
+  if (modele === 'commande' && MEDICAMENTS_ACTIFS && d.medicaments.length > 0) {
     doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(107, 114, 128);
     doc.text('#', MARGE, y);
     doc.text('MÉDICAMENT', MARGE + 10, y);
