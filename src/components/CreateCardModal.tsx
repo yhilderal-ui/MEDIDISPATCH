@@ -4,6 +4,7 @@ import type { Criticite, Medicament, Nature, NouvelleDemande, Pieces } from '../
 import { CRITICITE_CONFIG, DOC_CONFIG, LIBELLE_PIECE, NATURE_CONFIG, PIECES } from '../data';
 import ChampPiece from './ChampPiece';
 import SaisieMedicament from './SaisieMedicament';
+import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 import { aujourdhuiParis, erreurJourLivraison } from '../lib/dates';
 
 interface Props {
@@ -75,7 +76,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
       (!form.patient_telephone.trim() && 'Indiquez le téléphone du patient.') ||
       (!form.patient_adresse.trim() && "Indiquez l'adresse de livraison.") ||
       erreurJourLivraison(form.jour_livraison) ||
-      (lignes.length === 0 && 'Ajoutez au moins un médicament.') ||
+      (MEDICAMENTS_ACTIFS && lignes.length === 0 && 'Ajoutez au moins un médicament.') ||
       null;
     if (probleme) {
       setErreur(probleme);
@@ -91,7 +92,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
         patient_adresse: form.patient_adresse.trim(),
         jour_livraison: form.jour_livraison,
         criticite: form.criticite,
-        medicaments: lignes,
+        medicaments: MEDICAMENTS_ACTIFS ? lignes : [],
         notes_initiales: form.notes_initiales.trim() || null,
         nature,
       },
@@ -205,7 +206,8 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
             </div>
           </div>
 
-          {/* Médicaments */}
+          {/* Médicaments (masqués depuis le 04/11, voir config/fonctionnalites.ts) */}
+          {MEDICAMENTS_ACTIFS && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className={ETIQUETTE.replace(' block mb-1', '')}>{retour ? 'Médicaments à récupérer' : 'Médicaments'}</span>
@@ -265,6 +267,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
               </button>
             </div>
           </div>
+          )}
 
           {/* Notes */}
           <div>
@@ -286,7 +289,9 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
               <FileText size={13} className="inline -mt-0.5 mr-1" aria-hidden />
               {retour
                 ? 'Aucun document n’est généré pour un retour.'
-                : 'Le bon de commande (avec les médicaments, à mettre dans le carton) sera généré automatiquement. Joignez ci-dessous le bon de livraison créé dans votre logiciel.'}
+                : MEDICAMENTS_ACTIFS
+                  ? 'Le bon de commande (avec les médicaments, à mettre dans le carton) sera généré automatiquement. Joignez ci-dessous le bon de livraison créé dans votre logiciel.'
+                  : 'Le bon de commande sera généré automatiquement. Joignez ci-dessous le bon de livraison créé dans votre logiciel.'}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {PIECES.map(type => (

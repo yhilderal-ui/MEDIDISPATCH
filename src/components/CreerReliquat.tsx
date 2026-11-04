@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Split } from 'lucide-react';
 import type { Demande, Medicament } from '../types';
 import { aujourdhuiParis, erreurJourLivraison } from '../lib/dates';
+import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 
 interface Props {
   demande: Demande;
@@ -40,6 +41,21 @@ export default function CreerReliquat({ demande, onAnnuler, onEnregistrer }: Pro
   const maj = (i: number, champs: Partial<Ligne>) => setLignes(ls => ls.map((l, j) => (j === i ? { ...l, ...champs } : l)));
 
   const enregistrer = async () => {
+    // Liste masquée : la carte d'origine garde ses médicaments (souvent aucun),
+    // le reliquat n'en reçoit pas ; on ne choisit que la date.
+    if (!MEDICAMENTS_ACTIFS) {
+      const probleme = erreurJourLivraison(jour);
+      if (probleme) {
+        setErreur(probleme);
+        return;
+      }
+      setErreur(null);
+      setEnvoi(true);
+      const ok = await onEnregistrer(demande.medicaments, [], jour);
+      setEnvoi(false);
+      if (ok) onAnnuler();
+      return;
+    }
     const restants: Medicament[] = [];
     const reliquat: Medicament[] = [];
     for (const [i, l] of lignes.entries()) {
@@ -77,11 +93,15 @@ export default function CreerReliquat({ demande, onAnnuler, onEnregistrer }: Pro
           <Split size={15} aria-hidden /> Créer un reliquat
         </p>
         <p className="text-[11px] text-sky-800/80 mt-0.5">
-          Indiquez ce qui part maintenant et ce qui sera livré plus tard. Une carte « Reliquat de {demande.numero_ticket} » sera
-          créée pour le reste, avec ses propres bons.
+          {MEDICAMENTS_ACTIFS
+            ? <>Indiquez ce qui part maintenant et ce qui sera livré plus tard. Une carte « Reliquat de {demande.numero_ticket} » sera
+              créée pour le reste, avec ses propres bons.</>
+            : <>Choisissez le jour de la seconde livraison. Une carte « Reliquat de {demande.numero_ticket} » sera créée,
+              avec son propre bon de commande ; joignez-y le bon de livraison correspondant.</>}
         </p>
       </div>
 
+      {MEDICAMENTS_ACTIFS && (
       <div className="space-y-2">
         {demande.medicaments.map((m, i) => {
           const l = lignes[i];
@@ -121,6 +141,7 @@ export default function CreerReliquat({ demande, onAnnuler, onEnregistrer }: Pro
           );
         })}
       </div>
+      )}
 
       <label className="block text-[10px] font-600 uppercase tracking-widest text-gray-500">
         Livraison du reliquat

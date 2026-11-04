@@ -10,6 +10,7 @@ import WeekView from './WeekView';
 import TourneeDuJour from './TourneeDuJour';
 import { ajouterJours, formatJour, lundiDeLaSemaine, moisCourt } from '../lib/dates';
 import { useGlisserStatut } from '../lib/useGlisserStatut';
+import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 
 type Tri = 'date' | 'criticite';
 type Vue = 'kanban' | 'week' | 'tournee';
@@ -61,7 +62,9 @@ function MedicalCard({ demande, onClick, etatVu }: { demande: Demande; onClick: 
         <div className="flex items-center justify-between gap-2">
           <BadgeCriticite criticite={demande.criticite} />
           <div className="flex items-center gap-2 text-[11px] text-gray-400 group-hover:text-gray-600 transition-colors shrink-0">
-            <span className="inline-flex items-center gap-1" title="Médicaments"><Pill size={12} aria-hidden /> {nbMedicaments}</span>
+            {MEDICAMENTS_ACTIFS && (
+              <span className="inline-flex items-center gap-1" title="Médicaments"><Pill size={12} aria-hidden /> {nbMedicaments}</span>
+            )}
             {demande.documents.length > 0 && (
               <span className="inline-flex items-center gap-1" title="Documents"><FileText size={12} aria-hidden /> {demande.documents.length}</span>
             )}

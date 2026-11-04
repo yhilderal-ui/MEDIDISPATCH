@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react';
 import GraphiqueColonnes, { type Colonne } from './GraphiqueColonnes';
 import { exporterStatistiques } from '../lib/exportExcel';
 import { kilometresPeriode, type Kilometres } from '../lib/kilometres';
+import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 import { ajouterJours, aujourdhuiParis, depuisJour, formatJour, lundiDeLaSemaine, moisCourt, versJour } from '../lib/dates';
 import {
   calculerPeriode,
@@ -325,7 +326,7 @@ export default function StatistiquesView() {
               )}
             </section>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className={`grid grid-cols-1 gap-4 ${MEDICAMENTS_ACTIFS ? 'lg:grid-cols-2' : ''}`}>
               {/* Activité selon le jour de la semaine */}
               <section className={CARTE} aria-labelledby="titre-activite">
                 <h3 id="titre-activite" className={TITRE}>Activité selon le jour de la semaine</h3>
@@ -338,6 +339,7 @@ export default function StatistiquesView() {
               </section>
 
               {/* Top 10 des médicaments */}
+              {MEDICAMENTS_ACTIFS && (
               <section className={CARTE} aria-labelledby="titre-medicaments">
                 <h3 id="titre-medicaments" className={TITRE}>Top 10 des médicaments</h3>
                 <p className="text-[11px] text-gray-400 mb-4">Nombre de demandes livrées qui en contenaient</p>
@@ -362,6 +364,7 @@ export default function StatistiquesView() {
                   </ol>
                 )}
               </section>
+              )}
             </div>
 
             <p className="text-[10px] text-gray-400 pb-2">

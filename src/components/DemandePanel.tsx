@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Archive, CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Split, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
 import type { Demande, DocumentJoint, Medicament, ModificationDemande as Champs, Note, Statut, TypeDocument } from '../types';
+import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 import BoutonsItineraire from './BoutonsItineraire';
 import ModificationDemande from './ModificationDemande';
 import CreerReliquat from './CreerReliquat';
@@ -369,6 +370,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
             <CreerReliquat demande={demande} onAnnuler={() => setReliquatOuvert(false)} onEnregistrer={onCreerReliquat} />
           )}
 
+          {MEDICAMENTS_ACTIFS && (
           <section>
             <p className={TITRE}>{retour ? 'Médicaments à récupérer' : 'Médicaments'} ({demande.medicaments.length})</p>
             <div className="border border-gray-100 rounded-xl overflow-hidden">
@@ -383,6 +385,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
               ))}
             </div>
           </section>
+          )}
 
           <section>
             <p className={TITRE}>Documents ({documents.length})</p>

@@ -24,11 +24,12 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 ## 1. Création d'une demande (Florence)
 
 - [ ] **+ Nouvelle demande** : nom, téléphone, adresse, date du jour, criticité Urgent,
-      deux médicaments avec quantités, une note (digicode), une ordonnance fictive.
+      une note (digicode), une ordonnance fictive, un bon de livraison fictif. Il n'y a **pas** de
+      liste de médicaments (masquée depuis le 04/11, voir `src/config/fonctionnalites.ts`).
 - [ ] Un **dimanche** est refusé ; une date **passée** est refusée.
 - [ ] Un fichier Word est refusé ; un fichier de plus de 10 Mo est refusé.
 - [ ] La carte apparaît dans « Nouvelle » avec un numéro `MD-000xx`.
-- [ ] Le **bon de commande** généré s'ouvre : en-tête FLOPHARMA, patient, médicaments,
+- [ ] Le **bon de commande** généré s'ouvre : en-tête FLOPHARMA, patient (sans liste de médicaments),
       encart Notes, zone de signature.
 - [ ] Le bon de livraison n'est **pas** généré : celui joint à la création (logiciel de Florence)
       apparaît dans les documents, marqué « joint ». On peut aussi en joindre un après coup
@@ -94,12 +95,12 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 
 ## 7 ter. Retours et reliquats
 
-- [ ] **+ Nouvelle demande** → **Retour** : « Jour de passage », « Médicaments à récupérer », aucun PDF
+- [ ] **+ Nouvelle demande** → **Retour** : « Jour de passage », ce qu'il faut récupérer noté dans les **Notes**, aucun PDF
       généré ; la carte porte l'étiquette **Retour**.
-- [ ] Côté Livreurs, la Tournée indique « à récupérer » et la liste des médicaments à reprendre ;
+- [ ] Côté Livreurs, la Tournée indique « à récupérer » et la note de la carte ;
       **Marquer comme récupéré** passe la carte en « Récupéré ».
-- [ ] Sur une livraison : **Créer un reliquat** → un médicament « Partagé » (2 + 2), un autre « Plus tard »,
-      date au choix → une carte « Reliquat de MD-… » est créée et s'ouvre.
+- [ ] Sur une livraison : **Créer un reliquat** → seule la date est demandée → une carte « Reliquat de MD-… »
+      est créée et s'ouvre ; y joindre le bon de livraison correspondant.
 - [ ] Les deux cartes se renvoient l'une à l'autre ; le bon de commande de la carte d'origine
       indique « Reliquat à suivre », celui du reliquat « Reliquat de la commande … ».
 - [ ] Le compte Livreurs ne voit pas **Créer un reliquat**.
