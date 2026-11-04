@@ -124,7 +124,7 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 
 ## 7 quinquies. Sélection de plusieurs cartes
 
-- [ ] **Sélectionner** (à côté du titre du tableau) : une case apparaît sur chaque carte ; un clic coche
+- [ ] **Sélectionner** (au-dessus des cartes, sous les filtres) : une case apparaît sur chaque carte ; un clic coche
       la carte au lieu d'ouvrir sa fiche. **Échap** ou **✕** quitte le mode sélection.
 - [ ] **Tout sélectionner** coche une colonne (ou un jour dans la vue semaine).
 - [ ] La barre indique pour chaque action le nombre de cartes concernées, par ex. « Archiver (1) ».

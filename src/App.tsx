@@ -650,7 +650,6 @@ export default function App() {
                 )}
 
                 <span className="text-xs text-gray-400 font-mono">{nbNouvelles} en attente</span>
-                {boutonSelection}
 
                 <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg ml-2">
                   {([['kanban', LayoutGrid, 'Vue par statut'], ['week', CalendarDays, 'Vue semaine']] as [DispatcherView, typeof LayoutGrid, string][]).map(([v, Icone, titre]) => (
@@ -673,6 +672,7 @@ export default function App() {
                 </div>
               </div>
               <div className="mt-3">{barreFiltres}</div>
+              <div className="mt-3">{boutonSelection}</div>
             </div>
 
             <div className="flex-1 overflow-hidden px-4 sm:px-6 pb-6">
@@ -689,7 +689,6 @@ export default function App() {
               <h2 className="text-xs font-700 uppercase tracking-widest text-gray-400">Tableau des livraisons</h2>
               <div className="flex-1 h-px bg-gray-200" />
               <span className="text-xs text-gray-400 font-mono">{nbNouvelles} nouvelle{nbNouvelles !== 1 ? 's' : ''}</span>
-              {boutonSelection}
             </div>
             <div className="mb-3 shrink-0">{barreFiltres}</div>
             <div className="flex-1 min-h-0">
@@ -701,6 +700,7 @@ export default function App() {
                 onDeposerStatut={handleDeposerStatut}
                 etats={etats}
                 selection={selection}
+                boutonSelection={boutonSelection}
                 vueInitiale={role === 'livreur' ? 'tournee' : 'kanban'}
               />
             </div>
