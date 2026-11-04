@@ -9,6 +9,7 @@ import { CRITICITE_CONFIG, CRITICITE_ORDRE, STATUT_CONFIG } from '../data';
 import WeekView from './WeekView';
 import TourneeDuJour from './TourneeDuJour';
 import { ajouterJours, formatJour, lundiDeLaSemaine, moisCourt } from '../lib/dates';
+import { useGlisserStatut } from '../lib/useGlisserStatut';
 
 type Tri = 'date' | 'criticite';
 type Vue = 'kanban' | 'week' | 'tournee';
@@ -17,6 +18,7 @@ interface Props {
   demandes: Demande[];
   onOpen: (demande: Demande) => void;
   onDropCard: (demandeId: string, jour: string) => void;
+  onDeposerStatut?: (demande: Demande, statut: Statut) => void;
   etats: Record<string, EtatVu>;
   // Écran d'arrivée : la Tournée pour le compte Livreurs, le tableau sinon.
   vueInitiale?: Vue;
@@ -84,12 +86,14 @@ function TriBouton({ actif, onClick, children }: { actif: boolean; onClick: () =
   );
 }
 
-function Colonne({ statut, items, onOpen, etats, visibleMobile }: {
+function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser }: {
   statut: Statut; items: Demande[]; onOpen: (d: Demande) => void; etats: Record<string, EtatVu>; visibleMobile: boolean;
+  glisser: ReturnType<typeof useGlisserStatut>;
 }) {
   const cfg = STATUT_CONFIG[statut];
+  const depot = glisser.colonne(statut);
   return (
-    <div className={`${visibleMobile ? 'flex' : 'hidden'} md:flex flex-col w-full md:min-w-[280px] md:w-[280px] shrink-0 min-h-0`}>
+    <div {...depot.props} className={`${visibleMobile ? 'flex' : 'hidden'} md:flex flex-col w-full md:min-w-[280px] md:w-[280px] shrink-0 min-h-0`}>
       <div className="hidden md:flex items-center justify-between mb-3 px-3 py-2 rounded-xl" style={{ background: cfg.color + '12' }}>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ background: cfg.color }} />
@@ -97,21 +101,27 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile }: {
         </div>
         <span className="text-[10px] font-700 px-2 py-0.5 rounded-full text-white" style={{ background: cfg.color }}>{items.length}</span>
       </div>
-      <div className="flex flex-col gap-3 overflow-y-auto flex-1 pr-1">
+      <div
+        className={`flex flex-col gap-3 overflow-y-auto flex-1 pr-1 rounded-2xl transition-colors ${depot.possible ? 'outline-2 outline-dashed -outline-offset-2 p-1' : ''}`}
+        style={depot.possible ? { outlineColor: cfg.color + (depot.survolee ? '' : '66'), background: depot.survolee ? cfg.color + '0f' : undefined } : undefined}
+      >
         {items.length === 0 && (
           <div className="flex items-center justify-center h-24 border-2 border-dashed rounded-2xl" style={{ borderColor: cfg.color + '40' }}>
             <span className="text-xs font-500" style={{ color: cfg.color + '99' }}>Aucune demande</span>
           </div>
         )}
         {items.map(d => (
-          <MedicalCard key={d.id} demande={d} onClick={() => onOpen(d)} etatVu={etats[d.id] ?? null} />
+          <div key={d.id} {...glisser.carte(d)} className={`shrink-0 ${glisser.glisse?.id === d.id ? 'opacity-40' : ''}`}>
+            <MedicalCard demande={d} onClick={() => onOpen(d)} etatVu={etats[d.id] ?? null} />
+          </div>
         ))}
       </div>
     </div>
   );
 }
 
-export default function LivreurBoard({ demandes, onOpen, onDropCard, etats, vueInitiale = 'kanban' }: Props) {
+export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, vueInitiale = 'kanban' }: Props) {
+  const glisser = useGlisserStatut(onDeposerStatut);
   const [tri, setTri] = useState<Tri>('date');
   const [vue, setVue] = useState<Vue>(vueInitiale);
   const [onglet, setOnglet] = useState<Statut>('nouvelle');
@@ -183,11 +193,11 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, etats, vueI
         <div className="flex flex-col flex-1 min-h-0">
           <OngletsStatut demandes={demandes} etats={etats} actif={onglet} onChange={setOnglet} />
           <div className="flex gap-5 flex-1 min-h-0 md:overflow-x-auto pb-24 md:pb-4">
-            <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'nouvelle'} />
-            <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'en_cours'} />
-            <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'livree'} />
+            <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'nouvelle'} glisser={glisser} />
+            <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'en_cours'} glisser={glisser} />
+            <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'livree'} glisser={glisser} />
             {(annulees.length > 0 || onglet === 'annulee') && (
-              <Colonne statut="annulee" items={annulees} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'annulee'} />
+              <Colonne statut="annulee" items={annulees} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'annulee'} glisser={glisser} />
             )}
           </div>
         </div>
