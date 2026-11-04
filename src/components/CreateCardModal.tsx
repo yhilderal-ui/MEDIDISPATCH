@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { FileText } from 'lucide-react';
+import { Split } from 'lucide-react';
 import type { Criticite, Medicament, Nature, NouvelleDemande, Pieces } from '../types';
 import { CRITICITE_CONFIG, DOC_CONFIG, LIBELLE_PIECE, NATURE_CONFIG, PIECES } from '../data';
 import ChampPiece from './ChampPiece';
@@ -9,7 +9,8 @@ import { aujourdhuiParis, erreurJourLivraison } from '../lib/dates';
 
 interface Props {
   onClose: () => void;
-  onSubmit: (demande: NouvelleDemande, pieces: Pieces) => Promise<string | null>;
+  // jourReliquat : livraison en deux fois dès la création (décision du 04/11).
+  onSubmit: (demande: NouvelleDemande, pieces: Pieces, jourReliquat: string | null) => Promise<string | null>;
 }
 
 interface LigneMedicament extends Medicament {
@@ -36,6 +37,11 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
   // Livraison ou retour (aller récupérer des médicaments), décision du 03/10.
   const [nature, setNature] = useState<Nature>('livraison');
   const retour = nature === 'retour';
+  // Livraison en deux fois, connue dès la création : une carte « Reliquat de … »
+  // est créée en même temps, pour le jour choisi.
+  const [deuxFois, setDeuxFois] = useState(false);
+  const [jourReliquat, setJourReliquat] = useState('');
+  const avecReliquat = !retour && deuxFois;
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const nomRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
@@ -76,6 +82,9 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
       (!form.patient_telephone.trim() && 'Indiquez le téléphone du patient.') ||
       (!form.patient_adresse.trim() && "Indiquez l'adresse de livraison.") ||
       erreurJourLivraison(form.jour_livraison) ||
+      (avecReliquat && !jourReliquat && 'Indiquez le jour de la seconde livraison.') ||
+      (avecReliquat && erreurJourLivraison(jourReliquat)) ||
+      (avecReliquat && jourReliquat <= form.jour_livraison && 'La seconde livraison doit avoir lieu après la première.') ||
       (MEDICAMENTS_ACTIFS && lignes.length === 0 && 'Ajoutez au moins un médicament.') ||
       null;
     if (probleme) {
@@ -97,6 +106,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
         nature,
       },
       pieces,
+      avecReliquat ? jourReliquat : null,
     );
     setEnvoi(false);
     if (echec) setErreur(echec);
@@ -206,6 +216,42 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
             </div>
           </div>
 
+          {/* Livraison en deux fois (reliquat dès la création) */}
+          {!retour && (
+            <div className={`rounded-2xl border p-3 transition-colors ${deuxFois ? 'border-sky-200 bg-sky-50/50' : 'border-gray-200'}`}>
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={deuxFois}
+                  onChange={e => setDeuxFois(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-sky-700"
+                />
+                <span>
+                  <span className="text-sm font-600 text-gray-800 inline-flex items-center gap-1.5">
+                    <Split size={14} className="text-sky-700" aria-hidden /> Livrer en deux fois
+                  </span>
+                  <span className="block text-[11px] text-gray-500 leading-snug">
+                    Une carte « Reliquat » liée sera créée en même temps pour la seconde livraison.
+                  </span>
+                </span>
+              </label>
+              {deuxFois && (
+                <div className="mt-3">
+                  <label className={ETIQUETTE} htmlFor="jour_reliquat">Jour de la seconde livraison</label>
+                  <input
+                    id="jour_reliquat"
+                    type="date"
+                    value={jourReliquat}
+                    onChange={e => setJourReliquat(e.target.value)}
+                    min={form.jour_livraison || aujourdhuiParis()}
+                    className={CHAMP}
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">Les pièces jointes ci-dessous vont sur la première carte ; joignez le bon de livraison du reliquat depuis sa fiche.</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Médicaments (masqués depuis le 04/11, voir config/fonctionnalites.ts) */}
           {MEDICAMENTS_ACTIFS && (
           <div>
@@ -285,14 +331,6 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
           {/* Pièces jointes (toutes optionnelles) */}
           <div>
             <span className={ETIQUETTE}>Pièces jointes (optionnelles)</span>
-            <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 mb-2">
-              <FileText size={13} className="inline -mt-0.5 mr-1" aria-hidden />
-              {retour
-                ? 'Aucun document n’est généré pour un retour.'
-                : MEDICAMENTS_ACTIFS
-                  ? 'Le bon de commande (avec les médicaments, à mettre dans le carton) sera généré automatiquement. Joignez ci-dessous le bon de livraison créé dans votre logiciel.'
-                  : 'Le bon de commande sera généré automatiquement. Joignez ci-dessous le bon de livraison créé dans votre logiciel.'}
-            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {PIECES.map(type => (
                 <ChampPiece
