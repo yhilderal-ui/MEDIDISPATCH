@@ -390,14 +390,14 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
               {documents.map(doc => <LigneDocument key={doc.id} doc={doc} />)}
               {documents.length === 0 && <p className="text-sm text-gray-400 py-3 text-center">Aucun document joint</p>}
             </div>
-            {!retour && !['bon_commande', 'bon_livraison'].every(t => demande.documents.some(d => d.genere && d.type === t)) && (
+            {!retour && !demande.documents.some(d => d.genere && d.type === 'bon_commande') && (
               <button
                 type="button"
                 disabled={occupe}
                 onClick={() => executer(onGenererBon)}
                 className="mt-2 w-full text-xs font-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl py-2 transition-colors disabled:opacity-50"
               >
-                <FileText size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Générer le bon de commande et le bon de livraison
+                <FileText size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Générer le bon de commande
               </button>
             )}
             {/* Les deux rôles peuvent ajouter des pièces, à tout moment : le

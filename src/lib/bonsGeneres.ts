@@ -205,8 +205,10 @@ async function publierBon(d: Demande, modele: ModeleBon, liens: LiensReliquat): 
   if (ecriture.error) throw new Error(messageErreur(ecriture.error));
 }
 
-// Génère le bon de commande et le bon de livraison à partir de l'état actuel
-// de la carte en base.
+// Génère le bon de commande à partir de l'état actuel de la carte en base.
+// Le bon de livraison n'est plus généré (décision du 04/11) : Florence le crée
+// dans son propre logiciel et le joint à la carte (pièce « Bon de livraison »).
+// Les bons de livraison générés avant cette date restent consultables.
 export async function publierBonsGeneres(demandeId: string): Promise<void> {
   const { data: d, error } = await supabase.from('demandes').select('*').eq('id', demandeId).single();
   if (error) throw new Error(messageErreur(error));
@@ -228,5 +230,4 @@ export async function publierBonsGeneres(demandeId: string): Promise<void> {
   liens.reliquats = (enfants.data ?? []).map(e => ({ ticket: e.numero_ticket as string, jour: e.jour_livraison as string }));
 
   await publierBon(d as Demande, 'commande', liens);
-  await publierBon(d as Demande, 'livraison', liens);
 }

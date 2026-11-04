@@ -32,13 +32,14 @@ export const DOC_CONFIG: Record<TypeDocument, { Icone: LucideIcon; color: string
   mutuelle: { Icone: ShieldCheck, color: '#2563eb', bg: '#eff6ff', label: 'Mutuelle' },
 };
 
-export const PIECES: TypePiece[] = ['ordonnance', 'carte_vitale', 'mutuelle', 'bon_livraison'];
+// Le bon de livraison vient du logiciel de Florence (décision du 04/11) : en tête après l'ordonnance.
+export const PIECES: TypePiece[] = ['ordonnance', 'bon_livraison', 'carte_vitale', 'mutuelle'];
 
 export const LIBELLE_PIECE: Record<TypePiece, string> = {
   ordonnance: 'Ordonnance',
   carte_vitale: 'Carte Vitale',
   mutuelle: 'Mutuelle',
-  bon_livraison: 'Bon de livraison complémentaire',
+  bon_livraison: 'Bon de livraison',
 };
 
 // Livraison ou retour (décision du 03/10).
