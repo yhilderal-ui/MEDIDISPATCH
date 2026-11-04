@@ -30,7 +30,9 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] La carte apparaît dans « Nouvelle » avec un numéro `MD-000xx`.
 - [ ] Le **bon de commande** généré s'ouvre : en-tête FLOPHARMA, patient, médicaments,
       encart Notes, zone de signature.
-- [ ] Le **bon de livraison** généré s'ouvre : le même document, **sans** la liste des médicaments.
+- [ ] Le bon de livraison n'est **pas** généré : celui joint à la création (logiciel de Florence)
+      apparaît dans les documents, marqué « joint ». On peut aussi en joindre un après coup
+      depuis la fiche (**+ Bon de livraison**).
 
 ## 2. Réception côté pharmacie (téléphone)
 
@@ -54,8 +56,8 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 
 ## 4. Modification et report
 
-- [ ] Florence corrige l'adresse (**Modifier les informations**) → le bon de commande et le
-      bon de livraison sont régénérés avec la nouvelle adresse ; l'historique indique « Modification : adresse ».
+- [ ] Florence corrige l'adresse (**Modifier les informations**) → le bon de commande est
+      régénéré avec la nouvelle adresse ; l'historique indique « Modification : adresse ».
 - [ ] La pharmacie reporte une demande au lendemain → elle change de colonne dans la
       vue semaine ; l'historique indique le report.
 - [ ] Dans la vue semaine sur ordinateur, glisser une carte vers un autre jour la reporte.
@@ -98,8 +100,8 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
       **Marquer comme récupéré** passe la carte en « Récupéré ».
 - [ ] Sur une livraison : **Créer un reliquat** → un médicament « Partagé » (2 + 2), un autre « Plus tard »,
       date au choix → une carte « Reliquat de MD-… » est créée et s'ouvre.
-- [ ] Les deux cartes se renvoient l'une à l'autre ; les bons de la carte d'origine indiquent
-      « Reliquat à suivre », ceux du reliquat « Reliquat de la commande … ».
+- [ ] Les deux cartes se renvoient l'une à l'autre ; le bon de commande de la carte d'origine
+      indique « Reliquat à suivre », celui du reliquat « Reliquat de la commande … ».
 - [ ] Le compte Livreurs ne voit pas **Créer un reliquat**.
 
 ## 7 quater. Kilomètres estimés (Statistiques)

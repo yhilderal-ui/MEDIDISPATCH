@@ -286,7 +286,7 @@ export default function CreateCardModal({ onClose, onSubmit }: Props) {
               <FileText size={13} className="inline -mt-0.5 mr-1" aria-hidden />
               {retour
                 ? 'Aucun document n’est généré pour un retour.'
-                : 'Deux PDF seront générés automatiquement : le bon de commande (avec les médicaments, à mettre dans le carton) et le bon de livraison (sans les médicaments).'}
+                : 'Le bon de commande (avec les médicaments, à mettre dans le carton) sera généré automatiquement. Joignez ci-dessous le bon de livraison créé dans votre logiciel.'}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {PIECES.map(type => (

@@ -195,7 +195,7 @@ export default function App() {
         try {
           await publierBonsGeneres(id);
         } catch (e) {
-          problemes.push(`les bons de commande et de livraison n'ont pas pu être générés (${(e as Error).message})`);
+          problemes.push(`le bon de commande n'a pas pu être généré (${(e as Error).message})`);
         }
       }
       await recharger();
@@ -203,7 +203,7 @@ export default function App() {
       if (problemes.length) {
         setErreur(`${quoi} ${numeroTicket} créé${retour ? '' : 'e'}, mais ${problemes.join(' et ')}. Ouvrez la demande pour réessayer.`);
       } else {
-        setInfo(retour ? `Retour ${numeroTicket} créé.` : `Demande ${numeroTicket} créée, bons de commande et de livraison générés.`);
+        setInfo(retour ? `Retour ${numeroTicket} créé.` : `Demande ${numeroTicket} créée, bon de commande généré.`);
       }
       return null;
     } catch (e) {
@@ -227,9 +227,9 @@ export default function App() {
       try {
         await regenererBons(d);
       } catch (e) {
-        throw new Error(`${succes.replace(/\.$/, '')}, mais les bons n'ont pas pu être régénérés : ${(e as Error).message}`);
+        throw new Error(`${succes.replace(/\.$/, '')}, mais le bon de commande n'a pas pu être régénéré : ${(e as Error).message}`);
       }
-    }, d.nature === 'retour' ? succes : `${succes} Bons de commande et de livraison ${d.numero_ticket} mis à jour.`);
+    }, d.nature === 'retour' ? succes : `${succes} Bon de commande ${d.numero_ticket} mis à jour.`);
 
   // Reliquat : la nouvelle carte est ouverte une fois créée, avec ses bons
   // et ceux, mis à jour, de la carte d'origine.
@@ -245,7 +245,7 @@ export default function App() {
       }
       await recharger();
       setOuverteId(id);
-      if (probleme) setErreur(`Reliquat ${numeroTicket} créé, mais les bons n'ont pas pu être générés : ${probleme}`);
+      if (probleme) setErreur(`Reliquat ${numeroTicket} créé, mais les bons de commande n'ont pas pu être générés : ${probleme}`);
       else {
         setErreur(null);
         setInfo(`Reliquat ${numeroTicket} créé (reste de ${origine.numero_ticket}).`);
@@ -601,7 +601,7 @@ export default function App() {
           onModifier={(champs: ModificationDemande) =>
             modifierPuisRegenerer(ouverte, () => modifierDemande(ouverte.id, champs), `Demande ${ouverte.numero_ticket} modifiée.`)
           }
-          onGenererBon={() => agir(() => publierBonsGeneres(ouverte.id), 'Bons de commande et de livraison générés.')}
+          onGenererBon={() => agir(() => publierBonsGeneres(ouverte.id), 'Bon de commande généré.')}
           onArchiver={async () => {
             const ticket = ouverte.numero_ticket;
             const ok = await agir(() => archiverDemande(ouverte.id), `Demande ${ticket} archivée.`);
