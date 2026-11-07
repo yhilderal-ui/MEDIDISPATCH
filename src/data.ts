@@ -48,6 +48,10 @@ export const NATURE_CONFIG: Record<Nature, { label: string; Icone: LucideIcon; c
   retour: { label: 'Retour', Icone: Undo2, color: '#b45309', bg: '#fffbeb' },
 };
 
+// Ordre des cartes dans les colonnes (décision du 07/11) : la dernière créée
+// en tête, pour que la carte qu'on vient d'ajouter soit visible tout de suite.
+export const plusRecenteEnTete = (a: Pick<Demande, 'cree_le'>, b: Pick<Demande, 'cree_le'>) => b.cree_le.localeCompare(a.cree_le);
+
 // Statut tel qu'affiché : pour un retour, « En cours de récupération » puis
 // « Récupéré » au lieu de « En cours de livraison » et « Livrée ».
 export function statutAffiche(d: Pick<Demande, 'statut' | 'nature'>) {

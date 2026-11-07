@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { CalendarDays, FileText, LayoutGrid, Pill, Route, TriangleAlert } from 'lucide-react';
+import { CalendarDays, Clock, FileText, LayoutGrid, Pill, Route, TriangleAlert } from 'lucide-react';
 import BadgeCriticite from './BadgeCriticite';
 import type { Demande, EtatVu, Statut } from '../types';
 import BadgeVu from './BadgeVu';
 import BadgeNature from './BadgeNature';
 import OngletsStatut from './OngletsStatut';
-import { CRITICITE_CONFIG, CRITICITE_ORDRE, STATUT_CONFIG } from '../data';
+import { CRITICITE_CONFIG, CRITICITE_ORDRE, plusRecenteEnTete, STATUT_CONFIG } from '../data';
 import WeekView from './WeekView';
 import TourneeDuJour from './TourneeDuJour';
 import { ajouterJours, formatJour, lundiDeLaSemaine, moisCourt } from '../lib/dates';
@@ -14,7 +14,8 @@ import type { Selection } from '../lib/selection';
 import { CaseCarte, CaseGroupe } from './Selection';
 import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 
-type Tri = 'date' | 'criticite';
+// « Récentes » (par défaut) : la dernière carte créée en tête (décision du 07/11).
+type Tri = 'recentes' | 'date' | 'criticite';
 type Vue = 'kanban' | 'week' | 'tournee';
 
 interface Props {
@@ -137,7 +138,7 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser, selecti
 
 export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, boutonSelection, vueInitiale = 'kanban' }: Props) {
   const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut);
-  const [tri, setTri] = useState<Tri>('date');
+  const [tri, setTri] = useState<Tri>('recentes');
   const [vue, setVue] = useState<Vue>(vueInitiale);
   const [onglet, setOnglet] = useState<Statut>('nouvelle');
   const [debutSemaine, setDebutSemaine] = useState<Date>(() => lundiDeLaSemaine(new Date()));
@@ -148,9 +149,11 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
 
   const trier = (items: Demande[]) =>
     [...items].sort((a, b) =>
-      tri === 'date'
-        ? a.jour_livraison.localeCompare(b.jour_livraison) || CRITICITE_ORDRE[a.criticite] - CRITICITE_ORDRE[b.criticite]
-        : CRITICITE_ORDRE[a.criticite] - CRITICITE_ORDRE[b.criticite] || a.jour_livraison.localeCompare(b.jour_livraison),
+      tri === 'recentes'
+        ? plusRecenteEnTete(a, b)
+        : tri === 'date'
+          ? a.jour_livraison.localeCompare(b.jour_livraison) || CRITICITE_ORDRE[a.criticite] - CRITICITE_ORDRE[b.criticite]
+          : CRITICITE_ORDRE[a.criticite] - CRITICITE_ORDRE[b.criticite] || a.jour_livraison.localeCompare(b.jour_livraison),
     );
 
   const parStatut = (s: Statut) => trier(demandes.filter(d => d.statut === s));
@@ -165,6 +168,9 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
           {vue === 'kanban' && (
             <>
               <span className="text-[10px] font-700 uppercase tracking-widest text-gray-400">Trier</span>
+              <TriBouton actif={tri === 'recentes'} onClick={() => setTri('recentes')}>
+                <Clock size={13} aria-hidden /> Récentes
+              </TriBouton>
               <TriBouton actif={tri === 'date'} onClick={() => setTri('date')}>
                 <CalendarDays size={13} aria-hidden /> Date
               </TriBouton>
