@@ -28,7 +28,8 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
       liste de médicaments (masquée depuis le 04/11, voir `src/config/fonctionnalites.ts`).
 - [ ] Un **dimanche** est refusé ; une date **passée** est refusée.
 - [ ] Un fichier Word est refusé ; un fichier de plus de 10 Mo est refusé.
-- [ ] La carte apparaît dans « Nouvelle » avec un numéro `MD-000xx`.
+- [ ] La carte apparaît **en tête** de « Nouvelle » avec un numéro `MD-000xx`, même si sa date de
+      livraison est plus lointaine (côté Pharmacie : tri « Récentes », choisi par défaut).
 - [ ] Le **bon de commande** généré s'ouvre : en-tête FLOPHARMA, patient (sans liste de médicaments),
       encart Notes, zone de signature.
 - [ ] Le bon de livraison n'est **pas** généré : celui joint à la création (logiciel de Florence)

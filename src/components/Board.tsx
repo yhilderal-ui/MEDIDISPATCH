@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Demande, EtatVu, Statut } from '../types';
 import OngletsStatut from './OngletsStatut';
-import { STATUT_CONFIG } from '../data';
+import { plusRecenteEnTete, STATUT_CONFIG } from '../data';
 import DeliveryCardComponent from './DeliveryCardComponent';
 import { useGlisserStatut } from '../lib/useGlisserStatut';
 import type { Selection } from '../lib/selection';
@@ -18,7 +18,7 @@ interface Props {
 const COLONNES: Statut[] = ['nouvelle', 'en_cours', 'livree'];
 
 export default function Board({ demandes, onOpen, etats, onDeposerStatut, selection }: Props) {
-  const annulees = demandes.filter(d => d.statut === 'annulee');
+  const annulees = demandes.filter(d => d.statut === 'annulee').sort(plusRecenteEnTete);
   const [onglet, setOnglet] = useState<Statut>('nouvelle');
   // Pas de glisser-déposer pendant une sélection.
   const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut);
@@ -35,7 +35,7 @@ export default function Board({ demandes, onOpen, etats, onDeposerStatut, select
       <OngletsStatut demandes={demandes} etats={etats} actif={onglet} onChange={setOnglet} />
       <div className={`${onglet === 'annulee' ? 'hidden' : 'flex'} md:flex gap-5 shrink-0 md:overflow-x-auto -mt-6 md:mt-0`}>
         {COLONNES.map(statut => {
-          const items = demandes.filter(d => d.statut === statut);
+          const items = demandes.filter(d => d.statut === statut).sort(plusRecenteEnTete);
           const cfg = STATUT_CONFIG[statut];
           const depot = glisser.colonne(statut);
           return (
