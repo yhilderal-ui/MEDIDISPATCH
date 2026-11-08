@@ -134,6 +134,21 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] Pharmacie : pas de **Supprimer**. Livreurs : seulement **Passer en cours** et **Marquer livrées**
       (la Tournée bascule sur le tableau en mode sélection).
 
+## 7 sexies. Livreurs, secteurs et logisticien
+
+- [ ] Créer le compte du logisticien (Authentication → Add user), puis lancer
+      `supabase/scripts/ajouter_compte_logisticien.sql` (e-mail et prénom remplacés).
+- [ ] Logisticien : boutons Tableau / **Répartition** / Statistiques ; pas de « Nouvelle demande » ni de chat.
+- [ ] Répartition → **Livreurs** : ajouter 3 prénoms, en renommer un, en désactiver un puis le réactiver.
+- [ ] Classer une carte en Est et l'attribuer à un livreur avec les menus ; message « Est · Karim ».
+- [ ] **Sélectionner** → Tout sélectionner (À classer) → **Secteur Ouest**, puis **Attribuer à…** un livreur.
+- [ ] Le résumé du jour indique le nombre de passages par livreur ; « à classer » disparaît quand tout est classé.
+- [ ] Compte **Livreurs** (téléphone) : « Qui livre aujourd'hui ? » → choisir un prénom → la Tournée ne montre
+      que ses livraisons ; **changer** permet de prendre un autre prénom ; le choix est gardé au rechargement.
+- [ ] Florence : étiquettes « Est · Karim », filtres Secteur et Livreur, Répartition disponible en secours.
+- [ ] Pharmacie : étiquettes et filtres visibles, pas de Répartition, pas de menus Secteur / Livreur dans la fiche.
+- [ ] La fiche d'une carte répartie montre « Répartition : Est · Karim » dans l'historique.
+
 ## 8. Robustesse
 
 - [ ] Recharger la page (F5) : rien n'est perdu.

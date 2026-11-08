@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Archive, Bell, BellOff, CalendarDays, ChartColumn, CircleCheck, LayoutDashboard, LayoutGrid, LogOut, Plus, SquareCheck, TriangleAlert } from 'lucide-react';
-import type { Demande, EtatVu, Medicament, ModificationDemande, NouvelleDemande, Pieces, Statut, TypeDocument } from './types';
+import { Archive, Bell, BellOff, CalendarDays, ChartColumn, CircleCheck, LayoutDashboard, LayoutGrid, LogOut, Network, Plus, SquareCheck, TriangleAlert } from 'lucide-react';
+import type { Demande, EtatVu, Livreur, Medicament, ModificationDemande, NouvelleDemande, Pieces, Secteur, Statut, TypeDocument } from './types';
 import { publierBonsGeneres } from './lib/bonsGeneres';
 import Board from './components/Board';
 import LivreurBoard from './components/LivreurBoard';
@@ -42,6 +42,10 @@ import { useNotifications } from './lib/notifications';
 import Alertes from './components/Alertes';
 import BandeauEnvironnement from './components/BandeauEnvironnement';
 import { ajouterJours, aujourdhuiParis, formatJour, lundiDeLaSemaine, moisCourt } from './lib/dates';
+import RepartitionView from './components/RepartitionView';
+import ChoixLivreur from './components/ChoixLivreur';
+import { ajouterLivreur, lirePrenomChoisi, listerLivreurs, memoriserPrenomChoisi, modifierLivreur, repartir } from './lib/livreurs';
+import { LivreursContexte, nomLivreur } from './lib/livreursContexte';
 
 type DispatcherView = 'kanban' | 'week';
 
@@ -68,7 +72,36 @@ export default function App() {
       .then(({ data }) => setComptes(Object.fromEntries((data ?? []).map(p => [p.id, p.nom]))));
   }, [userId]);
 
-  const [demandes, setDemandes] = useState<Demande[]>([]);
+  // Livreurs et répartition Est / Ouest (décision du 08/11, migration 0016).
+  const [livreurs, setLivreurs] = useState<Livreur[]>([]);
+  const [livreursCharges, setLivreursCharges] = useState(false);
+  const rechargerLivreurs = useCallback(async () => {
+    try {
+      setLivreurs(await listerLivreurs());
+    } catch (e) {
+      setErreur(messageErreur(e));
+    } finally {
+      setLivreursCharges(true);
+    }
+  }, []);
+  useEffect(() => {
+    if (userId) rechargerLivreurs();
+  }, [userId, rechargerLivreurs]);
+  // Compte partagé « Livreurs » : prénom choisi sur ce téléphone.
+  const [prenomChoisi, setPrenomChoisi] = useState<string | null>(() => lirePrenomChoisi());
+  const choisirPrenom = (id: string | null) => {
+    memoriserPrenomChoisi(id);
+    setPrenomChoisi(id);
+  };
+  const livreurCourant = role === 'livreur' ? livreurs.find(l => l.id === prenomChoisi && l.actif) ?? null : null;
+  // Transition : tant qu'aucun livreur n'est enregistré, le compte Livreurs
+  // voit toutes les livraisons, comme avant la répartition.
+  // (Pendant le chargement de la liste, on n'affiche rien plutôt que tout.)
+  const parLivreur = role === 'livreur' && (!livreursCharges || livreurs.some(l => l.actif));
+
+  const [demandesBrutes, setDemandes] = useState<Demande[]>([]);
+  // Un livreur ne voit que les livraisons qui lui sont attribuées.
+  const demandes = parLivreur ? demandesBrutes.filter(d => d.livreur_id === livreurCourant?.id) : demandesBrutes;
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -79,7 +112,9 @@ export default function App() {
   const [filtres, setFiltres] = useState<Filtres>(FILTRES_VIDES);
   const [vueArchives, setVueArchives] = useState(false);
   const [vueStatistiques, setVueStatistiques] = useState(false);
-  const [archives, setArchives] = useState<Demande[]>([]);
+  const [vueRepartition, setVueRepartition] = useState(false);
+  const [archivesBrutes, setArchives] = useState<Demande[]>([]);
+  const archives = parLivreur ? archivesBrutes.filter(d => d.livreur_id === livreurCourant?.id) : archivesBrutes;
   const [chargementArchives, setChargementArchives] = useState(false);
   const vueArchivesRef = useRef(false);
   const rechercheArchivesRef = useRef('');
@@ -305,10 +340,10 @@ export default function App() {
         return n;
       }),
   };
-  // Archives et Statistiques n'ont pas de sélection.
+  // Archives et Statistiques n'ont pas de sélection ; on la vide en changeant d'écran.
   useEffect(() => {
-    if (vueArchives || vueStatistiques) quitterSelection();
-  }, [vueArchives, vueStatistiques, quitterSelection]);
+    quitterSelection();
+  }, [vueArchives, vueStatistiques, vueRepartition, quitterSelection]);
   useEffect(() => {
     if (!modeSelection) return;
     const touche = (e: KeyboardEvent) => e.key === 'Escape' && quitterSelection();
@@ -317,7 +352,8 @@ export default function App() {
   }, [modeSelection, quitterSelection]);
 
   // Applique une action aux cartes concernées, une par une, puis fait le bilan.
-  const actionGroupee = async (action: ActionGroupee, cibles: Demande[], jour?: string) => {
+  const actionGroupee = async (action: ActionGroupee, cibles: Demande[], options: { jour?: string; livreur?: string | null } = {}) => {
+    const { jour, livreur } = options;
     setActionEnCours(true);
     const echecs: string[] = [];
     const bonsEnEchec: string[] = [];
@@ -328,6 +364,8 @@ export default function App() {
         else if (action === 'annuler') await changerStatut(d.id, 'annulee');
         else if (action === 'archiver') await archiverDemande(d.id);
         else if (action === 'supprimer') await supprimerDemande(d);
+        else if (action === 'secteur_est' || action === 'secteur_ouest') await repartir(d.id, { secteur: action === 'secteur_est' ? 'est' : 'ouest' });
+        else if (action === 'attribuer') await repartir(d.id, { livreur_id: livreur ?? null });
         else if (action === 'reporter' && jour) {
           await reporter(d.id, jour);
           try {
@@ -352,6 +390,9 @@ export default function App() {
       archiver: `archivée${pluriel}`,
       annuler: `annulée${pluriel}`,
       supprimer: `supprimée${pluriel} définitivement`,
+      secteur_est: `classée${pluriel} en secteur Est`,
+      secteur_ouest: `classée${pluriel} en secteur Ouest`,
+      attribuer: livreur ? `attribuée${pluriel} à ${nomLivreur(livreurs, livreur) ?? 'ce livreur'}` : `retirée${pluriel} de leur livreur`,
     };
     const bilan = `${faites} carte${pluriel} ${quoi[action]}`.replace(/\.?$/, '.'); // « 7 nov. » ne prend pas un second point
     if (echecs.length || bonsEnEchec.length) {
@@ -383,6 +424,37 @@ export default function App() {
   );
 
   // Glisser-déposer d'une colonne de statut à la suivante (Nouvelle → En cours → Livrée).
+  // Répartition d'une carte (secteur et/ou livreur), depuis l'écran Répartition ou la fiche.
+  const handleRepartir = (d: Demande, champs: { secteur?: Secteur | null; livreur_id?: string | null }) => {
+    const apres = { secteur: champs.secteur !== undefined ? champs.secteur : d.secteur, livreur_id: champs.livreur_id !== undefined ? champs.livreur_id : d.livreur_id };
+    const libelle = [apres.secteur === 'est' ? 'Est' : apres.secteur === 'ouest' ? 'Ouest' : null, nomLivreur(livreurs, apres.livreur_id)].filter(Boolean).join(' · ');
+    agir(() => repartir(d.id, champs), `Demande ${d.numero_ticket} : ${libelle || 'non répartie'}.`);
+  };
+  const handleAjouterLivreur = async (nom: string) => {
+    try {
+      await ajouterLivreur(nom, livreurs.length + 1);
+      await rechargerLivreurs();
+      setErreur(null);
+      setInfo(`${nom} ajouté à la liste des livreurs.`);
+      return true;
+    } catch (e) {
+      setErreur(messageErreur(e));
+      return false;
+    }
+  };
+  const handleModifierLivreur = async (l: Livreur, champs: Partial<Pick<Livreur, 'nom' | 'actif'>>) => {
+    try {
+      await modifierLivreur(l.id, champs);
+      await rechargerLivreurs();
+      setErreur(null);
+      setInfo(champs.actif === false ? `${l.nom} désactivé.` : champs.actif ? `${l.nom} réactivé.` : `${l.nom} renommé en ${champs.nom}.`);
+      return true;
+    } catch (e) {
+      setErreur(messageErreur(e));
+      return false;
+    }
+  };
+
   const handleDeposerStatut = (d: Demande, statut: Statut) => {
     agir(() => changerStatut(d.id, statut), `Demande ${d.numero_ticket} : ${statutAffiche({ statut, nature: d.nature }).label}.`);
   };
@@ -402,6 +474,7 @@ export default function App() {
     setShowModal(false);
     setVueArchives(false);
     setVueStatistiques(false);
+    setVueRepartition(false);
     setDispatcherView('kanban');
     setWeekStart(lundiDeLaSemaine(new Date()));
     setFiltres(FILTRES_VIDES);
@@ -427,6 +500,11 @@ export default function App() {
     );
   }
 
+  // Compte partagé « Livreurs » : on demande d'abord qui livre (décision du 08/11).
+  if (parLivreur && livreursCharges && !livreurCourant) {
+    return <ChoixLivreur livreurs={livreurs} onChoisir={choisirPrenom} onDeconnexion={signOut} />;
+  }
+
   const ouverte = ouverteCourante ?? null;
   const ouvrir = (d: Demande) => setOuverteId(d.id);
   const actives = demandes.filter(d => d.statut !== 'annulee');
@@ -443,10 +521,14 @@ export default function App() {
         nbResultats={vueArchives ? archivesFiltrees.length : filtrees.length}
         nbTotal={vueArchives ? archives.length : demandes.length}
         masquerStatut={vueArchives}
+        avecRepartition={role !== 'livreur'}
       />
       <button
         type="button"
-        onClick={() => setVueArchives(v => !v)}
+        onClick={() => {
+          setVueArchives(v => !v);
+          setVueRepartition(false);
+        }}
         className="ml-auto text-xs font-600 px-3 py-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
       >
         {vueArchives ? '← Retour au tableau' : <><Archive size={14} className="inline-block align-[-3px] mr-1.5" aria-hidden />Archives</>}
@@ -459,6 +541,7 @@ export default function App() {
   const nbNonVues = Object.values(etats).filter(Boolean).length;
 
   return (
+    <LivreursContexte.Provider value={livreurs}>
     <div className="h-dvh flex flex-col bg-[#f5f4f0] overflow-hidden">
       <BandeauEnvironnement />
       {/* Barre du haut */}
@@ -491,25 +574,42 @@ export default function App() {
               <IconeRole size={14} aria-hidden />
               <span className="hidden sm:inline">{libelle}</span>
               {userName && userName !== libelle && <span className="hidden xl:inline opacity-60">— {userName}</span>}
+              {livreurCourant && (
+                <>
+                  <span className="opacity-60">—</span>
+                  <span>{livreurCourant.nom}</span>
+                  <button
+                    type="button"
+                    onClick={() => choisirPrenom(null)}
+                    className="underline decoration-dotted underline-offset-2 opacity-70 hover:opacity-100 font-500"
+                    title="Changer de livreur"
+                  >
+                    changer
+                  </button>
+                </>
+              )}
             </div>
           );
         })()}
 
         <div className="flex items-center gap-1 sm:gap-3 xl:gap-4 shrink-0">
-          {/* Navigation principale : tableau des livraisons ou statistiques */}
-          {droits?.statistiques && (
+          {/* Navigation principale : tableau, répartition (logisticien, Florence) ou statistiques */}
+          {(droits?.statistiques || droits?.repartir) && (
           <nav className="flex items-center gap-0.5 bg-gray-100 p-0.5 rounded-xl" aria-label="Navigation">
             {([
-              [false, 'Tableau', LayoutDashboard, 'Tableau des livraisons'],
-              [true, 'Statistiques', ChartColumn, 'Statistiques'],
-            ] as [boolean, string, typeof ChartColumn, string][]).map(([stats, libelle, Icone, titre]) => {
-              const actif = vueStatistiques === stats;
+              ['tableau', 'Tableau', LayoutDashboard, 'Tableau des livraisons'],
+              ...(droits?.repartir ? [['repartition', 'Répartition', Network, 'Répartition Est / Ouest et livreurs']] : []),
+              ...(droits?.statistiques ? [['statistiques', 'Statistiques', ChartColumn, 'Statistiques']] : []),
+            ] as ['tableau' | 'repartition' | 'statistiques', string, typeof ChartColumn, string][]).map(([ecran, libelle, Icone, titre]) => {
+              const ecranActuel = vueStatistiques ? 'statistiques' : vueRepartition ? 'repartition' : 'tableau';
+              const actif = ecranActuel === ecran;
               return (
                 <button
                   key={libelle}
                   type="button"
                   onClick={() => {
-                    setVueStatistiques(stats);
+                    setVueStatistiques(ecran === 'statistiques');
+                    setVueRepartition(ecran === 'repartition');
                     setVueArchives(false);
                     setOuverteId(null);
                   }}
@@ -618,6 +718,26 @@ export default function App() {
               <StatistiquesView />
             </div>
           </div>
+        ) : vueRepartition && droits?.repartir ? (
+          <div className="h-full flex flex-col px-4 sm:px-6 pt-5">
+            <div className="flex items-center gap-2 mb-4 shrink-0">
+              <h2 className="text-xs font-700 uppercase tracking-widest text-gray-400">Répartition Est / Ouest</h2>
+              <div className="flex-1 h-px bg-gray-200" />
+              {boutonSelection}
+            </div>
+            <div className="flex-1 min-h-0">
+              <RepartitionView
+                demandes={demandes}
+                livreurs={livreurs}
+                etats={etats}
+                selection={selection}
+                onOpen={ouvrir}
+                onRepartir={handleRepartir}
+                onAjouterLivreur={handleAjouterLivreur}
+                onModifierLivreur={handleModifierLivreur}
+              />
+            </div>
+          </div>
         ) : vueArchives ? (
           <div className="h-full flex flex-col px-4 sm:px-6 pt-5 pb-6">
             <div className="flex items-center gap-2 mb-3 shrink-0">
@@ -718,6 +838,7 @@ export default function App() {
           demandes={archives.length ? [...demandes, ...archives] : demandes}
           onOuvrir={setOuverteId}
           onCreerReliquat={(restants, reliquat, jour) => handleReliquat(ouverte, restants, reliquat, jour)}
+          onRepartir={champs => handleRepartir(ouverte, champs)}
           onClose={() => setOuverteId(null)}
           onSupprimer={async () => {
             const ticket = ouverte.numero_ticket;
@@ -768,5 +889,6 @@ export default function App() {
       />
       )}
     </div>
+    </LivreursContexte.Provider>
   );
 }

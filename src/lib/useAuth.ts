@@ -4,12 +4,13 @@ import { supabase } from './supabase';
 
 // Rôles côté interface ↔ rôles en base (le rôle « livraison » en base est,
 // pour des raisons historiques, le compte Pharmacie).
-export type Role = 'dispatcher' | 'pharmacie' | 'livreur';
+export type Role = 'dispatcher' | 'pharmacie' | 'livreur' | 'logisticien';
 
 const ROLE_FROM_DB: Record<string, Role> = {
   dispatcheur: 'dispatcher',
   livraison: 'pharmacie',
   livreur: 'livreur',
+  logisticien: 'logisticien', // décision du 08/11 (migration 0016)
 };
 
 export interface CurrentUser {

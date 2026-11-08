@@ -13,7 +13,8 @@
 --   * les kilomètres estimés et les positions d'adresses gardées en cache
 --     (migration 0014 ; à retirer de ce script si 0014 n'est pas installée).
 -- Ce qui est conservé :
---   * les comptes (Florence, Pharmacie, Livreurs) et leurs mots de passe ;
+--   * les comptes (Florence, Pharmacie, Livreurs, Logisticien) et leurs mots de passe ;
+--   * la liste des livreurs (prénoms) ; les attributions partent avec les demandes ;
 --   * la structure de la base, les règles et les réglages.
 -- Le compteur de tickets repart à zéro : la première vraie demande sera MD-00001.
 --

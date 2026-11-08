@@ -39,6 +39,8 @@ export interface Demande {
   statut: Statut;
   nature: Nature;
   reliquat_de: string | null; // carte d'origine quand celle-ci est un reliquat
+  secteur: Secteur | null; // classée par le logisticien (décision du 08/11)
+  livreur_id: string | null; // livreur attribué
   notes_initiales: string | null;
   cree_le: string;
   mis_a_jour_le: string;
@@ -48,6 +50,16 @@ export interface Demande {
   derniere_activite_par: string | null;
   documents: DocumentJoint[];
   lectures_demandes: { utilisateur_id: string; vu_le: string }[];
+}
+
+export type Secteur = 'est' | 'ouest';
+
+// Prénoms proposés au compte partagé « Livreurs » (migration 0016).
+export interface Livreur {
+  id: string;
+  nom: string;
+  actif: boolean;
+  ordre: number;
 }
 
 // « nouvelle » : jamais ouverte par moi ; « maj » : l'autre compte l'a modifiée
@@ -72,7 +84,7 @@ export type ModificationDemande = Pick<
 
 export interface EvenementHistorique {
   id: string;
-  evenement: 'creation' | 'statut' | 'report' | 'modification';
+  evenement: 'creation' | 'statut' | 'report' | 'modification' | 'affectation';
   ancienne_valeur: string | null;
   nouvelle_valeur: string | null;
   cree_le: string;

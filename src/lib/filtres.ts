@@ -1,4 +1,4 @@
-import type { Criticite, Demande, Nature, Statut } from '../types';
+import type { Criticite, Demande, Nature, Secteur, Statut } from '../types';
 import { ajouterJours, aujourdhuiParis, depuisJour, lundiDeLaSemaine, versJour } from './dates';
 
 // Recherche et filtres communs aux deux rôles (cahier des charges, section 7bis).
@@ -12,12 +12,32 @@ export interface Filtres {
   nature: Nature | 'toutes'; // livraisons ou retours (décision du 03/10)
   date: FiltreDate;
   jour: string; // utilisé quand date === 'jour'
+  // Répartition (décision du 08/11) : « aucun » = pas encore classée / attribuée.
+  secteur: Secteur | 'tous' | 'aucun';
+  livreur: string; // identifiant d'un livreur, 'tous' ou 'aucun'
 }
 
-export const FILTRES_VIDES: Filtres = { recherche: '', statut: 'tous', criticite: 'toutes', nature: 'toutes', date: 'toutes', jour: '' };
+export const FILTRES_VIDES: Filtres = {
+  recherche: '',
+  statut: 'tous',
+  criticite: 'toutes',
+  nature: 'toutes',
+  date: 'toutes',
+  jour: '',
+  secteur: 'tous',
+  livreur: 'tous',
+};
 
 export function filtresActifs(f: Filtres): boolean {
-  return f.recherche.trim() !== '' || f.statut !== 'tous' || f.criticite !== 'toutes' || f.nature !== 'toutes' || f.date !== 'toutes';
+  return (
+    f.recherche.trim() !== '' ||
+    f.statut !== 'tous' ||
+    f.criticite !== 'toutes' ||
+    f.nature !== 'toutes' ||
+    f.date !== 'toutes' ||
+    f.secteur !== 'tous' ||
+    f.livreur !== 'tous'
+  );
 }
 
 // Enlève les accents et la casse : « Hélène » se trouve en tapant « helene ».
@@ -51,6 +71,8 @@ export function appliquerFiltres(demandes: Demande[], f: Filtres): Demande[] {
       (f.statut === 'tous' || d.statut === f.statut) &&
       (f.criticite === 'toutes' || d.criticite === f.criticite) &&
       (f.nature === 'toutes' || d.nature === f.nature) &&
+      (f.secteur === 'tous' || (f.secteur === 'aucun' ? !d.secteur : d.secteur === f.secteur)) &&
+      (f.livreur === 'tous' || (f.livreur === 'aucun' ? !d.livreur_id : d.livreur_id === f.livreur)) &&
       correspondDate(d.jour_livraison, f),
   );
 }

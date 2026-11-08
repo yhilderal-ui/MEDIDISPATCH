@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Archive, CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Split, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
-import type { Demande, DocumentJoint, Medicament, ModificationDemande as Champs, Note, Statut, TypeDocument } from '../types';
+import type { Demande, DocumentJoint, Medicament, ModificationDemande as Champs, Note, Secteur, Statut, TypeDocument } from '../types';
+import { useLivreurs } from '../lib/livreursContexte';
 import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 import BoutonsItineraire from './BoutonsItineraire';
 import ModificationDemande from './ModificationDemande';
@@ -33,6 +34,7 @@ interface Props {
   demandes: Demande[];
   onOuvrir: (id: string) => void;
   onCreerReliquat: (restants: Medicament[], reliquat: Medicament[], jour: string) => Promise<boolean>;
+  onRepartir: (champs: { secteur?: Secteur | null; livreur_id?: string | null }) => void;
 }
 
 const TITRE = 'text-[10px] font-700 uppercase tracking-widest text-gray-400 mb-2';
@@ -157,7 +159,8 @@ function FilNotes({ demandeId }: { demandeId: string }) {
   );
 }
 
-export default function DemandePanel({ demande, role, utilisateurId, comptes, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon, onArchiver, demandes, onOuvrir, onCreerReliquat }: Props) {
+export default function DemandePanel({ demande, role, utilisateurId, comptes, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon, onArchiver, demandes, onOuvrir, onCreerReliquat, onRepartir }: Props) {
+  const livreurs = useLivreurs();
   const [edition, setEdition] = useState(false);
   const [reliquatOuvert, setReliquatOuvert] = useState(false);
   const criticite = CRITICITE_CONFIG[demande.criticite];
@@ -292,6 +295,39 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
               <span>{retour ? 'Passage prévu' : 'Livraison prévue'} : <span className="font-600 text-gray-800">{formatJour(demande.jour_livraison)}</span></span>
             </p>
           </div>
+
+          {/* Répartition Est / Ouest et livreur (décision du 08/11) : logisticien et Florence. */}
+          {peut.repartir && demande.statut !== 'annulee' && (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400">
+                Secteur
+                <select
+                  value={demande.secteur ?? ''}
+                  onChange={e => onRepartir({ secteur: (e.target.value || null) as Secteur | null })}
+                  className="mt-1 w-full text-xs normal-case tracking-normal font-500 text-gray-700 bg-white border border-gray-200 rounded-lg px-2 py-1.5"
+                >
+                  <option value="">À classer</option>
+                  <option value="est">Est</option>
+                  <option value="ouest">Ouest</option>
+                </select>
+              </label>
+              <label className="text-[10px] font-600 uppercase tracking-widest text-gray-400">
+                Livreur
+                <select
+                  value={demande.livreur_id ?? ''}
+                  onChange={e => onRepartir({ livreur_id: e.target.value || null })}
+                  className="mt-1 w-full text-xs normal-case tracking-normal font-500 text-gray-700 bg-white border border-gray-200 rounded-lg px-2 py-1.5"
+                >
+                  <option value="">Non attribuée</option>
+                  {livreurs
+                    .filter(l => l.actif || l.id === demande.livreur_id)
+                    .map(l => (
+                      <option key={l.id} value={l.id}>{l.nom}{l.actif ? '' : ' (inactif)'}</option>
+                    ))}
+                </select>
+              </label>
+            </div>
+          )}
 
           {/* Utile seulement si c'est moi qui ai fait la dernière modification. */}
           {demande.derniere_activite_par === utilisateurId && autres.length > 0 && (
