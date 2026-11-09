@@ -1,4 +1,4 @@
-import { ClipboardList, MessageSquare, Pencil, TriangleAlert } from 'lucide-react';
+import { ClipboardList, Layers, MessageSquare, Pencil, TriangleAlert } from 'lucide-react';
 import type { Alerte } from '../lib/notifications';
 import Balayable from './Balayable';
 
@@ -24,12 +24,12 @@ export default function Alertes({ alertes, onActiver, onFermer }: Props) {
             className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${a.urgente ? 'bg-red-50 text-red-600' : 'bg-violet-50 text-violet-600'}`}
             aria-hidden
           >
-            {a.genre === 'message' ? <MessageSquare size={16} /> : a.genre === 'maj' ? <Pencil size={16} /> : a.urgente ? <TriangleAlert size={16} /> : <ClipboardList size={16} />}
+            {a.genre === 'message' ? <MessageSquare size={16} /> : a.genre === 'lot' ? <Layers size={16} /> : a.genre === 'maj' ? <Pencil size={16} /> : a.urgente ? <TriangleAlert size={16} /> : <ClipboardList size={16} />}
           </span>
           <button type="button" onClick={() => onActiver(a)} className="flex-1 min-w-0 text-left">
             <p className={`text-sm font-700 ${a.urgente ? 'text-red-700' : 'text-gray-900'}`}>{a.titre}</p>
             <p className="text-xs text-gray-500 truncate">{a.detail}</p>
-            <p className="text-[10px] font-600 text-violet-600 mt-1">{a.chat ? 'Ouvrir la messagerie →' : 'Ouvrir la demande →'}</p>
+            <p className="text-[10px] font-600 text-violet-600 mt-1">{a.chat ? 'Ouvrir la messagerie →' : a.demandeId ? 'Ouvrir la demande →' : 'Voir dans le tableau (pastilles « non vue »)'}</p>
           </button>
           <button
             type="button"
