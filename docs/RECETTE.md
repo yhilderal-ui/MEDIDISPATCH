@@ -152,6 +152,8 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
       carte passe dans « Terminées aujourd'hui ». Pharmacie : le bouton n'apparaît que sur les cartes en cours.
 - [ ] Compte **Livreurs** (téléphone) : « Qui livre aujourd'hui ? » → choisir un prénom → la Tournée ne montre
       que ses livraisons ; **changer** permet de prendre un autre prénom ; le choix est gardé au rechargement.
+- [ ] Logisticien : la barre du haut a 4 boutons, Tableau / **Tournée** / Répartition / Statistiques ; « Tournée »
+      ouvre sa tournée du jour depuis n'importe quel écran (téléphone compris).
 - [ ] Logisticien qui livre : s'attribuer des cartes ; dans **Tournée**, « Tournée de : » propose d'abord sa
       propre tournée (livreur portant le même prénom que son compte) ; « Tous les livreurs » ou un autre prénom
       pour suivre l'équipe ; le choix est gardé au rechargement.

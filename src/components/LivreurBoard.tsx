@@ -18,7 +18,7 @@ import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 
 // « Récentes » (par défaut) : la dernière carte créée en tête (décision du 07/11).
 type Tri = 'recentes' | 'date' | 'criticite';
-type Vue = 'kanban' | 'week' | 'tournee';
+export type Vue = 'kanban' | 'week' | 'tournee';
 
 interface Props {
   demandes: Demande[];
@@ -34,6 +34,10 @@ interface Props {
   // sa propre tournée dans le sélecteur « Tournée de ».
   tourneeLogisticien?: { nomCompte: string };
   livraisonDirecte?: boolean; // « Nouvelle » → « Livrée » sans « En cours » (livreurs, logisticien)
+  // Vue pilotée de l'extérieur (bouton « Tournée » de la barre du haut du
+  // logisticien) ; sinon, la vue est gérée ici.
+  vue?: Vue;
+  onVueChange?: (v: Vue) => void;
 }
 
 function MedicalCard({ demande, onClick, etatVu, selectionnee }: { demande: Demande; onClick: () => void; etatVu: EtatVu; selectionnee?: boolean }) {
@@ -142,7 +146,7 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser, selecti
   );
 }
 
-export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, boutonSelection, vueInitiale = 'kanban', tourneeLogisticien, livraisonDirecte = false }: Props) {
+export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, boutonSelection, vueInitiale = 'kanban', tourneeLogisticien, livraisonDirecte = false, vue: vuePilotee, onVueChange }: Props) {
   const livreurs = useLivreurs();
   // Tournée affichée pour le logisticien : la sienne par défaut (livreur portant
   // le même prénom que son compte), sinon celle de tous.
@@ -159,7 +163,9 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
     tourneeLogisticien && tourneeDe !== 'tous' && tourneeConnue ? demandes.filter(d => d.livreur_id === tourneeDe) : demandes;
   const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut, livraisonDirecte);
   const [tri, setTri] = useState<Tri>('recentes');
-  const [vue, setVue] = useState<Vue>(vueInitiale);
+  const [vueLocale, setVueLocale] = useState<Vue>(vueInitiale);
+  const vue = vuePilotee ?? vueLocale;
+  const setVue = (v: Vue) => (onVueChange ? onVueChange(v) : setVueLocale(v));
   const [onglet, setOnglet] = useState<Statut>('nouvelle');
   const [debutSemaine, setDebutSemaine] = useState<Date>(() => lundiDeLaSemaine(new Date()));
   // La Tournée n'a pas de cases à cocher : le mode sélection ouvre le tableau.

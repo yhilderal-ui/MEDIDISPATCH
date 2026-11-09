@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Archive, Bell, BellOff, CalendarDays, ChartColumn, CircleCheck, LayoutDashboard, LayoutGrid, LogOut, Network, Plus, SquareCheck, TriangleAlert } from 'lucide-react';
+import { Archive, Bell, BellOff, CalendarDays, ChartColumn, CircleCheck, LayoutDashboard, LayoutGrid, LogOut, Network, Plus, Route, SquareCheck, TriangleAlert } from 'lucide-react';
 import type { Demande, EtatVu, Livreur, Medicament, ModificationDemande, NouvelleDemande, Pieces, Secteur, Statut, TypeDocument } from './types';
 import { publierBonsGeneres } from './lib/bonsGeneres';
 import Board from './components/Board';
-import LivreurBoard from './components/LivreurBoard';
+import LivreurBoard, { type Vue as VueTableau } from './components/LivreurBoard';
 import CreateCardModal from './components/CreateCardModal';
 import Chat from './components/Chat';
 import LoginScreen from './components/LoginScreen';
@@ -115,6 +115,10 @@ export default function App() {
   const [vueArchives, setVueArchives] = useState(false);
   const [vueStatistiques, setVueStatistiques] = useState(false);
   const [vueRepartition, setVueRepartition] = useState(false);
+  // Logisticien qui livre aussi (décision du 09/11) : la vue du tableau
+  // (statuts, semaine, tournée) est pilotée par la barre du haut, où un bouton
+  // « Tournée » reste accessible depuis tous les écrans.
+  const [vueTableau, setVueTableau] = useState<VueTableau>('kanban');
   const [archivesBrutes, setArchives] = useState<Demande[]>([]);
   const archives = parLivreur ? archivesBrutes.filter(d => d.livreur_id === livreurCourant?.id) : archivesBrutes;
   const [chargementArchives, setChargementArchives] = useState(false);
@@ -477,6 +481,7 @@ export default function App() {
     setVueArchives(false);
     setVueStatistiques(false);
     setVueRepartition(false);
+    setVueTableau('kanban');
     setDispatcherView('kanban');
     setWeekStart(lundiDeLaSemaine(new Date()));
     setFiltres(FILTRES_VIDES);
@@ -558,7 +563,7 @@ export default function App() {
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden bg-white flex items-center justify-center shrink-0">
             <img src={logo} alt="" className="w-full h-full object-contain" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 max-[379px]:hidden">
             <h1 className="text-sm sm:text-base font-700 text-gray-900 leading-tight">MediDispatch</h1>
             <p className="hidden xl:block whitespace-nowrap text-[10px] text-gray-400 font-mono tracking-wide">Livraison médicale — Île-de-France</p>
           </div>
@@ -600,10 +605,17 @@ export default function App() {
           <nav className="flex items-center gap-0.5 bg-gray-100 p-0.5 rounded-xl" aria-label="Navigation">
             {([
               ['tableau', 'Tableau', LayoutDashboard, 'Tableau des livraisons'],
+              ...(role === 'logisticien' ? [['tournee', 'Tournée', Route, 'Ma tournée du jour']] : []),
               ...(droits?.repartir ? [['repartition', 'Répartition', Network, 'Répartition Est / Ouest et livreurs']] : []),
               ...(droits?.statistiques ? [['statistiques', 'Statistiques', ChartColumn, 'Statistiques']] : []),
-            ] as ['tableau' | 'repartition' | 'statistiques', string, typeof ChartColumn, string][]).map(([ecran, libelle, Icone, titre]) => {
-              const ecranActuel = vueStatistiques ? 'statistiques' : vueRepartition ? 'repartition' : 'tableau';
+            ] as ['tableau' | 'tournee' | 'repartition' | 'statistiques', string, typeof ChartColumn, string][]).map(([ecran, libelle, Icone, titre]) => {
+              const ecranActuel = vueStatistiques
+                ? 'statistiques'
+                : vueRepartition
+                  ? 'repartition'
+                  : role === 'logisticien' && vueTableau === 'tournee' && !vueArchives
+                    ? 'tournee'
+                    : 'tableau';
               const actif = ecranActuel === ecran;
               return (
                 <button
@@ -614,6 +626,8 @@ export default function App() {
                     setVueRepartition(ecran === 'repartition');
                     setVueArchives(false);
                     setOuverteId(null);
+                    if (ecran === 'tournee') setVueTableau('tournee');
+                    else if (ecran === 'tableau' && vueTableau === 'tournee') setVueTableau('kanban');
                   }}
                   aria-current={actif ? 'page' : undefined}
                   title={titre}
@@ -827,6 +841,8 @@ export default function App() {
                 vueInitiale={role === 'livreur' ? 'tournee' : 'kanban'}
                 tourneeLogisticien={role === 'logisticien' ? { nomCompte: userName } : undefined}
                 livraisonDirecte={droits?.livraisonDirecte}
+                vue={role === 'logisticien' ? vueTableau : undefined}
+                onVueChange={role === 'logisticien' ? setVueTableau : undefined}
               />
             </div>
           </div>
