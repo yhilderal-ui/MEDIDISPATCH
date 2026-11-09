@@ -47,7 +47,8 @@ export function droits(role: Role): Droits {
     reliquat: role === 'dispatcher' || role === 'pharmacie',
     chat: role === 'dispatcher' || role === 'pharmacie',
     statistiques: role !== 'livreur',
-    // Le logisticien répartit ; Florence peut le remplacer.
-    repartir: role === 'logisticien' || role === 'dispatcher',
+    // Le logisticien répartit ; la Pharmacie peut le remplacer (décision du
+    // 09/11 : pas Florence). Migrations 0016 et 0019.
+    repartir: role === 'logisticien' || role === 'pharmacie',
   };
 }

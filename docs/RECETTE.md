@@ -155,8 +155,9 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] Logisticien qui livre : s'attribuer des cartes ; dans **Tournée**, « Tournée de : » propose d'abord sa
       propre tournée (livreur portant le même prénom que son compte) ; « Tous les livreurs » ou un autre prénom
       pour suivre l'équipe ; le choix est gardé au rechargement.
-- [ ] Florence : étiquettes « Est · Karim », filtres Secteur et Livreur, Répartition disponible en secours.
-- [ ] Pharmacie : étiquettes et filtres visibles, pas de Répartition, pas de menus Secteur / Livreur dans la fiche.
+- [ ] Florence : étiquettes « Est · Karim », filtres Secteur et Livreur ; **pas** de Répartition ni de menus
+      Secteur / Livreur dans la fiche (décision du 09/11, migration 0019).
+- [ ] Pharmacie : Tableau / **Répartition** / Statistiques ; elle peut classer, attribuer et gérer les livreurs.
 - [ ] La fiche d'une carte répartie montre « Répartition : Est · Karim » dans l'historique.
 
 ## 7 septies. Signature du patient (téléphone du livreur)
