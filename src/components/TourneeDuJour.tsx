@@ -12,12 +12,16 @@ interface Props {
   demandes: Demande[];
   onOpen: (demande: Demande) => void;
   etats: Record<string, EtatVu>;
+  // Bouton « Livrée » sur chaque carte (décision du 09/11). livraisonDirecte :
+  // aussi depuis « Nouvelle » (livreurs, logisticien) ; sinon depuis « En cours ».
+  onLivrer?: (demande: Demande) => void;
+  livraisonDirecte?: boolean;
 }
 
 // Livraisons du jour à faire, pour le livreur. Il organise sa tournée comme il
 // l'entend (décision du 30/09) : la liste met simplement les urgences en tête,
 // et chaque carte ouvre l'adresse dans Waze.
-export default function TourneeDuJour({ demandes, onOpen, etats }: Props) {
+export default function TourneeDuJour({ demandes, onOpen, etats, onLivrer, livraisonDirecte = false }: Props) {
   const jour = aujourdhuiParis();
   const duJour = demandes.filter(d => d.jour_livraison === jour && d.statut !== 'annulee');
   const aLivrer = duJour
@@ -84,17 +88,32 @@ export default function TourneeDuJour({ demandes, onOpen, etats }: Props) {
                     <p className="text-[11px] text-amber-700 leading-snug">{d.notes_initiales}</p>
                   </div>
                 )}
-                <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
+                <div className="grid grid-cols-2 gap-2 pt-1">
                   <a
                     href={urlWaze(d.patient_adresse)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm font-600 px-4 py-2.5 rounded-xl text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800"
+                    className="inline-flex items-center justify-center gap-1.5 text-sm font-600 px-3 py-2.5 rounded-xl text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800"
                   >
-                    <Navigation size={15} aria-hidden /> Ouvrir dans Waze
+                    <Navigation size={15} aria-hidden /> Waze
                   </a>
-                  <button type="button" onClick={() => onOpen(d)} className="text-xs font-600 text-violet-700 hover:text-violet-900 px-1 py-1.5">
-                    Ouvrir la demande →
+                  {onLivrer && (livraisonDirecte || d.statut === 'en_cours') ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Une confirmation évite un appui involontaire en voiture.
+                        const quoi = d.nature === 'retour' ? 'récupéré' : 'livrée';
+                        if (window.confirm(`Marquer ${d.numero_ticket} (${d.patient_nom}) comme ${quoi} ?`)) onLivrer(d);
+                      }}
+                      className="inline-flex items-center justify-center gap-1.5 text-sm font-600 px-3 py-2.5 rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800"
+                    >
+                      <CircleCheck size={15} aria-hidden /> {d.nature === 'retour' ? 'Récupéré' : 'Livrée'}
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+                  <button type="button" onClick={() => onOpen(d)} className="col-span-2 text-xs font-600 text-violet-700 hover:text-violet-900 py-1.5">
+                    Ouvrir la demande (signature, photo, notes) →
                   </button>
                 </div>
               </li>
