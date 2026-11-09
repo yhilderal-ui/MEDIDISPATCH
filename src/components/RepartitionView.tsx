@@ -4,6 +4,7 @@ import type { Demande, EtatVu, Livreur, Secteur } from '../types';
 import BadgeCriticite from './BadgeCriticite';
 import BadgeVu from './BadgeVu';
 import { CaseCarte, CaseGroupe } from './Selection';
+import MenusRepartition from './MenusRepartition';
 import { NATURE_CONFIG, statutAffiche } from '../data';
 import { villeDepuisAdresse } from '../lib/adresse';
 import { ajouterJours, aujourdhuiParis, depuisJour, formatJour, versJour } from '../lib/dates';
@@ -45,8 +46,6 @@ export default function RepartitionView({ demandes, livreurs, etats, selection, 
   const carte = (d: Demande) => {
     const statut = statutAffiche(d);
     const coche = selection.ids.has(d.id);
-    // Un livreur désactivé reste affiché s'il est encore attribué à la carte.
-    const proposes = livreurs.filter(l => l.actif || l.id === d.livreur_id);
     return (
       <div key={d.id} className={`relative bg-white rounded-xl border shadow-sm ${selection.actif && coche ? 'border-sky-500 ring-2 ring-sky-500' : 'border-black/5'}`}>
         <button
@@ -74,30 +73,7 @@ export default function RepartitionView({ demandes, livreurs, etats, selection, 
         {selection.actif && <CaseCarte coche={coche} />}
         {!selection.actif && (
           <div className="grid grid-cols-2 gap-1.5 px-3 pb-2.5">
-            <select
-              aria-label={`Secteur de ${d.numero_ticket}`}
-              value={d.secteur ?? ''}
-              onChange={e => onRepartir(d, { secteur: (e.target.value || null) as Secteur | null })}
-              className={MENU}
-            >
-              <option value="">Secteur…</option>
-              <option value="est">Est</option>
-              <option value="ouest">Ouest</option>
-            </select>
-            <select
-              aria-label={`Livreur de ${d.numero_ticket}`}
-              value={d.livreur_id ?? ''}
-              onChange={e => onRepartir(d, { livreur_id: e.target.value || null })}
-              className={MENU}
-            >
-              <option value="">Livreur…</option>
-              {proposes.map(l => (
-                <option key={l.id} value={l.id}>
-                  {l.nom}
-                  {l.actif ? '' : ' (inactif)'}
-                </option>
-              ))}
-            </select>
+            <MenusRepartition demande={d} onRepartir={champs => onRepartir(d, champs)} classeMenu={MENU} />
           </div>
         )}
       </div>

@@ -140,7 +140,9 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
       `supabase/scripts/ajouter_compte_logisticien.sql` (e-mail et prénom remplacés).
 - [ ] Logisticien : boutons Tableau / **Répartition** / Statistiques ; pas de « Nouvelle demande » ni de chat.
 - [ ] Répartition → **Livreurs** : ajouter 3 prénoms, en renommer un, en désactiver un puis le réactiver.
-- [ ] Classer une carte en Est et l'attribuer à un livreur avec les menus ; message « Est · Karim ».
+- [ ] Choisir seulement le secteur d'une carte : elle reste « À classer » (« Choisissez aussi le livreur »).
+      Choisir ensuite le livreur : elle passe en Est, chez ce livreur ; message « Est · Karim ».
+- [ ] Compte Livreurs **sur téléphone**, vue tableau et Tournée : l'écran défile au doigt jusqu'à la dernière carte.
 - [ ] **Sélectionner** → Tout sélectionner (À classer) → **Secteur Ouest**, puis **Attribuer à…** un livreur.
 - [ ] Le résumé du jour indique le nombre de passages par livreur ; « à classer » disparaît quand tout est classé.
 - [ ] Compte **Livreurs** (téléphone) : « Qui livre aujourd'hui ? » → choisir un prénom → la Tournée ne montre

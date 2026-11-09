@@ -102,7 +102,7 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser, selecti
   const cfg = STATUT_CONFIG[statut];
   const depot = glisser.colonne(statut);
   return (
-    <div {...depot.props} className={`${visibleMobile ? 'flex' : 'hidden'} md:flex flex-col w-full md:min-w-[280px] md:w-[280px] shrink-0 min-h-0`}>
+    <div {...depot.props} className={`${visibleMobile ? 'flex' : 'hidden'} md:flex flex-col w-full md:min-w-[280px] md:w-[280px] shrink-0 md:min-h-0`}>
       <div className="hidden md:flex items-center justify-between mb-3 px-3 py-2 rounded-xl" style={{ background: cfg.color + '12' }}>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ background: cfg.color }} />
@@ -111,7 +111,7 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser, selecti
         <span className="text-[10px] font-700 px-2 py-0.5 rounded-full text-white" style={{ background: cfg.color }}>{items.length}</span>
       </div>
       <div
-        className={`flex flex-col gap-3 overflow-y-auto flex-1 pr-1 rounded-2xl transition-colors ${depot.possible ? 'outline-2 outline-dashed -outline-offset-2 p-1' : ''}`}
+        className={`flex flex-col gap-3 md:overflow-y-auto md:flex-1 pr-1 rounded-2xl transition-colors ${depot.possible ? 'outline-2 outline-dashed -outline-offset-2 p-1' : ''}`}
         style={depot.possible ? { outlineColor: cfg.color + (depot.survolee ? '' : '66'), background: depot.survolee ? cfg.color + '0f' : undefined } : undefined}
       >
         <CaseGroupe ids={items.map(d => d.id)} selection={selection} />
@@ -161,7 +161,9 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
   const finSemaine = ajouterJours(debutSemaine, 5);
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    // Sur téléphone, tout l'écran défile d'un bloc (barre d'outils, onglets et
+    // cartes) ; sur ordinateur, chaque colonne défile séparément.
+    <div className="flex flex-col h-full min-h-0 overflow-y-auto md:overflow-visible">
       <div className="flex items-center gap-3 mb-4 flex-wrap shrink-0">
         {boutonSelection}
         <div className="flex items-center gap-2 ml-auto flex-wrap">
@@ -216,9 +218,9 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
       </div>
 
       {vue === 'kanban' ? (
-        <div className="flex flex-col flex-1 min-h-0">
+        <div className="flex flex-col md:flex-1 md:min-h-0">
           <OngletsStatut demandes={demandes} etats={etats} actif={onglet} onChange={setOnglet} />
-          <div className={`flex gap-5 flex-1 min-h-0 md:overflow-x-auto ${selection.actif ? 'pb-48 md:pb-24' : 'pb-24 md:pb-4'}`}>
+          <div className={`flex gap-5 md:flex-1 md:min-h-0 md:overflow-x-auto ${selection.actif ? 'pb-48 md:pb-24' : 'pb-24 md:pb-4'}`}>
             <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'nouvelle'} glisser={glisser} selection={selection} />
             <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'en_cours'} glisser={glisser} selection={selection} />
             <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'livree'} glisser={glisser} selection={selection} />
