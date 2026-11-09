@@ -562,9 +562,9 @@ export default function App() {
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden bg-white flex items-center justify-center shrink-0">
             <img src={logo} alt="" className="w-full h-full object-contain" />
           </div>
-          <div className="min-w-0 max-[379px]:hidden">
+          <div className="min-w-0 max-sm:hidden">
             <h1 className="text-sm sm:text-base font-700 text-gray-900 leading-tight">MediDispatch</h1>
-            <p className="hidden xl:block whitespace-nowrap text-[10px] text-gray-400 font-mono tracking-wide">Livraison médicale — Île-de-France</p>
+            <p className="hidden min-[1700px]:block whitespace-nowrap text-[10px] text-gray-400 font-mono tracking-wide">Livraison médicale — Île-de-France</p>
           </div>
         </button>
 
@@ -579,7 +579,7 @@ export default function App() {
             >
               <IconeRole size={14} aria-hidden />
               <span className="hidden sm:inline">{libelle}</span>
-              {userName && userName !== libelle && <span className="hidden xl:inline opacity-60">— {userName}</span>}
+              {userName && userName !== libelle && <span className="hidden min-[1600px]:inline opacity-60">— {userName}</span>}
               {livreurCourant && (
                 <>
                   <span className="opacity-60">—</span>
@@ -636,7 +636,7 @@ export default function App() {
                   }`}
                 >
                   <Icone size={16} aria-hidden />
-                  <span className="hidden md:inline">{libelle}</span>
+                  <span className="hidden xl:inline">{libelle}</span>
                 </button>
               );
             })}
@@ -655,7 +655,7 @@ export default function App() {
             <button
               type="button"
               onClick={notif.autoriserNavigateur}
-              className="hidden 2xl:inline text-[11px] font-600 text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-2.5 py-1 rounded-full"
+              className="hidden min-[1800px]:inline text-[11px] font-600 text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-2.5 py-1 rounded-full"
             >
               Recevoir les alertes même fenêtre réduite
             </button>
@@ -666,10 +666,10 @@ export default function App() {
               title={`${nbNonVues} demande${nbNonVues > 1 ? 's' : ''} non vue${nbNonVues > 1 ? 's' : ''}`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-violet-500 pulse-dot" aria-hidden />
-              {nbNonVues}<span className="hidden sm:inline"> non vue{nbNonVues > 1 ? 's' : ''}</span>
+              {nbNonVues}<span className="hidden 2xl:inline"> non vue{nbNonVues > 1 ? 's' : ''}</span>
             </span>
           )}
-          <div className="hidden xl:flex items-center gap-1.5 text-xs text-gray-500 whitespace-nowrap">
+          <div className="hidden min-[1700px]:flex items-center gap-1.5 text-xs text-gray-500 whitespace-nowrap">
             <span className="pulse-dot w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
             <span className="font-mono">{actives.length} demandes actives</span>
           </div>
@@ -690,8 +690,8 @@ export default function App() {
             title="Déconnexion"
             className="text-xs text-gray-400 hover:text-gray-600 transition-colors font-500 p-1"
           >
-            <LogOut size={17} className="lg:hidden" aria-hidden />
-            <span className="hidden lg:inline">Déconnexion</span>
+            <LogOut size={17} className="xl:hidden" aria-hidden />
+            <span className="hidden xl:inline">Déconnexion</span>
           </button>
         </div>
       </header>
