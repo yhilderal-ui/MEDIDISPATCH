@@ -12,7 +12,16 @@ export interface Selection {
   basculerGroupe: (ids: string[]) => void;
 }
 
-export type ActionGroupee = 'en_cours' | 'livree' | 'reporter' | 'archiver' | 'annuler' | 'supprimer';
+export type ActionGroupee =
+  | 'en_cours'
+  | 'livree'
+  | 'reporter'
+  | 'archiver'
+  | 'annuler'
+  | 'supprimer'
+  | 'secteur_est'
+  | 'secteur_ouest'
+  | 'attribuer'; // les trois dernières : répartition (décision du 08/11)
 
 // Mêmes règles que les boutons de la fiche, appliquées carte par carte ; les
 // actions réservées sont limitées aux comptes qui y ont droit.
@@ -21,9 +30,9 @@ export function actionPossible(action: ActionGroupee, d: Demande, role: Role): b
   const active = d.statut === 'nouvelle' || d.statut === 'en_cours';
   switch (action) {
     case 'en_cours':
-      return d.statut === 'nouvelle';
+      return d.statut === 'nouvelle' && !peut.livraisonDirecte;
     case 'livree':
-      return d.statut === 'en_cours';
+      return d.statut === 'en_cours' || (peut.livraisonDirecte && d.statut === 'nouvelle');
     case 'reporter':
       return role !== 'livreur' && active;
     case 'archiver':
@@ -32,14 +41,36 @@ export function actionPossible(action: ActionGroupee, d: Demande, role: Role): b
       return peut.annuler && active;
     case 'supprimer':
       return peut.supprimer && d.statut === 'annulee';
+    case 'secteur_est':
+      return peut.repartir && d.statut !== 'annulee' && d.secteur !== 'est';
+    case 'secteur_ouest':
+      return peut.repartir && d.statut !== 'annulee' && d.secteur !== 'ouest';
+    case 'attribuer':
+      return peut.repartir && d.statut !== 'annulee';
   }
 }
 
 // Actions affichées pour un compte, dans l'ordre de la barre.
 export function actionsDuRole(role: Role): ActionGroupee[] {
-  const toutes: ActionGroupee[] = ['en_cours', 'livree', 'reporter', 'archiver', 'annuler', 'supprimer'];
+  const toutes: ActionGroupee[] = ['secteur_est', 'secteur_ouest', 'attribuer', 'en_cours', 'livree', 'reporter', 'archiver', 'annuler', 'supprimer'];
   const peut = droits(role);
-  return toutes.filter(a =>
-    a === 'reporter' || a === 'archiver' ? role !== 'livreur' : a === 'annuler' ? peut.annuler : a === 'supprimer' ? peut.supprimer : true,
-  );
+  return toutes.filter(a => {
+    switch (a) {
+      case 'reporter':
+      case 'archiver':
+        return role !== 'livreur';
+      case 'annuler':
+        return peut.annuler;
+      case 'supprimer':
+        return peut.supprimer;
+      case 'secteur_est':
+      case 'secteur_ouest':
+      case 'attribuer':
+        return peut.repartir;
+      case 'en_cours':
+        return !peut.livraisonDirecte;
+      default:
+        return true;
+    }
+  });
 }

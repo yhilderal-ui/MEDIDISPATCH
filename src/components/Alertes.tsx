@@ -1,5 +1,6 @@
 import { ClipboardList, MessageSquare, Pencil, TriangleAlert } from 'lucide-react';
 import type { Alerte } from '../lib/notifications';
+import Balayable from './Balayable';
 
 interface Props {
   alertes: Alerte[];
@@ -7,14 +8,16 @@ interface Props {
   onFermer: (id: string) => void;
 }
 
-// Bandeaux d'alerte en haut à droite ; un clic ouvre la carte ou le chat.
+// Bandeaux d'alerte en haut à droite ; un clic ouvre la carte ou le chat, un
+// balayage du doigt (gauche ou droite) ou le bouton × les ferme.
 export default function Alertes({ alertes, onActiver, onFermer }: Props) {
   if (alertes.length === 0) return null;
   return (
     <div className="fixed z-[35] sm:z-[60] left-3 right-3 bottom-20 sm:left-auto sm:bottom-auto sm:top-20 sm:right-4 flex flex-col-reverse sm:flex-col gap-2 sm:w-[22rem]" aria-live="polite">
       {alertes.map(a => (
-        <div
+        <Balayable
           key={a.id}
+          onFermer={() => onFermer(a.id)}
           className={`slide-in bg-white rounded-2xl shadow-xl border flex items-start gap-3 p-3 ${a.urgente ? 'border-red-300 ring-2 ring-red-200' : 'border-violet-200'}`}
         >
           <span
@@ -36,7 +39,7 @@ export default function Alertes({ alertes, onActiver, onFermer }: Props) {
           >
             ×
           </button>
-        </div>
+        </Balayable>
       ))}
     </div>
   );

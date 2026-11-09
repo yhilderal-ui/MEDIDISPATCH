@@ -134,7 +134,43 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] Pharmacie : pas de **Supprimer**. Livreurs : seulement **Passer en cours** et **Marquer livrées**
       (la Tournée bascule sur le tableau en mode sélection).
 
+## 7 sexies. Livreurs, secteurs et logisticien
+
+- [ ] Créer le compte du logisticien (Authentication → Add user), puis lancer
+      `supabase/scripts/ajouter_compte_logisticien.sql` (e-mail et prénom remplacés).
+- [ ] Logisticien : boutons Tableau / **Répartition** / Statistiques ; pas de « Nouvelle demande » ni de chat.
+- [ ] Répartition → **Livreurs** : ajouter 3 prénoms, en renommer un, en désactiver un puis le réactiver.
+- [ ] Choisir seulement le secteur d'une carte : elle reste « À classer » (« Choisissez aussi le livreur »).
+      Choisir ensuite le livreur : elle passe en Est, chez ce livreur ; message « Est · Karim ».
+- [ ] Compte Livreurs **sur téléphone**, vue tableau et Tournée : l'écran défile au doigt jusqu'à la dernière carte.
+- [ ] **Sélectionner** → Tout sélectionner (À classer) → **Secteur Ouest**, puis **Attribuer à…** un livreur.
+- [ ] Le résumé du jour indique le nombre de passages par livreur ; « à classer » disparaît quand tout est classé.
+- [ ] Livreurs et logisticien : sur une carte « Nouvelle », la fiche propose directement **Marquer comme livrée**
+      (plus de « Passer en cours ») ; Faire signer et la photo sont disponibles dès « Nouvelle ». Florence et la
+      Pharmacie gardent l'étape « En cours ».
+- [ ] Compte **Livreurs** (téléphone) : « Qui livre aujourd'hui ? » → choisir un prénom → la Tournée ne montre
+      que ses livraisons ; **changer** permet de prendre un autre prénom ; le choix est gardé au rechargement.
+- [ ] Logisticien qui livre : s'attribuer des cartes ; dans **Tournée**, « Tournée de : » propose d'abord sa
+      propre tournée (livreur portant le même prénom que son compte) ; « Tous les livreurs » ou un autre prénom
+      pour suivre l'équipe ; le choix est gardé au rechargement.
+- [ ] Florence : étiquettes « Est · Karim », filtres Secteur et Livreur, Répartition disponible en secours.
+- [ ] Pharmacie : étiquettes et filtres visibles, pas de Répartition, pas de menus Secteur / Livreur dans la fiche.
+- [ ] La fiche d'une carte répartie montre « Répartition : Est · Karim » dans l'historique.
+
+## 7 septies. Signature du patient (téléphone du livreur)
+
+- [ ] Sur une carte en cours : **Faire signer** → encart plein écran ; « Signé par » prérempli avec le patient.
+- [ ] Signer au doigt : la page ne bouge pas ; **Effacer** recommence ; **Valider** est grisé tant que rien n'est signé.
+- [ ] Modifier « Signé par » (ex. « Mme Durand (sa fille) ») → message « Signature … enregistrée et ajoutée au bon de commande ».
+- [ ] Dans la fiche : document **Signature**, historique « Signature de … » ; le bouton devient **Refaire signer**.
+- [ ] Ouvrir le **bon de commande** : « Reçu le JJ/MM/AAAA à HH h MM », le nom du signataire et la signature dans le cadre.
+- [ ] Sur un **retour** : la signature est enregistrée, sans PDF.
+
 ## 8. Robustesse
+
+- [ ] Sur téléphone, une alerte (nouvelle demande, mise à jour, message) ou un bandeau de confirmation /
+      d'erreur se ferme en le **balayant du doigt** vers la gauche ou la droite ; un petit glissement le
+      laisse en place ; le bouton × marche toujours, et un appui sur l'alerte ouvre la demande.
 
 - [ ] Recharger la page (F5) : rien n'est perdu.
 - [ ] Couper le Wi-Fi du téléphone puis le rétablir : les nouveautés arrivent après

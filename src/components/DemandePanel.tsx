@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Archive, CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Split, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
-import type { Demande, DocumentJoint, Medicament, ModificationDemande as Champs, Note, Statut, TypeDocument } from '../types';
+import { Archive, CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Signature, Split, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
+import type { Demande, DocumentJoint, Medicament, ModificationDemande as Champs, Note, Secteur, Statut, TypeDocument } from '../types';
+import MenusRepartition from './MenusRepartition';
+import EncartSignature from './EncartSignature';
 import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 import BoutonsItineraire from './BoutonsItineraire';
 import ModificationDemande from './ModificationDemande';
@@ -33,6 +35,8 @@ interface Props {
   demandes: Demande[];
   onOuvrir: (id: string) => void;
   onCreerReliquat: (restants: Medicament[], reliquat: Medicament[], jour: string) => Promise<boolean>;
+  onRepartir: (champs: { secteur?: Secteur | null; livreur_id?: string | null }) => void;
+  onSigner: (image: Blob, signataire: string) => Promise<boolean>;
 }
 
 const TITRE = 'text-[10px] font-700 uppercase tracking-widest text-gray-400 mb-2';
@@ -157,7 +161,8 @@ function FilNotes({ demandeId }: { demandeId: string }) {
   );
 }
 
-export default function DemandePanel({ demande, role, utilisateurId, comptes, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon, onArchiver, demandes, onOuvrir, onCreerReliquat }: Props) {
+export default function DemandePanel({ demande, role, utilisateurId, comptes, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon, onArchiver, demandes, onOuvrir, onCreerReliquat, onRepartir, onSigner }: Props) {
+  const [signatureOuverte, setSignatureOuverte] = useState(false);
   const [edition, setEdition] = useState(false);
   const [reliquatOuvert, setReliquatOuvert] = useState(false);
   const criticite = CRITICITE_CONFIG[demande.criticite];
@@ -171,6 +176,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
   const preuveRef = useRef<HTMLInputElement>(null);
 
   const aPreuve = demande.documents.some(d => d.type === 'preuve_livraison');
+  const aSignature = demande.documents.some(d => d.type === 'signature');
   const documents = [...demande.documents].sort((a, b) => a.ajoute_le.localeCompare(b.ajoute_le));
 
   const executer = async (action: () => Promise<boolean>) => {
@@ -292,6 +298,18 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
               <span>{retour ? 'Passage prévu' : 'Livraison prévue'} : <span className="font-600 text-gray-800">{formatJour(demande.jour_livraison)}</span></span>
             </p>
           </div>
+
+          {/* Répartition Est / Ouest et livreur (décision du 08/11) : logisticien et Florence. */}
+          {peut.repartir && demande.statut !== 'annulee' && (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <MenusRepartition
+                demande={demande}
+                onRepartir={onRepartir}
+                etiquettes
+                classeMenu="mt-1 w-full text-xs normal-case tracking-normal font-500 text-gray-700 bg-white border border-gray-200 rounded-lg px-2 py-1.5"
+              />
+            </div>
+          )}
 
           {/* Utile seulement si c'est moi qui ai fait la dernière modification. */}
           {demande.derniere_activite_par === utilisateurId && autres.length > 0 && (
@@ -476,7 +494,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
 
         {/* Actions de statut */}
         <div className="shrink-0 px-6 pb-6 pt-3 border-t border-gray-100 flex flex-col gap-2">
-          {demande.statut === 'nouvelle' && (
+          {demande.statut === 'nouvelle' && !peut.livraisonDirecte && (
             <button
               type="button"
               disabled={occupe}
@@ -487,8 +505,24 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
             </button>
           )}
 
+          {/* Signature du patient : facultative, livraisons et retours (décision du 09/11). */}
+          {(demande.statut === 'en_cours' || demande.statut === 'livree' || (peut.livraisonDirecte && demande.statut === 'nouvelle')) && (
+            <button
+              type="button"
+              disabled={occupe}
+              onClick={() => setSignatureOuverte(true)}
+              className="w-full bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-800 font-600 text-sm py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              <Signature size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />
+              {aSignature ? 'Refaire signer' : 'Faire signer'} <span className="font-400 opacity-70">(optionnel)</span>
+            </button>
+          )}
+          {signatureOuverte && (
+            <EncartSignature nomPatient={demande.patient_nom} onAnnuler={() => setSignatureOuverte(false)} onValider={onSigner} />
+          )}
+
           {/* Photo de preuve : optionnelle en V1, ajoutable pendant ou après la livraison. */}
-          {(demande.statut === 'en_cours' || demande.statut === 'livree') && !aPreuve && (
+          {(demande.statut === 'en_cours' || demande.statut === 'livree' || (peut.livraisonDirecte && demande.statut === 'nouvelle')) && !aPreuve && (
             <>
               <button
                 type="button"
@@ -512,7 +546,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
             </>
           )}
 
-          {demande.statut === 'en_cours' && (
+          {(demande.statut === 'en_cours' || (peut.livraisonDirecte && demande.statut === 'nouvelle')) && (
             <button
               type="button"
               disabled={occupe}

@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Archive, CalendarClock, Check, CircleCheck, CircleX, Trash2, Truck, X } from 'lucide-react';
+import { Archive, CalendarClock, Check, CircleCheck, CircleX, MapPin, Trash2, Truck, UserCheck, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Demande } from '../types';
 import type { Role } from '../lib/useAuth';
 import { actionPossible, actionsDuRole, type ActionGroupee, type Selection } from '../lib/selection';
 import { aujourdhuiParis, erreurJourLivraison } from '../lib/dates';
+import { useLivreurs } from '../lib/livreursContexte';
 
 // Case affichée sur une carte en mode sélection (décorative : l'état est porté
 // par aria-pressed sur la carte elle-même).
@@ -41,6 +42,9 @@ export function CaseGroupe({ ids, selection }: { ids: string[]; selection: Selec
 }
 
 const ACTIONS: Record<ActionGroupee, { libelle: string; Icone: LucideIcon; danger?: boolean }> = {
+  secteur_est: { libelle: 'Secteur Est', Icone: MapPin },
+  secteur_ouest: { libelle: 'Secteur Ouest', Icone: MapPin },
+  attribuer: { libelle: 'Attribuer à…', Icone: UserCheck },
   en_cours: { libelle: 'Passer en cours', Icone: Truck },
   livree: { libelle: 'Marquer livrées', Icone: CircleCheck },
   reporter: { libelle: 'Reporter au…', Icone: CalendarClock },
@@ -53,7 +57,8 @@ interface Props {
   role: Role;
   selectionnees: Demande[];
   occupe: boolean;
-  onAction: (action: ActionGroupee, cibles: Demande[], jour?: string) => void;
+  // jour : pour « Reporter au… » ; livreur : pour « Attribuer à… » (null = retirer).
+  onAction: (action: ActionGroupee, cibles: Demande[], options?: { jour?: string; livreur?: string | null }) => void;
   onQuitter: () => void;
 }
 
@@ -63,13 +68,21 @@ export function BarreSelection({ role, selectionnees, occupe, onAction, onQuitte
   const [jourOuvert, setJourOuvert] = useState(false);
   const [jour, setJour] = useState('');
   const [erreurJour, setErreurJour] = useState<string | null>(null);
+  const [attribuerOuvert, setAttribuerOuvert] = useState(false);
+  const livreurs = useLivreurs().filter(l => l.actif);
   const n = selectionnees.length;
 
   const lancer = (action: ActionGroupee) => {
     const cibles = selectionnees.filter(d => actionPossible(action, d, role));
     if (action === 'reporter') {
       setErreurJour(null);
+      setAttribuerOuvert(false);
       setJourOuvert(o => !o);
+      return;
+    }
+    if (action === 'attribuer') {
+      setJourOuvert(false);
+      setAttribuerOuvert(o => !o);
       return;
     }
     if (action === 'annuler' || action === 'supprimer') {
@@ -92,7 +105,13 @@ export function BarreSelection({ role, selectionnees, occupe, onAction, onQuitte
     }
     const cibles = selectionnees.filter(d => actionPossible('reporter', d, role) && d.jour_livraison !== jour);
     setJourOuvert(false);
-    onAction('reporter', cibles, jour);
+    onAction('reporter', cibles, { jour });
+  };
+
+  const attribuer = (livreur: string | null) => {
+    const cibles = selectionnees.filter(d => actionPossible('attribuer', d, role) && d.livreur_id !== livreur);
+    setAttribuerOuvert(false);
+    onAction('attribuer', cibles, { livreur });
   };
 
   return (
@@ -119,6 +138,20 @@ export function BarreSelection({ role, selectionnees, occupe, onAction, onQuitte
           {erreurJour && <p role="alert" className="text-[11px] text-red-300 w-full">{erreurJour}</p>}
         </div>
       )}
+      {attribuerOuvert && (
+        <div className="flex flex-wrap items-center gap-1.5 px-2 pt-1 pb-2 mb-1 border-b border-white/10" role="group" aria-label="Attribuer à">
+          <span className="text-xs text-white/70 mr-1">Attribuer à</span>
+          {livreurs.map(l => (
+            <button key={l.id} type="button" disabled={occupe} onClick={() => attribuer(l.id)} className="text-xs font-600 px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-sky-500">
+              {l.nom}
+            </button>
+          ))}
+          <button type="button" disabled={occupe} onClick={() => attribuer(null)} className="text-xs px-2.5 py-1.5 rounded-lg text-white/70 hover:bg-white/10">
+            Personne
+          </button>
+          {livreurs.length === 0 && <span className="text-[11px] text-white/60">Ajoutez d'abord des livreurs (écran Répartition).</span>}
+        </div>
+      )}
       <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5">
         <p role="status" className="text-xs font-600 px-2 shrink-0 whitespace-nowrap flex-1 md:flex-none">
           {n === 0 ? 'Touchez les cartes à sélectionner' : `${n} sélectionnée${n > 1 ? 's' : ''}`}
@@ -137,7 +170,7 @@ export function BarreSelection({ role, selectionnees, occupe, onAction, onQuitte
                   title={nb === 0 ? 'Aucune carte sélectionnée ne s’y prête' : undefined}
                   className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-600 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-35 ${
                     danger ? 'text-red-200 hover:bg-red-500/20' : 'hover:bg-white/10'
-                  } ${action === 'reporter' && jourOuvert ? 'bg-white/15' : ''}`}
+                  } ${(action === 'reporter' && jourOuvert) || (action === 'attribuer' && attribuerOuvert) ? 'bg-white/15' : ''}`}
                 >
                   <Icone size={14} aria-hidden />
                   {libelle}

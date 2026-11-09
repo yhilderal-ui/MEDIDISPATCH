@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
-import type { Criticite, Nature, Statut } from '../types';
+import type { Criticite, Nature, Secteur, Statut } from '../types';
+import { useLivreurs } from '../lib/livreursContexte';
 import { CRITICITE_CONFIG, STATUT_CONFIG } from '../data';
 import { FILTRES_VIDES, filtresActifs, type FiltreDate, type Filtres } from '../lib/filtres';
 
@@ -10,12 +11,14 @@ interface Props {
   nbResultats: number;
   nbTotal: number;
   masquerStatut?: boolean;
+  avecRepartition?: boolean; // filtres Secteur et Livreur (pas pour le compte Livreurs)
 }
 
 const SELECT =
   'text-xs bg-white border border-gray-200 rounded-xl px-2.5 py-2 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all';
 
-export default function BarreFiltres({ filtres, onChange, nbResultats, nbTotal, masquerStatut }: Props) {
+export default function BarreFiltres({ filtres, onChange, nbResultats, nbTotal, masquerStatut, avecRepartition }: Props) {
+  const livreurs = useLivreurs();
   const ref = useRef<HTMLInputElement>(null);
   const set = <K extends keyof Filtres>(k: K, v: Filtres[K]) => onChange({ ...filtres, [k]: v });
 
@@ -34,7 +37,14 @@ export default function BarreFiltres({ filtres, onChange, nbResultats, nbTotal, 
   const actifs = filtresActifs(filtres);
   // Sur téléphone, les listes déroulantes sont repliées derrière « Filtres ».
   const [deplie, setDeplie] = useState(false);
-  const nbFiltres = [filtres.statut !== 'tous', filtres.criticite !== 'toutes', filtres.nature !== 'toutes', filtres.date !== 'toutes'].filter(Boolean).length;
+  const nbFiltres = [
+    filtres.statut !== 'tous',
+    filtres.criticite !== 'toutes',
+    filtres.nature !== 'toutes',
+    filtres.date !== 'toutes',
+    filtres.secteur !== 'tous',
+    filtres.livreur !== 'tous',
+  ].filter(Boolean).length;
 
   return (
     <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
@@ -77,6 +87,24 @@ export default function BarreFiltres({ filtres, onChange, nbResultats, nbTotal, 
           <option value="livraison">Livraisons</option>
           <option value="retour">Retours</option>
         </select>
+
+        {avecRepartition && (
+          <>
+            <select aria-label="Filtrer par secteur" value={filtres.secteur} onChange={e => set('secteur', e.target.value as Secteur | 'tous' | 'aucun')} className={SELECT}>
+              <option value="tous">Tous secteurs</option>
+              <option value="est">Est</option>
+              <option value="ouest">Ouest</option>
+              <option value="aucun">À classer</option>
+            </select>
+            <select aria-label="Filtrer par livreur" value={filtres.livreur} onChange={e => set('livreur', e.target.value)} className={SELECT}>
+              <option value="tous">Tous livreurs</option>
+              {livreurs.map(l => (
+                <option key={l.id} value={l.id}>{l.nom}{l.actif ? '' : ' (inactif)'}</option>
+              ))}
+              <option value="aucun">Non attribuées</option>
+            </select>
+          </>
+        )}
 
         <select aria-label="Filtrer par criticité" value={filtres.criticite} onChange={e => set('criticite', e.target.value as Criticite | 'toutes')} className={SELECT}>
           <option value="toutes">Toutes criticités</option>

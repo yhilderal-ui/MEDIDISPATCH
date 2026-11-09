@@ -41,7 +41,7 @@ function WeekCard({ demande, onClick, etatVu, selectionnee }: { demande: Demande
           </span>
         </div>
         {etatVu && <div className="mb-1"><BadgeVu etat={etatVu} compact /></div>}
-        {(demande.nature === 'retour' || demande.reliquat_de) && (
+        {(demande.nature === 'retour' || demande.reliquat_de || demande.secteur || demande.livreur_id) && (
           <div className="mb-1 flex flex-wrap gap-1"><BadgeNature demande={demande} /></div>
         )}
         <p className="font-600 text-gray-900 text-[11px] leading-tight truncate">{demande.patient_nom}</p>

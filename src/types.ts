@@ -4,7 +4,7 @@ export type Criticite = 'urgent' | 'standard_prioritaire' | 'standard';
 export type Statut = 'nouvelle' | 'en_cours' | 'livree' | 'annulee';
 // Livraison chez le patient, ou retour (aller récupérer des médicaments), décision du 03/10.
 export type Nature = 'livraison' | 'retour';
-export type TypeDocument = 'ordonnance' | 'bon_commande' | 'bon_livraison' | 'preuve_livraison' | 'carte_vitale' | 'mutuelle';
+export type TypeDocument = 'ordonnance' | 'bon_commande' | 'bon_livraison' | 'preuve_livraison' | 'carte_vitale' | 'mutuelle' | 'signature';
 
 // Pièces jointes proposées à la création et dans le détail (demande du 29/09).
 export type TypePiece = 'ordonnance' | 'carte_vitale' | 'mutuelle' | 'bon_livraison';
@@ -25,6 +25,7 @@ export interface DocumentJoint {
   type_mime: string;
   ajoute_le: string;
   genere: boolean; // bon de commande ou de livraison généré automatiquement
+  signataire?: string | null; // signature : nom de la personne qui a signé (migration 0017)
 }
 
 export interface Demande {
@@ -39,6 +40,8 @@ export interface Demande {
   statut: Statut;
   nature: Nature;
   reliquat_de: string | null; // carte d'origine quand celle-ci est un reliquat
+  secteur: Secteur | null; // classée par le logisticien (décision du 08/11)
+  livreur_id: string | null; // livreur attribué
   notes_initiales: string | null;
   cree_le: string;
   mis_a_jour_le: string;
@@ -48,6 +51,16 @@ export interface Demande {
   derniere_activite_par: string | null;
   documents: DocumentJoint[];
   lectures_demandes: { utilisateur_id: string; vu_le: string }[];
+}
+
+export type Secteur = 'est' | 'ouest';
+
+// Prénoms proposés au compte partagé « Livreurs » (migration 0016).
+export interface Livreur {
+  id: string;
+  nom: string;
+  actif: boolean;
+  ordre: number;
 }
 
 // « nouvelle » : jamais ouverte par moi ; « maj » : l'autre compte l'a modifiée
@@ -72,7 +85,7 @@ export type ModificationDemande = Pick<
 
 export interface EvenementHistorique {
   id: string;
-  evenement: 'creation' | 'statut' | 'report' | 'modification';
+  evenement: 'creation' | 'statut' | 'report' | 'modification' | 'affectation' | 'signature';
   ancienne_valeur: string | null;
   nouvelle_valeur: string | null;
   cree_le: string;

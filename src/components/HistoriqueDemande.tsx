@@ -25,6 +25,10 @@ function decrire(e: EvenementHistorique, nature: Nature): string {
       return `Report : ${e.ancienne_valeur ? formatJour(e.ancienne_valeur) : '?'} → ${e.nouvelle_valeur ? formatJour(e.nouvelle_valeur) : '?'}`;
     case 'modification':
       return e.nouvelle_valeur ? `Modification : ${e.nouvelle_valeur}` : 'Modification des informations';
+    case 'affectation':
+      return `Répartition : ${e.nouvelle_valeur ?? 'non attribuée'}`;
+    case 'signature':
+      return `Signature de ${e.nouvelle_valeur ?? '?'}`;
   }
 }
 

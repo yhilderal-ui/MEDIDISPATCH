@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Camera, CircleCheck, CircleX, ClipboardList, CreditCard, FileText, PackageCheck, ShieldCheck, ShoppingBag, Truck, Undo2 } from 'lucide-react';
+import { Camera, CircleCheck, CircleX, ClipboardList, CreditCard, FileText, PackageCheck, ShieldCheck, ShoppingBag, Signature, Truck, Undo2 } from 'lucide-react';
 import type { Criticite, Demande, Nature, Statut, TypeDocument, TypePiece } from './types';
 
 // Section 7 du cahier des charges.
@@ -30,6 +30,7 @@ export const DOC_CONFIG: Record<TypeDocument, { Icone: LucideIcon; color: string
   preuve_livraison: { Icone: Camera, color: '#059669', bg: '#f0fdf4', label: 'Preuve de livraison' },
   carte_vitale: { Icone: CreditCard, color: '#16a34a', bg: '#f0fdf4', label: 'Carte Vitale' },
   mutuelle: { Icone: ShieldCheck, color: '#2563eb', bg: '#eff6ff', label: 'Mutuelle' },
+  signature: { Icone: Signature, color: '#0f766e', bg: '#f0fdfa', label: 'Signature' },
 };
 
 // Le bon de livraison vient du logiciel de Florence (décision du 04/11) : en tête après l'ordonnance.

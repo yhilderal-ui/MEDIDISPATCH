@@ -11,7 +11,9 @@ export const ETAPE_SUIVANTE: Partial<Record<Statut, Statut>> = {
   en_cours: 'livree',
 };
 
-export function useGlisserStatut(onDeposer?: (demande: Demande, statut: Statut) => void) {
+// direct : « Nouvelle » va directement vers « Livrée » (livreurs, logisticien).
+export function useGlisserStatut(onDeposer?: (demande: Demande, statut: Statut) => void, direct = false) {
+  const suivante = (s: Statut): Statut | undefined => (direct && s === 'nouvelle' ? 'livree' : ETAPE_SUIVANTE[s]);
   const [glisse, setGlisse] = useState<Demande | null>(null);
   const [survol, setSurvol] = useState<Statut | null>(null);
 
@@ -22,7 +24,7 @@ export function useGlisserStatut(onDeposer?: (demande: Demande, statut: Statut) 
 
   // Propriétés à poser sur l'élément qui entoure une carte.
   const carte = (d: Demande) =>
-    onDeposer && ETAPE_SUIVANTE[d.statut]
+    onDeposer && suivante(d.statut)
       ? {
           draggable: true,
           onDragStart: (e: DragEvent) => {
@@ -37,7 +39,7 @@ export function useGlisserStatut(onDeposer?: (demande: Demande, statut: Statut) 
   // État et propriétés d'une colonne : `possible` si la carte en cours de
   // déplacement peut y être déposée, `survolee` si elle est juste au-dessus.
   const colonne = (statut: Statut) => {
-    const possible = !!glisse && ETAPE_SUIVANTE[glisse.statut] === statut;
+    const possible = !!glisse && suivante(glisse.statut) === statut;
     return {
       possible,
       survolee: possible && survol === statut,

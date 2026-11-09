@@ -12,6 +12,8 @@ import { ajouterJours, formatJour, lundiDeLaSemaine, moisCourt } from '../lib/da
 import { useGlisserStatut } from '../lib/useGlisserStatut';
 import type { Selection } from '../lib/selection';
 import { CaseCarte, CaseGroupe } from './Selection';
+import { useLivreurs } from '../lib/livreursContexte';
+import { lireTourneeDe, memoriserTourneeDe } from '../lib/livreurs';
 import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 
 // « Récentes » (par défaut) : la dernière carte créée en tête (décision du 07/11).
@@ -28,6 +30,10 @@ interface Props {
   boutonSelection?: React.ReactNode; // à gauche de la barre d'outils, au-dessus des cartes
   // Écran d'arrivée : la Tournée pour le compte Livreurs, le tableau sinon.
   vueInitiale?: Vue;
+  // Logisticien (qui livre aussi) : nom de son compte, pour proposer d'abord
+  // sa propre tournée dans le sélecteur « Tournée de ».
+  tourneeLogisticien?: { nomCompte: string };
+  livraisonDirecte?: boolean; // « Nouvelle » → « Livrée » sans « En cours » (livreurs, logisticien)
 }
 
 function MedicalCard({ demande, onClick, etatVu, selectionnee }: { demande: Demande; onClick: () => void; etatVu: EtatVu; selectionnee?: boolean }) {
@@ -102,7 +108,7 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser, selecti
   const cfg = STATUT_CONFIG[statut];
   const depot = glisser.colonne(statut);
   return (
-    <div {...depot.props} className={`${visibleMobile ? 'flex' : 'hidden'} md:flex flex-col w-full md:min-w-[280px] md:w-[280px] shrink-0 min-h-0`}>
+    <div {...depot.props} className={`${visibleMobile ? 'flex' : 'hidden'} md:flex flex-col w-full md:min-w-[280px] md:w-[280px] shrink-0 md:min-h-0`}>
       <div className="hidden md:flex items-center justify-between mb-3 px-3 py-2 rounded-xl" style={{ background: cfg.color + '12' }}>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ background: cfg.color }} />
@@ -111,7 +117,7 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser, selecti
         <span className="text-[10px] font-700 px-2 py-0.5 rounded-full text-white" style={{ background: cfg.color }}>{items.length}</span>
       </div>
       <div
-        className={`flex flex-col gap-3 overflow-y-auto flex-1 pr-1 rounded-2xl transition-colors ${depot.possible ? 'outline-2 outline-dashed -outline-offset-2 p-1' : ''}`}
+        className={`flex flex-col gap-3 md:overflow-y-auto md:flex-1 pr-1 rounded-2xl transition-colors ${depot.possible ? 'outline-2 outline-dashed -outline-offset-2 p-1' : ''}`}
         style={depot.possible ? { outlineColor: cfg.color + (depot.survolee ? '' : '66'), background: depot.survolee ? cfg.color + '0f' : undefined } : undefined}
       >
         <CaseGroupe ids={items.map(d => d.id)} selection={selection} />
@@ -136,8 +142,22 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser, selecti
   );
 }
 
-export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, boutonSelection, vueInitiale = 'kanban' }: Props) {
-  const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut);
+export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, boutonSelection, vueInitiale = 'kanban', tourneeLogisticien, livraisonDirecte = false }: Props) {
+  const livreurs = useLivreurs();
+  // Tournée affichée pour le logisticien : la sienne par défaut (livreur portant
+  // le même prénom que son compte), sinon celle de tous.
+  // (Calculé à chaque affichage : la liste des livreurs arrive après le premier.)
+  const [choixTournee, setChoixTournee] = useState<string | null>(() => lireTourneeDe());
+  const moi = tourneeLogisticien && livreurs.find(l => l.nom.trim().toLowerCase() === tourneeLogisticien.nomCompte.trim().toLowerCase());
+  const tourneeDe = choixTournee ?? moi?.id ?? 'tous';
+  const choisirTournee = (v: string) => {
+    memoriserTourneeDe(v);
+    setChoixTournee(v);
+  };
+  const tourneeConnue = tourneeDe === 'tous' || livreurs.some(l => l.id === tourneeDe);
+  const demandesTournee =
+    tourneeLogisticien && tourneeDe !== 'tous' && tourneeConnue ? demandes.filter(d => d.livreur_id === tourneeDe) : demandes;
+  const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut, livraisonDirecte);
   const [tri, setTri] = useState<Tri>('recentes');
   const [vue, setVue] = useState<Vue>(vueInitiale);
   const [onglet, setOnglet] = useState<Statut>('nouvelle');
@@ -161,7 +181,9 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
   const finSemaine = ajouterJours(debutSemaine, 5);
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    // Sur téléphone, tout l'écran défile d'un bloc (barre d'outils, onglets et
+    // cartes) ; sur ordinateur, chaque colonne défile séparément.
+    <div className="flex flex-col h-full min-h-0 overflow-y-auto md:overflow-visible">
       <div className="flex items-center gap-3 mb-4 flex-wrap shrink-0">
         {boutonSelection}
         <div className="flex items-center gap-2 ml-auto flex-wrap">
@@ -216,9 +238,9 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
       </div>
 
       {vue === 'kanban' ? (
-        <div className="flex flex-col flex-1 min-h-0">
+        <div className="flex flex-col md:flex-1 md:min-h-0">
           <OngletsStatut demandes={demandes} etats={etats} actif={onglet} onChange={setOnglet} />
-          <div className={`flex gap-5 flex-1 min-h-0 md:overflow-x-auto ${selection.actif ? 'pb-48 md:pb-24' : 'pb-24 md:pb-4'}`}>
+          <div className={`flex gap-5 md:flex-1 md:min-h-0 md:overflow-x-auto ${selection.actif ? 'pb-48 md:pb-24' : 'pb-24 md:pb-4'}`}>
             <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'nouvelle'} glisser={glisser} selection={selection} />
             <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'en_cours'} glisser={glisser} selection={selection} />
             <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'livree'} glisser={glisser} selection={selection} />
@@ -228,8 +250,27 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
           </div>
         </div>
       ) : vue === 'tournee' ? (
-        <div className="flex-1 min-h-0">
-          <TourneeDuJour demandes={demandes} onOpen={onOpen} etats={etats} />
+        <div className="flex-1 min-h-0 flex flex-col">
+          {tourneeLogisticien && (
+            <label className="shrink-0 max-w-2xl w-full mx-auto mb-3 flex items-center gap-2 text-xs text-gray-500">
+              Tournée de
+              <select
+                value={tourneeConnue ? tourneeDe : 'tous'}
+                onChange={e => choisirTournee(e.target.value)}
+                className="text-xs font-600 text-gray-800 bg-white border border-gray-200 rounded-lg px-2 py-1.5"
+              >
+                {livreurs
+                  .filter(l => l.actif || l.id === tourneeDe)
+                  .map(l => (
+                    <option key={l.id} value={l.id}>{l.nom}</option>
+                  ))}
+                <option value="tous">Tous les livreurs</option>
+              </select>
+            </label>
+          )}
+          <div className="flex-1 min-h-0">
+            <TourneeDuJour demandes={demandesTournee} onOpen={onOpen} etats={etats} />
+          </div>
         </div>
       ) : (
         <div className="flex-1 min-h-0">

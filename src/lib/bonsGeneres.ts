@@ -65,7 +65,21 @@ export interface LiensReliquat {
   reliquats: { ticket: string; jour: string }[];
 }
 
-export async function genererBonPdf(d: DonneesBon, modele: ModeleBon, liens: LiensReliquat = { reliquats: [] }): Promise<Blob> {
+// Signature du patient à incruster (décision du 09/11, migration 0017).
+export interface SignatureBon {
+  image: string; // data URL PNG
+  largeur: number; // dimensions de l'image, en pixels
+  hauteur: number;
+  signataire: string;
+  le: string; // horodatage ISO
+}
+
+export async function genererBonPdf(
+  d: DonneesBon,
+  modele: ModeleBon,
+  liens: LiensReliquat = { reliquats: [] },
+  signature: SignatureBon | null = null,
+): Promise<Blob> {
   // compress + 'FAST' : le logo est compressé (≈ 1 Mo → quelques dizaines de Ko par bon).
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
   let y = MARGE;
@@ -163,10 +177,26 @@ export async function genererBonPdf(d: DonneesBon, modele: ModeleBon, liens: Lie
   // Réception
   y += 4;
   doc.setFont('helvetica', 'normal').setFontSize(11).setTextColor(17, 24, 39);
-  doc.text('Reçu le ____ / ____ / ________', MARGE, y);
-  y += 10;
-  doc.text('Nom et signature du patient :', MARGE, y);
+  if (signature) {
+    const le = new Date(signature.le);
+    const date = le.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
+    const heure = le.toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' });
+    doc.text(`Reçu le ${date} à ${heure.replace(':', ' h ')}`, MARGE, y);
+    y += 10;
+    doc.text(`Nom et signature du patient : ${signature.signataire}`, MARGE, y);
+  } else {
+    doc.text('Reçu le ____ / ____ / ________', MARGE, y);
+    y += 10;
+    doc.text('Nom et signature du patient :', MARGE, y);
+  }
   doc.setDrawColor(156, 163, 175).rect(MARGE, y + 3, LARGEUR, 30);
+  if (signature && signature.largeur > 0 && signature.hauteur > 0) {
+    // La signature tient dans le cadre (marge de 2 mm), proportions gardées.
+    const echelle = Math.min((LARGEUR - 4) / signature.largeur, 26 / signature.hauteur);
+    const l = signature.largeur * echelle;
+    const h = signature.hauteur * echelle;
+    doc.addImage(signature.image, 'PNG', MARGE + (LARGEUR - l) / 2, y + 3 + (30 - h) / 2, l, h, undefined, 'FAST');
+  }
 
   doc.setFontSize(8).setTextColor(156, 163, 175);
   doc.text(`Document généré par MediDispatch — ${d.numero_ticket}`, MARGE + LARGEUR / 2, 287, { align: 'center' });
@@ -174,11 +204,44 @@ export async function genererBonPdf(d: DonneesBon, modele: ModeleBon, liens: Lie
   return doc.output('blob');
 }
 
+// Dernière signature de la carte, prête à incruster ; null s'il n'y en a pas
+// (ou si elle ne peut pas être lue : le bon est alors produit sans).
+async function chargerSignature(demandeId: string): Promise<SignatureBon | null> {
+  const { data } = await supabase
+    .from('documents')
+    .select('chemin_fichier, signataire, ajoute_le')
+    .eq('demande_id', demandeId)
+    .eq('type', 'signature')
+    .order('ajoute_le', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  try {
+    const { data: fichier, error } = await supabase.storage.from('documents').download(data.chemin_fichier as string);
+    if (error || !fichier) return null;
+    const image = await new Promise<string>((ok, ko) => {
+      const lecteur = new FileReader();
+      lecteur.onload = () => ok(lecteur.result as string);
+      lecteur.onerror = () => ko(lecteur.error);
+      lecteur.readAsDataURL(fichier);
+    });
+    const { largeur, hauteur } = await new Promise<{ largeur: number; hauteur: number }>(ok => {
+      const img = new Image();
+      img.onload = () => ok({ largeur: img.naturalWidth, hauteur: img.naturalHeight });
+      img.onerror = () => ok({ largeur: 0, hauteur: 0 });
+      img.src = image;
+    });
+    return { image, largeur, hauteur, signataire: (data.signataire as string | null) ?? '', le: data.ajoute_le as string };
+  } catch {
+    return null;
+  }
+}
+
 // Génère un bon à partir de la carte, puis le range dans la carte (en
 // remplaçant le précédent du même type).
 async function publierBon(d: Demande, modele: ModeleBon, liens: LiensReliquat): Promise<void> {
   const m = MODELES[modele];
-  const pdf = await genererBonPdf(d, modele, liens);
+  const pdf = await genererBonPdf(d, modele, liens, await chargerSignature(d.id));
   const chemin = `${d.id}/${m.fichier}`;
 
   const envoi = await supabase.storage

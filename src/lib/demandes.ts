@@ -23,13 +23,14 @@ export function messageErreur(err: unknown): string {
   if (msg.includes('demandes_medicaments_check')) return 'Ajoutez au moins un médicament, avec son nom.';
   if (msg.includes('documents_type_mime_check')) return 'Format de fichier refusé : PDF, JPEG ou PNG uniquement.';
   if (msg.includes('documents_taille_octets_check')) return 'Fichier trop lourd : 10 Mo maximum.';
+  if (msg.includes('livreurs_nom_unique')) return 'Ce prénom existe déjà dans la liste des livreurs.';
   if (msg.includes('row-level security')) return "Action refusée : votre compte n'a pas les droits nécessaires.";
   if (msg.toLowerCase().includes('failed to fetch')) return 'Connexion au serveur impossible. Vérifiez votre accès internet.';
   // Les règles écrites dans la base renvoient déjà un message en français.
   return msg;
 }
 
-function echouer(err: unknown): never {
+export function echouer(err: unknown): never {
   throw new Error(messageErreur(err));
 }
 
@@ -112,6 +113,24 @@ export async function deposerDocument(demandeId: string, type: TypeDocument, fic
     .single();
   if (error) echouer(error);
   return data as DocumentJoint;
+}
+
+// Signature du patient (décision du 09/11, migration 0017) : une image PNG
+// rangée dans la carte, avec le nom de la personne qui a signé.
+export async function deposerSignature(demandeId: string, image: Blob, signataire: string): Promise<void> {
+  const chemin = `${demandeId}/signature-${crypto.randomUUID()}.png`;
+  const envoi = await supabase.storage.from('documents').upload(chemin, image, { contentType: 'image/png', upsert: false });
+  if (envoi.error) echouer(envoi.error);
+  const { error } = await supabase.from('documents').insert({
+    demande_id: demandeId,
+    type: 'signature',
+    chemin_fichier: chemin,
+    nom_fichier: `Signature – ${signataire}.png`,
+    taille_octets: image.size,
+    type_mime: 'image/png',
+    signataire,
+  });
+  if (error) echouer(error);
 }
 
 // Crée la demande puis envoie les pièces jointes. Si l'envoi d'un fichier
