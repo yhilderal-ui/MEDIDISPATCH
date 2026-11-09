@@ -4,16 +4,17 @@ import type { Demande, Statut } from '../types';
 
 // Glisser-déposer d'une carte d'une colonne de statut à la suivante (décision
 // du 03/10). Seules les étapes des boutons de la fiche sont permises :
-// Nouvelle → En cours → Livrée. Sur ordinateur seulement : sur téléphone, les
+// Nouvelle → Livrée. Sur ordinateur seulement : sur téléphone, les
 // colonnes sont des onglets et les boutons de la fiche restent le moyen normal.
+// Depuis le 09/11, plus d'étape « En cours » : Nouvelle → Livrée (une carte
+// encore « En cours », d'avant ce changement, va aussi vers Livrée).
 export const ETAPE_SUIVANTE: Partial<Record<Statut, Statut>> = {
-  nouvelle: 'en_cours',
+  nouvelle: 'livree',
   en_cours: 'livree',
 };
 
-// direct : « Nouvelle » va directement vers « Livrée » (livreurs, logisticien).
-export function useGlisserStatut(onDeposer?: (demande: Demande, statut: Statut) => void, direct = false) {
-  const suivante = (s: Statut): Statut | undefined => (direct && s === 'nouvelle' ? 'livree' : ETAPE_SUIVANTE[s]);
+export function useGlisserStatut(onDeposer?: (demande: Demande, statut: Statut) => void) {
+  const suivante = (s: Statut): Statut | undefined => ETAPE_SUIVANTE[s];
   const [glisse, setGlisse] = useState<Demande | null>(null);
   const [survol, setSurvol] = useState<Statut | null>(null);
 

@@ -36,9 +36,6 @@ export interface Droits {
   chat: boolean;
   statistiques: boolean;
   repartir: boolean; // classer Est / Ouest et attribuer à un livreur (décision du 08/11)
-  // Marquer « Livrée » directement depuis « Nouvelle », sans l'étape « En cours »
-  // (décision du 09/11 : une étape de moins pour ceux qui livrent).
-  livraisonDirecte: boolean;
 }
 
 export function droits(role: Role): Droits {
@@ -52,6 +49,5 @@ export function droits(role: Role): Droits {
     statistiques: role !== 'livreur',
     // Le logisticien répartit ; Florence peut le remplacer.
     repartir: role === 'logisticien' || role === 'dispatcher',
-    livraisonDirecte: role === 'livreur' || role === 'logisticien',
   };
 }

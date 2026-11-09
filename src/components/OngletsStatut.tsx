@@ -1,5 +1,5 @@
 import type { Demande, EtatVu, Statut } from '../types';
-import { STATUT_CONFIG } from '../data';
+import { STATUT_CONFIG, STATUTS_UTILISES } from '../data';
 
 interface Props {
   demandes: Demande[];
@@ -8,13 +8,13 @@ interface Props {
   onChange: (s: Statut) => void;
 }
 
-const ONGLETS: Statut[] = ['nouvelle', 'en_cours', 'livree', 'annulee'];
+const ONGLETS: Statut[] = STATUTS_UTILISES;
 
 // Sur téléphone, les colonnes du tableau deviennent des onglets (une colonne
 // pleine largeur à la fois). Masqué à partir de la taille tablette.
 export default function OngletsStatut({ demandes, etats, actif, onChange }: Props) {
   return (
-    <div className="md:hidden grid grid-cols-4 gap-1 bg-gray-100 p-1 rounded-xl mb-3 shrink-0" role="tablist">
+    <div className="md:hidden grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-xl mb-3 shrink-0" role="tablist">
       {ONGLETS.map(s => {
         const cfg = STATUT_CONFIG[s];
         const items = demandes.filter(d => d.statut === s);

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import type { Criticite, Nature, Secteur, Statut } from '../types';
 import { useLivreurs } from '../lib/livreursContexte';
-import { CRITICITE_CONFIG, STATUT_CONFIG } from '../data';
+import { CRITICITE_CONFIG, STATUT_CONFIG, STATUTS_UTILISES } from '../data';
 import { FILTRES_VIDES, filtresActifs, type FiltreDate, type Filtres } from '../lib/filtres';
 
 interface Props {
@@ -76,7 +76,7 @@ export default function BarreFiltres({ filtres, onChange, nbResultats, nbTotal, 
         {!masquerStatut && (
           <select aria-label="Filtrer par statut" value={filtres.statut} onChange={e => set('statut', e.target.value as Statut | 'tous')} className={SELECT}>
             <option value="tous">Tous les statuts</option>
-            {(Object.keys(STATUT_CONFIG) as Statut[]).map(s => (
+            {STATUTS_UTILISES.map(s => (
               <option key={s} value={s}>{STATUT_CONFIG[s].label}</option>
             ))}
           </select>

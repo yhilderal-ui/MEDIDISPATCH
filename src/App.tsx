@@ -366,7 +366,7 @@ export default function App() {
     let faites = 0;
     for (const d of cibles) {
       try {
-        if (action === 'en_cours' || action === 'livree') await changerStatut(d.id, action);
+        if (action === 'livree') await changerStatut(d.id, 'livree');
         else if (action === 'annuler') await changerStatut(d.id, 'annulee');
         else if (action === 'archiver') await archiverDemande(d.id);
         else if (action === 'supprimer') await supprimerDemande(d);
@@ -390,7 +390,6 @@ export default function App() {
     setActionEnCours(false);
     const pluriel = faites > 1 ? 's' : '';
     const quoi: Record<ActionGroupee, string> = {
-      en_cours: `passée${pluriel} en cours`,
       livree: `marquée${pluriel} livrée${pluriel}`,
       reporter: `reportée${pluriel}${jour ? ` au ${formatJour(jour)}` : ''}`,
       archiver: `archivée${pluriel}`,
@@ -840,7 +839,6 @@ export default function App() {
                 boutonSelection={boutonSelection}
                 vueInitiale={role === 'livreur' ? 'tournee' : 'kanban'}
                 tourneeLogisticien={role === 'logisticien' ? { nomCompte: userName } : undefined}
-                livraisonDirecte={droits?.livraisonDirecte}
                 vue={role === 'logisticien' ? vueTableau : undefined}
                 onVueChange={role === 'logisticien' ? setVueTableau : undefined}
               />

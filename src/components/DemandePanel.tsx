@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Archive, CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Signature, Split, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
+import { Archive, CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Signature, Split, Trash2, TriangleAlert, Undo2, X } from 'lucide-react';
 import type { Demande, DocumentJoint, Medicament, ModificationDemande as Champs, Note, Secteur, Statut, TypeDocument } from '../types';
 import MenusRepartition from './MenusRepartition';
 import EncartSignature from './EncartSignature';
@@ -494,19 +494,9 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
 
         {/* Actions de statut */}
         <div className="shrink-0 px-6 pb-6 pt-3 border-t border-gray-100 flex flex-col gap-2">
-          {demande.statut === 'nouvelle' && !peut.livraisonDirecte && (
-            <button
-              type="button"
-              disabled={occupe}
-              onClick={() => executer(() => onChangerStatut('en_cours'))}
-              className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white font-600 text-sm py-2.5 rounded-xl transition-colors"
-            >
-              <Truck size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />{retour ? 'Passer « En cours » (en route)' : 'Passer « En cours de livraison »'}
-            </button>
-          )}
 
           {/* Signature du patient : facultative, livraisons et retours (décision du 09/11). */}
-          {(demande.statut === 'en_cours' || demande.statut === 'livree' || (peut.livraisonDirecte && demande.statut === 'nouvelle')) && (
+          {demande.statut !== 'annulee' && (
             <button
               type="button"
               disabled={occupe}
@@ -522,7 +512,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
           )}
 
           {/* Photo de preuve : optionnelle en V1, ajoutable pendant ou après la livraison. */}
-          {(demande.statut === 'en_cours' || demande.statut === 'livree' || (peut.livraisonDirecte && demande.statut === 'nouvelle')) && !aPreuve && (
+          {demande.statut !== 'annulee' && !aPreuve && (
             <>
               <button
                 type="button"
@@ -546,7 +536,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
             </>
           )}
 
-          {(demande.statut === 'en_cours' || (peut.livraisonDirecte && demande.statut === 'nouvelle')) && (
+          {(demande.statut === 'nouvelle' || demande.statut === 'en_cours') && (
             <button
               type="button"
               disabled={occupe}
