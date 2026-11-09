@@ -35,6 +35,7 @@ import {
   modifierDemande,
   reporter,
   supprimerDemande,
+  deposerSignature,
   surveillerDemandes,
 } from './lib/demandes';
 import { useChat } from './lib/chat';
@@ -842,6 +843,19 @@ export default function App() {
           onOuvrir={setOuverteId}
           onCreerReliquat={(restants, reliquat, jour) => handleReliquat(ouverte, restants, reliquat, jour)}
           onRepartir={champs => handleRepartir(ouverte, champs)}
+          onSigner={(image, signataire) =>
+            agir(async () => {
+              await deposerSignature(ouverte.id, image, signataire);
+              // Pour une livraison, la signature est incrustée dans le bon de commande.
+              if (ouverte.nature !== 'retour') {
+                try {
+                  await publierBonsGeneres(ouverte.id);
+                } catch (e) {
+                  throw new Error(`Signature enregistrée, mais le bon de commande n'a pas pu être mis à jour : ${(e as Error).message}`);
+                }
+              }
+            }, ouverte.nature === 'retour' ? `Signature de ${signataire} enregistrée.` : `Signature de ${signataire} enregistrée et ajoutée au bon de commande.`)
+          }
           onClose={() => setOuverteId(null)}
           onSupprimer={async () => {
             const ticket = ouverte.numero_ticket;

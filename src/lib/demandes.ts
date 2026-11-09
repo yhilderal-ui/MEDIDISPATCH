@@ -115,6 +115,24 @@ export async function deposerDocument(demandeId: string, type: TypeDocument, fic
   return data as DocumentJoint;
 }
 
+// Signature du patient (décision du 09/11, migration 0017) : une image PNG
+// rangée dans la carte, avec le nom de la personne qui a signé.
+export async function deposerSignature(demandeId: string, image: Blob, signataire: string): Promise<void> {
+  const chemin = `${demandeId}/signature-${crypto.randomUUID()}.png`;
+  const envoi = await supabase.storage.from('documents').upload(chemin, image, { contentType: 'image/png', upsert: false });
+  if (envoi.error) echouer(envoi.error);
+  const { error } = await supabase.from('documents').insert({
+    demande_id: demandeId,
+    type: 'signature',
+    chemin_fichier: chemin,
+    nom_fichier: `Signature – ${signataire}.png`,
+    taille_octets: image.size,
+    type_mime: 'image/png',
+    signataire,
+  });
+  if (error) echouer(error);
+}
+
 // Crée la demande puis envoie les pièces jointes. Si l'envoi d'un fichier
 // échoue, la demande est quand même enregistrée (rien ne se perd) et on
 // renvoie les erreurs pour que l'utilisateur ajoute les fichiers ensuite.

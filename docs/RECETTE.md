@@ -154,6 +154,15 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] Pharmacie : étiquettes et filtres visibles, pas de Répartition, pas de menus Secteur / Livreur dans la fiche.
 - [ ] La fiche d'une carte répartie montre « Répartition : Est · Karim » dans l'historique.
 
+## 7 septies. Signature du patient (téléphone du livreur)
+
+- [ ] Sur une carte en cours : **Faire signer** → encart plein écran ; « Signé par » prérempli avec le patient.
+- [ ] Signer au doigt : la page ne bouge pas ; **Effacer** recommence ; **Valider** est grisé tant que rien n'est signé.
+- [ ] Modifier « Signé par » (ex. « Mme Durand (sa fille) ») → message « Signature … enregistrée et ajoutée au bon de commande ».
+- [ ] Dans la fiche : document **Signature**, historique « Signature de … » ; le bouton devient **Refaire signer**.
+- [ ] Ouvrir le **bon de commande** : « Reçu le JJ/MM/AAAA à HH h MM », le nom du signataire et la signature dans le cadre.
+- [ ] Sur un **retour** : la signature est enregistrée, sans PDF.
+
 ## 8. Robustesse
 
 - [ ] Sur téléphone, une alerte (nouvelle demande, mise à jour, message) ou un bandeau de confirmation /

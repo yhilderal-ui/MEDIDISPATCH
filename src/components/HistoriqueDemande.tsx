@@ -27,6 +27,8 @@ function decrire(e: EvenementHistorique, nature: Nature): string {
       return e.nouvelle_valeur ? `Modification : ${e.nouvelle_valeur}` : 'Modification des informations';
     case 'affectation':
       return `Répartition : ${e.nouvelle_valeur ?? 'non attribuée'}`;
+    case 'signature':
+      return `Signature de ${e.nouvelle_valeur ?? '?'}`;
   }
 }
 

@@ -4,7 +4,7 @@ export type Criticite = 'urgent' | 'standard_prioritaire' | 'standard';
 export type Statut = 'nouvelle' | 'en_cours' | 'livree' | 'annulee';
 // Livraison chez le patient, ou retour (aller récupérer des médicaments), décision du 03/10.
 export type Nature = 'livraison' | 'retour';
-export type TypeDocument = 'ordonnance' | 'bon_commande' | 'bon_livraison' | 'preuve_livraison' | 'carte_vitale' | 'mutuelle';
+export type TypeDocument = 'ordonnance' | 'bon_commande' | 'bon_livraison' | 'preuve_livraison' | 'carte_vitale' | 'mutuelle' | 'signature';
 
 // Pièces jointes proposées à la création et dans le détail (demande du 29/09).
 export type TypePiece = 'ordonnance' | 'carte_vitale' | 'mutuelle' | 'bon_livraison';
@@ -25,6 +25,7 @@ export interface DocumentJoint {
   type_mime: string;
   ajoute_le: string;
   genere: boolean; // bon de commande ou de livraison généré automatiquement
+  signataire?: string | null; // signature : nom de la personne qui a signé (migration 0017)
 }
 
 export interface Demande {
@@ -84,7 +85,7 @@ export type ModificationDemande = Pick<
 
 export interface EvenementHistorique {
   id: string;
-  evenement: 'creation' | 'statut' | 'report' | 'modification' | 'affectation';
+  evenement: 'creation' | 'statut' | 'report' | 'modification' | 'affectation' | 'signature';
   ancienne_valeur: string | null;
   nouvelle_valeur: string | null;
   cree_le: string;

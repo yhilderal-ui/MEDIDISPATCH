@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Archive, CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Split, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
+import { Archive, CalendarDays, Camera, Check, CircleCheck, Eye, FileText, Paperclip, Pencil, Phone, Signature, Split, Trash2, TriangleAlert, Truck, Undo2, X } from 'lucide-react';
 import type { Demande, DocumentJoint, Medicament, ModificationDemande as Champs, Note, Secteur, Statut, TypeDocument } from '../types';
 import MenusRepartition from './MenusRepartition';
+import EncartSignature from './EncartSignature';
 import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 import BoutonsItineraire from './BoutonsItineraire';
 import ModificationDemande from './ModificationDemande';
@@ -35,6 +36,7 @@ interface Props {
   onOuvrir: (id: string) => void;
   onCreerReliquat: (restants: Medicament[], reliquat: Medicament[], jour: string) => Promise<boolean>;
   onRepartir: (champs: { secteur?: Secteur | null; livreur_id?: string | null }) => void;
+  onSigner: (image: Blob, signataire: string) => Promise<boolean>;
 }
 
 const TITRE = 'text-[10px] font-700 uppercase tracking-widest text-gray-400 mb-2';
@@ -159,7 +161,8 @@ function FilNotes({ demandeId }: { demandeId: string }) {
   );
 }
 
-export default function DemandePanel({ demande, role, utilisateurId, comptes, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon, onArchiver, demandes, onOuvrir, onCreerReliquat, onRepartir }: Props) {
+export default function DemandePanel({ demande, role, utilisateurId, comptes, onClose, onSupprimer, onChangerStatut, onReporter, onDeposer, onModifier, onGenererBon, onArchiver, demandes, onOuvrir, onCreerReliquat, onRepartir, onSigner }: Props) {
+  const [signatureOuverte, setSignatureOuverte] = useState(false);
   const [edition, setEdition] = useState(false);
   const [reliquatOuvert, setReliquatOuvert] = useState(false);
   const criticite = CRITICITE_CONFIG[demande.criticite];
@@ -173,6 +176,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
   const preuveRef = useRef<HTMLInputElement>(null);
 
   const aPreuve = demande.documents.some(d => d.type === 'preuve_livraison');
+  const aSignature = demande.documents.some(d => d.type === 'signature');
   const documents = [...demande.documents].sort((a, b) => a.ajoute_le.localeCompare(b.ajoute_le));
 
   const executer = async (action: () => Promise<boolean>) => {
@@ -499,6 +503,22 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
             >
               <Truck size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />{retour ? 'Passer « En cours » (en route)' : 'Passer « En cours de livraison »'}
             </button>
+          )}
+
+          {/* Signature du patient : facultative, livraisons et retours (décision du 09/11). */}
+          {(demande.statut === 'en_cours' || demande.statut === 'livree') && (
+            <button
+              type="button"
+              disabled={occupe}
+              onClick={() => setSignatureOuverte(true)}
+              className="w-full bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-800 font-600 text-sm py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              <Signature size={16} className="inline-block align-[-3px] mr-1.5" aria-hidden />
+              {aSignature ? 'Refaire signer' : 'Faire signer'} <span className="font-400 opacity-70">(optionnel)</span>
+            </button>
+          )}
+          {signatureOuverte && (
+            <EncartSignature nomPatient={demande.patient_nom} onAnnuler={() => setSignatureOuverte(false)} onValider={onSigner} />
           )}
 
           {/* Photo de preuve : optionnelle en V1, ajoutable pendant ou après la livraison. */}
