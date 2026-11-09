@@ -13,13 +13,18 @@ import { CRITICITE_CONFIG } from '../data';
 
 export interface Alerte {
   id: string;
-  genre: 'nouvelle' | 'maj' | 'message';
+  genre: 'nouvelle' | 'maj' | 'message' | 'lot'; // lot : plusieurs cartes à la fois (09/11)
   titre: string;
   detail: string;
   urgente: boolean;
   demandeId?: string; // clic → ouvre la carte
   chat?: boolean; // clic → ouvre le chat
 }
+
+// Regroupement des alertes de cartes (décision du 09/11).
+const SEUIL_REGROUPEMENT = 3; // au-delà, une seule alerte « n demandes… »
+const ATTENTE_REGROUPEMENT = 1500; // ms de calme avant d'afficher
+const ATTENTE_MAX_REGROUPEMENT = 4000; // ms au plus entre la 1re carte et l'alerte
 
 // ---------------------------------------------------------------- préférences
 
@@ -144,6 +149,64 @@ export function useNotifications({ utilisateurId, demandes, chargement, messages
     nouvelles.forEach(a => setTimeout(() => fermer(a.id), 12000));
   }, [activer, fermer]);
 
+  // Regroupement (décision du 09/11) : les alertes de cartes qui arrivent en
+  // rafale (répartition du matin, plusieurs livraisons d'un coup) sont
+  // rassemblées pendant un court instant ; au-delà de 3, une seule alerte
+  // « 12 demandes mises à jour » remplace les bandeaux individuels.
+  const tampon = useRef<Alerte[]>([]);
+  const minuteurTampon = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debutTampon = useRef(0);
+  const viderTampon = useCallback(() => {
+    minuteurTampon.current = null;
+    // Une même carte signalée deux fois dans la rafale ne compte qu'une fois.
+    const parCarte = new Map<string, Alerte>();
+    for (const a of tampon.current) parCarte.set(a.demandeId ?? a.id, a);
+    tampon.current = [];
+    const lot = [...parCarte.values()];
+    if (lot.length <= SEUIL_REGROUPEMENT) {
+      emettre(lot);
+      return;
+    }
+    const nbNouvelles = lot.filter(a => a.genre === 'nouvelle').length;
+    const nbMaj = lot.length - nbNouvelles;
+    const s = (n: number) => (n > 1 ? 's' : '');
+    const titre = [
+      nbNouvelles ? `${nbNouvelles} nouvelle${s(nbNouvelles)} demande${s(nbNouvelles)}` : null,
+      nbMaj ? `${nbMaj} demande${s(nbMaj)} mise${s(nbMaj)} à jour` : null,
+    ]
+      .filter(Boolean)
+      .join(' et ');
+    const tickets = lot.map(a => a.titre.match(/MD-\d+/)?.[0]).filter(Boolean) as string[];
+    emettre([
+      {
+        id: `lot-${Date.now()}`,
+        genre: 'lot',
+        titre: titre.charAt(0).toUpperCase() + titre.slice(1),
+        detail: tickets.slice(0, 4).join(', ') + (tickets.length > 4 ? ` et ${tickets.length - 4} autre${s(tickets.length - 4)}` : ''),
+        urgente: lot.some(a => a.urgente),
+      },
+    ]);
+  }, [emettre]);
+  const signalerCartes = useCallback(
+    (nouvelles: Alerte[]) => {
+      if (nouvelles.length === 0) return;
+      tampon.current.push(...nouvelles);
+      const maintenant = Date.now();
+      if (minuteurTampon.current) clearTimeout(minuteurTampon.current);
+      else debutTampon.current = maintenant;
+      // On attend un court calme (1,5 s), sans jamais retenir plus de 4 s.
+      const attente = Math.min(ATTENTE_REGROUPEMENT, Math.max(0, ATTENTE_MAX_REGROUPEMENT - (maintenant - debutTampon.current)));
+      minuteurTampon.current = setTimeout(viderTampon, attente);
+    },
+    [viderTampon],
+  );
+  useEffect(
+    () => () => {
+      if (minuteurTampon.current) clearTimeout(minuteurTampon.current);
+    },
+    [],
+  );
+
   // Cartes créées ou modifiées par l'autre compte.
   useEffect(() => {
     if (!utilisateurId || chargement) return;
@@ -170,8 +233,8 @@ export function useNotifications({ utilisateurId, demandes, chargement, messages
         demandeId: id,
       });
     });
-    emettre(nouvelles);
-  }, [demandes, chargement, utilisateurId, emettre]);
+    signalerCartes(nouvelles);
+  }, [demandes, chargement, utilisateurId, signalerCartes]);
 
   // Nouveaux messages du chat.
   useEffect(() => {

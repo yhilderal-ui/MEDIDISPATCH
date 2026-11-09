@@ -175,6 +175,14 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] Une carte livrée ne peut plus repasser en « Nouvelle » ni être annulée ; une carte archivée ne change plus
       de statut ; une carte annulée peut être remise en « Nouvelle ».
 
+## 7 nonies. Moins d'alertes « Mise à jour » (migration 0020)
+
+- [ ] Angel ou la Pharmacie répartit des cartes : chez Florence, ni pastille « Mise à jour » ni alerte.
+- [ ] Archiver une carte livrée : pas d'alerte chez les autres comptes.
+- [ ] Une livraison, un report, une note ou une signature : toujours une alerte chez les autres.
+- [ ] Plus de 3 cartes modifiées en quelques secondes : **une seule** alerte « n demandes mises à jour »
+      (en rouge s'il y a une urgence) ; 3 ou moins : une alerte par carte, comme avant.
+
 ## 8. Robustesse
 
 - [ ] Sur téléphone, une alerte (nouvelle demande, mise à jour, message) ou un bandeau de confirmation /
