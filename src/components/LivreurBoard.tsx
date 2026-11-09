@@ -33,6 +33,7 @@ interface Props {
   // Logisticien (qui livre aussi) : nom de son compte, pour proposer d'abord
   // sa propre tournée dans le sélecteur « Tournée de ».
   tourneeLogisticien?: { nomCompte: string };
+  livraisonDirecte?: boolean; // « Nouvelle » → « Livrée » sans « En cours » (livreurs, logisticien)
 }
 
 function MedicalCard({ demande, onClick, etatVu, selectionnee }: { demande: Demande; onClick: () => void; etatVu: EtatVu; selectionnee?: boolean }) {
@@ -141,7 +142,7 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser, selecti
   );
 }
 
-export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, boutonSelection, vueInitiale = 'kanban', tourneeLogisticien }: Props) {
+export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, boutonSelection, vueInitiale = 'kanban', tourneeLogisticien, livraisonDirecte = false }: Props) {
   const livreurs = useLivreurs();
   // Tournée affichée pour le logisticien : la sienne par défaut (livreur portant
   // le même prénom que son compte), sinon celle de tous.
@@ -156,7 +157,7 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
   const tourneeConnue = tourneeDe === 'tous' || livreurs.some(l => l.id === tourneeDe);
   const demandesTournee =
     tourneeLogisticien && tourneeDe !== 'tous' && tourneeConnue ? demandes.filter(d => d.livreur_id === tourneeDe) : demandes;
-  const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut);
+  const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut, livraisonDirecte);
   const [tri, setTri] = useState<Tri>('recentes');
   const [vue, setVue] = useState<Vue>(vueInitiale);
   const [onglet, setOnglet] = useState<Statut>('nouvelle');

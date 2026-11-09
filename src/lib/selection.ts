@@ -30,9 +30,9 @@ export function actionPossible(action: ActionGroupee, d: Demande, role: Role): b
   const active = d.statut === 'nouvelle' || d.statut === 'en_cours';
   switch (action) {
     case 'en_cours':
-      return d.statut === 'nouvelle';
+      return d.statut === 'nouvelle' && !peut.livraisonDirecte;
     case 'livree':
-      return d.statut === 'en_cours';
+      return d.statut === 'en_cours' || (peut.livraisonDirecte && d.statut === 'nouvelle');
     case 'reporter':
       return role !== 'livreur' && active;
     case 'archiver':
@@ -67,6 +67,8 @@ export function actionsDuRole(role: Role): ActionGroupee[] {
       case 'secteur_ouest':
       case 'attribuer':
         return peut.repartir;
+      case 'en_cours':
+        return !peut.livraisonDirecte;
       default:
         return true;
     }

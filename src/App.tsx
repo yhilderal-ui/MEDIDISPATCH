@@ -826,6 +826,7 @@ export default function App() {
                 boutonSelection={boutonSelection}
                 vueInitiale={role === 'livreur' ? 'tournee' : 'kanban'}
                 tourneeLogisticien={role === 'logisticien' ? { nomCompte: userName } : undefined}
+                livraisonDirecte={droits?.livraisonDirecte}
               />
             </div>
           </div>

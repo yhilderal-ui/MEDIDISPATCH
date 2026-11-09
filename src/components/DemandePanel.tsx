@@ -494,7 +494,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
 
         {/* Actions de statut */}
         <div className="shrink-0 px-6 pb-6 pt-3 border-t border-gray-100 flex flex-col gap-2">
-          {demande.statut === 'nouvelle' && (
+          {demande.statut === 'nouvelle' && !peut.livraisonDirecte && (
             <button
               type="button"
               disabled={occupe}
@@ -506,7 +506,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
           )}
 
           {/* Signature du patient : facultative, livraisons et retours (décision du 09/11). */}
-          {(demande.statut === 'en_cours' || demande.statut === 'livree') && (
+          {(demande.statut === 'en_cours' || demande.statut === 'livree' || (peut.livraisonDirecte && demande.statut === 'nouvelle')) && (
             <button
               type="button"
               disabled={occupe}
@@ -522,7 +522,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
           )}
 
           {/* Photo de preuve : optionnelle en V1, ajoutable pendant ou après la livraison. */}
-          {(demande.statut === 'en_cours' || demande.statut === 'livree') && !aPreuve && (
+          {(demande.statut === 'en_cours' || demande.statut === 'livree' || (peut.livraisonDirecte && demande.statut === 'nouvelle')) && !aPreuve && (
             <>
               <button
                 type="button"
@@ -546,7 +546,7 @@ export default function DemandePanel({ demande, role, utilisateurId, comptes, on
             </>
           )}
 
-          {demande.statut === 'en_cours' && (
+          {(demande.statut === 'en_cours' || (peut.livraisonDirecte && demande.statut === 'nouvelle')) && (
             <button
               type="button"
               disabled={occupe}

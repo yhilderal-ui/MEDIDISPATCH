@@ -145,6 +145,9 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] Compte Livreurs **sur téléphone**, vue tableau et Tournée : l'écran défile au doigt jusqu'à la dernière carte.
 - [ ] **Sélectionner** → Tout sélectionner (À classer) → **Secteur Ouest**, puis **Attribuer à…** un livreur.
 - [ ] Le résumé du jour indique le nombre de passages par livreur ; « à classer » disparaît quand tout est classé.
+- [ ] Livreurs et logisticien : sur une carte « Nouvelle », la fiche propose directement **Marquer comme livrée**
+      (plus de « Passer en cours ») ; Faire signer et la photo sont disponibles dès « Nouvelle ». Florence et la
+      Pharmacie gardent l'étape « En cours ».
 - [ ] Compte **Livreurs** (téléphone) : « Qui livre aujourd'hui ? » → choisir un prénom → la Tournée ne montre
       que ses livraisons ; **changer** permet de prendre un autre prénom ; le choix est gardé au rechargement.
 - [ ] Logisticien qui livre : s'attribuer des cartes ; dans **Tournée**, « Tournée de : » propose d'abord sa
