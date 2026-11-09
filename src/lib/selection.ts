@@ -13,7 +13,6 @@ export interface Selection {
 }
 
 export type ActionGroupee =
-  | 'en_cours'
   | 'livree'
   | 'reporter'
   | 'archiver'
@@ -29,10 +28,8 @@ export function actionPossible(action: ActionGroupee, d: Demande, role: Role): b
   const peut = droits(role);
   const active = d.statut === 'nouvelle' || d.statut === 'en_cours';
   switch (action) {
-    case 'en_cours':
-      return d.statut === 'nouvelle' && !peut.livraisonDirecte;
     case 'livree':
-      return d.statut === 'en_cours' || (peut.livraisonDirecte && d.statut === 'nouvelle');
+      return active; // « En cours » n'existe plus (09/11) : Nouvelle → Livrée
     case 'reporter':
       return role !== 'livreur' && active;
     case 'archiver':
@@ -52,7 +49,7 @@ export function actionPossible(action: ActionGroupee, d: Demande, role: Role): b
 
 // Actions affichées pour un compte, dans l'ordre de la barre.
 export function actionsDuRole(role: Role): ActionGroupee[] {
-  const toutes: ActionGroupee[] = ['secteur_est', 'secteur_ouest', 'attribuer', 'en_cours', 'livree', 'reporter', 'archiver', 'annuler', 'supprimer'];
+  const toutes: ActionGroupee[] = ['secteur_est', 'secteur_ouest', 'attribuer', 'livree', 'reporter', 'archiver', 'annuler', 'supprimer'];
   const peut = droits(role);
   return toutes.filter(a => {
     switch (a) {
@@ -67,8 +64,6 @@ export function actionsDuRole(role: Role): ActionGroupee[] {
       case 'secteur_ouest':
       case 'attribuer':
         return peut.repartir;
-      case 'en_cours':
-        return !peut.livraisonDirecte;
       default:
         return true;
     }

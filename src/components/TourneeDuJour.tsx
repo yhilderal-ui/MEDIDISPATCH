@@ -12,16 +12,14 @@ interface Props {
   demandes: Demande[];
   onOpen: (demande: Demande) => void;
   etats: Record<string, EtatVu>;
-  // Bouton « Livrée » sur chaque carte (décision du 09/11). livraisonDirecte :
-  // aussi depuis « Nouvelle » (livreurs, logisticien) ; sinon depuis « En cours ».
+  // Bouton « Livrée » sur chaque carte (décision du 09/11).
   onLivrer?: (demande: Demande) => void;
-  livraisonDirecte?: boolean;
 }
 
 // Livraisons du jour à faire, pour le livreur. Il organise sa tournée comme il
 // l'entend (décision du 30/09) : la liste met simplement les urgences en tête,
 // et chaque carte ouvre l'adresse dans Waze.
-export default function TourneeDuJour({ demandes, onOpen, etats, onLivrer, livraisonDirecte = false }: Props) {
+export default function TourneeDuJour({ demandes, onOpen, etats, onLivrer }: Props) {
   const jour = aujourdhuiParis();
   const duJour = demandes.filter(d => d.jour_livraison === jour && d.statut !== 'annulee');
   const aLivrer = duJour
@@ -97,7 +95,7 @@ export default function TourneeDuJour({ demandes, onOpen, etats, onLivrer, livra
                   >
                     <Navigation size={15} aria-hidden /> Waze
                   </a>
-                  {onLivrer && (livraisonDirecte || d.statut === 'en_cours') ? (
+                  {onLivrer ? (
                     <button
                       type="button"
                       onClick={() => {

@@ -15,7 +15,7 @@ interface Props {
   selection: Selection;
 }
 
-const COLONNES: Statut[] = ['nouvelle', 'en_cours', 'livree'];
+const COLONNES: Statut[] = ['nouvelle', 'livree'];
 
 export default function Board({ demandes, onOpen, etats, onDeposerStatut, selection }: Props) {
   const annulees = demandes.filter(d => d.statut === 'annulee').sort(plusRecenteEnTete);

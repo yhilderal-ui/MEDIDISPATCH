@@ -15,7 +15,11 @@ export const CRITICITE_ORDRE: Record<Criticite, number> = {
   standard: 2,
 };
 
-// Section 5 : Nouvelle demande → En cours de livraison → Livrée (+ Annulée).
+// Section 5, simplifiée le 09/11 : Nouvelle demande → Livrée (+ Annulée).
+// « En cours » n'est plus utilisé (le livreur marque directement « Livrée ») ;
+// il reste décrit ici pour lire l'historique des anciennes cartes.
+export const STATUTS_UTILISES: Statut[] = ['nouvelle', 'livree', 'annulee'];
+
 export const STATUT_CONFIG: Record<Statut, { label: string; court: string; color: string; Icone: LucideIcon }> = {
   nouvelle: { label: 'Nouvelle demande', court: 'Nouvelle', color: '#7c3aed', Icone: ClipboardList },
   en_cours: { label: 'En cours de livraison', court: 'En cours', color: '#0891b2', Icone: Truck },

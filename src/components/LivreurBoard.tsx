@@ -33,7 +33,6 @@ interface Props {
   // Logisticien (qui livre aussi) : nom de son compte, pour proposer d'abord
   // sa propre tournée dans le sélecteur « Tournée de ».
   tourneeLogisticien?: { nomCompte: string };
-  livraisonDirecte?: boolean; // « Nouvelle » → « Livrée » sans « En cours » (livreurs, logisticien)
   // Vue pilotée de l'extérieur (bouton « Tournée » de la barre du haut du
   // logisticien) ; sinon, la vue est gérée ici.
   vue?: Vue;
@@ -146,7 +145,7 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser, selecti
   );
 }
 
-export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, boutonSelection, vueInitiale = 'kanban', tourneeLogisticien, livraisonDirecte = false, vue: vuePilotee, onVueChange }: Props) {
+export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, boutonSelection, vueInitiale = 'kanban', tourneeLogisticien, vue: vuePilotee, onVueChange }: Props) {
   const livreurs = useLivreurs();
   // Tournée affichée pour le logisticien : la sienne par défaut (livreur portant
   // le même prénom que son compte), sinon celle de tous.
@@ -161,7 +160,7 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
   const tourneeConnue = tourneeDe === 'tous' || livreurs.some(l => l.id === tourneeDe);
   const demandesTournee =
     tourneeLogisticien && tourneeDe !== 'tous' && tourneeConnue ? demandes.filter(d => d.livreur_id === tourneeDe) : demandes;
-  const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut, livraisonDirecte);
+  const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut);
   const [tri, setTri] = useState<Tri>('recentes');
   const [vueLocale, setVueLocale] = useState<Vue>(vueInitiale);
   const vue = vuePilotee ?? vueLocale;
@@ -248,7 +247,6 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
           <OngletsStatut demandes={demandes} etats={etats} actif={onglet} onChange={setOnglet} />
           <div className={`flex gap-5 md:flex-1 md:min-h-0 md:overflow-x-auto ${selection.actif ? 'pb-48 md:pb-24' : 'pb-24 md:pb-4'}`}>
             <Colonne statut="nouvelle" items={parStatut('nouvelle')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'nouvelle'} glisser={glisser} selection={selection} />
-            <Colonne statut="en_cours" items={parStatut('en_cours')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'en_cours'} glisser={glisser} selection={selection} />
             <Colonne statut="livree" items={parStatut('livree')} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'livree'} glisser={glisser} selection={selection} />
             {(annulees.length > 0 || onglet === 'annulee') && (
               <Colonne statut="annulee" items={annulees} onOpen={onOpen} etats={etats} visibleMobile={onglet === 'annulee'} glisser={glisser} selection={selection} />
@@ -280,7 +278,6 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
               onOpen={onOpen}
               etats={etats}
               onLivrer={onDeposerStatut && (d => onDeposerStatut(d, 'livree'))}
-              livraisonDirecte={livraisonDirecte}
             />
           </div>
         </div>

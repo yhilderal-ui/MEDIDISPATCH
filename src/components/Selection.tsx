@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Archive, CalendarClock, Check, CircleCheck, CircleX, MapPin, Trash2, Truck, UserCheck, X } from 'lucide-react';
+import { Archive, CalendarClock, Check, CircleCheck, CircleX, MapPin, Trash2, UserCheck, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Demande } from '../types';
 import type { Role } from '../lib/useAuth';
@@ -45,7 +45,6 @@ const ACTIONS: Record<ActionGroupee, { libelle: string; Icone: LucideIcon; dange
   secteur_est: { libelle: 'Secteur Est', Icone: MapPin },
   secteur_ouest: { libelle: 'Secteur Ouest', Icone: MapPin },
   attribuer: { libelle: 'Attribuer à…', Icone: UserCheck },
-  en_cours: { libelle: 'Passer en cours', Icone: Truck },
   livree: { libelle: 'Marquer livrées', Icone: CircleCheck },
   reporter: { libelle: 'Reporter au…', Icone: CalendarClock },
   archiver: { libelle: 'Archiver', Icone: Archive },

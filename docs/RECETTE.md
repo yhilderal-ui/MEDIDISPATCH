@@ -42,19 +42,18 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] Toucher le bandeau ouvre la demande ; la pastille disparaît.
 - [ ] Côté Florence, le détail indique « Vue par la pharmacie le … ».
 - [ ] Le numéro de téléphone du patient est cliquable et lance l'appel.
-- [ ] Les onglets Nouvelle / En cours / Livrée / Annulée affichent les bons compteurs.
+- [ ] Les onglets Nouvelle / Livrée / Annulée affichent les bons compteurs (plus d'« En cours » depuis le 09/11).
 
 ## 3. Livraison (pharmacie, téléphone)
 
-- [ ] **Passer « En cours de livraison »** → côté Florence, la carte change de colonne
-      toute seule et passe en « Mise à jour ».
+- [ ] **Marquer comme livrée** → côté Florence, la carte change de colonne toute seule et passe
+      en « Mise à jour ». Il n'y a plus d'étape « En cours de livraison ».
 - [ ] **+ Carte Vitale** : l'appareil photo s'ouvre, la photo s'ajoute à la carte.
 - [ ] Ajouter une **deuxième** ordonnance (verso) : acceptée.
 - [ ] **Ajouter une photo de preuve** (optionnel), puis **Marquer comme livrée**.
 - [ ] L'historique de la carte liste chaque étape, avec l'auteur et l'heure.
-- [ ] Sur **ordinateur**, glisser une carte de « Nouvelle » vers « En cours », puis de « En cours »
-      vers « Livrée » : la colonne d'arrivée s'entoure de pointillés et la carte change de statut.
-      Glisser directement de « Nouvelle » vers « Livrée » n'est pas possible (une étape à la fois).
+- [ ] Sur **ordinateur**, glisser une carte de « Nouvelle » vers « Livrée » : la colonne d'arrivée
+      s'entoure de pointillés et la carte change de statut. Pas de retour en arrière.
 
 ## 4. Modification et report
 
@@ -89,7 +88,7 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 
 - [ ] À la connexion, l'écran **Tournée** s'affiche, avec le badge « Livreurs ».
 - [ ] Pas de bouton **Statistiques**, pas de bulle de **chat**, pas de **+ Nouvelle demande**.
-- [ ] Sur une demande : **Passer en cours**, **Ajouter une photo**, **Marquer comme livrée**,
+- [ ] Sur une demande : **Ajouter une photo**, **Marquer comme livrée**,
       **Reporter** et **ajouter une note** fonctionnent.
 - [ ] **Modifier les informations** et **Annuler la demande** n'apparaissent pas.
 - [ ] Côté Florence : le détail indique « Vue par Pharmacie … et Livreurs … » après consultation.
@@ -131,7 +130,7 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] La barre indique pour chaque action le nombre de cartes concernées, par ex. « Archiver (1) ».
 - [ ] **Reporter au…** : toutes les cartes cochées passent au jour choisi ; leur bon de commande est mis à jour.
 - [ ] **Annuler** et **Supprimer** demandent une confirmation listant les tickets.
-- [ ] Pharmacie : pas de **Supprimer**. Livreurs : seulement **Passer en cours** et **Marquer livrées**
+- [ ] Pharmacie : pas de **Supprimer**. Livreurs : seulement **Marquer livrées**
       (la Tournée bascule sur le tableau en mode sélection).
 
 ## 7 sexies. Livreurs, secteurs et logisticien
@@ -145,11 +144,10 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] Compte Livreurs **sur téléphone**, vue tableau et Tournée : l'écran défile au doigt jusqu'à la dernière carte.
 - [ ] **Sélectionner** → Tout sélectionner (À classer) → **Secteur Ouest**, puis **Attribuer à…** un livreur.
 - [ ] Le résumé du jour indique le nombre de passages par livreur ; « à classer » disparaît quand tout est classé.
-- [ ] Livreurs et logisticien : sur une carte « Nouvelle », la fiche propose directement **Marquer comme livrée**
-      (plus de « Passer en cours ») ; Faire signer et la photo sont disponibles dès « Nouvelle ». Florence et la
-      Pharmacie gardent l'étape « En cours ».
+- [ ] Tous les comptes : sur une carte « Nouvelle », la fiche propose directement **Marquer comme livrée** ;
+      Faire signer et la photo sont disponibles dès « Nouvelle ».
 - [ ] Tournée : chaque carte a **Waze** et **Livrée** (ou **Récupéré**) ; une confirmation est demandée, puis la
-      carte passe dans « Terminées aujourd'hui ». Pharmacie : le bouton n'apparaît que sur les cartes en cours.
+      carte passe dans « Terminées aujourd'hui ».
 - [ ] Compte **Livreurs** (téléphone) : « Qui livre aujourd'hui ? » → choisir un prénom → la Tournée ne montre
       que ses livraisons ; **changer** permet de prendre un autre prénom ; le choix est gardé au rechargement.
 - [ ] Logisticien : la barre du haut a 4 boutons, Tableau / **Tournée** / Répartition / Statistiques ; « Tournée »
@@ -163,12 +161,18 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 
 ## 7 septies. Signature du patient (téléphone du livreur)
 
-- [ ] Sur une carte en cours : **Faire signer** → encart plein écran ; « Signé par » prérempli avec le patient.
+- [ ] Sur une carte « Nouvelle » ou « Livrée » : **Faire signer** → encart plein écran ; « Signé par » prérempli avec le patient.
 - [ ] Signer au doigt : la page ne bouge pas ; **Effacer** recommence ; **Valider** est grisé tant que rien n'est signé.
 - [ ] Modifier « Signé par » (ex. « Mme Durand (sa fille) ») → message « Signature … enregistrée et ajoutée au bon de commande ».
 - [ ] Dans la fiche : document **Signature**, historique « Signature de … » ; le bouton devient **Refaire signer**.
 - [ ] Ouvrir le **bon de commande** : « Reçu le JJ/MM/AAAA à HH h MM », le nom du signataire et la signature dans le cadre.
 - [ ] Sur un **retour** : la signature est enregistrée, sans PDF.
+
+## 7 octies. Statuts simplifiés (migration 0018)
+
+- [ ] Après 0018, plus aucune carte « En cours » ; les anciennes sont revenues en « Nouvelle » (historique).
+- [ ] Une carte livrée ne peut plus repasser en « Nouvelle » ni être annulée ; une carte archivée ne change plus
+      de statut ; une carte annulée peut être remise en « Nouvelle ».
 
 ## 8. Robustesse
 
