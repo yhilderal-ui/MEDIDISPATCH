@@ -824,6 +824,7 @@ export default function App() {
                 selection={selection}
                 boutonSelection={boutonSelection}
                 vueInitiale={role === 'livreur' ? 'tournee' : 'kanban'}
+                tourneeLogisticien={role === 'logisticien' ? { nomCompte: userName } : undefined}
               />
             </div>
           </div>

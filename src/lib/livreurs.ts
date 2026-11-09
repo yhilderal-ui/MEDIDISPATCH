@@ -32,6 +32,24 @@ export async function repartir(id: string, champs: { secteur?: Secteur | null; l
   if (error) echouer(error);
 }
 
+// Tournée affichée sur le compte du logisticien, qui livre aussi (décision du
+// 09/11) : l'identifiant d'un livreur, ou « tous ». Mémorisée sur l'appareil.
+const CLE_TOURNEE = 'medidispatch.tourneeDe';
+export function lireTourneeDe(): string | null {
+  try {
+    return localStorage.getItem(CLE_TOURNEE);
+  } catch {
+    return null;
+  }
+}
+export function memoriserTourneeDe(valeur: string) {
+  try {
+    localStorage.setItem(CLE_TOURNEE, valeur);
+  } catch {
+    // stockage indisponible : le choix vaut pour cette visite seulement
+  }
+}
+
 // Prénom choisi sur ce téléphone par le compte partagé « Livreurs ».
 // Mémorisé sur l'appareil seulement ; sans stockage, la question est reposée.
 const CLE = 'medidispatch.livreur';

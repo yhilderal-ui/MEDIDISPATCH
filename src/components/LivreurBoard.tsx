@@ -12,6 +12,8 @@ import { ajouterJours, formatJour, lundiDeLaSemaine, moisCourt } from '../lib/da
 import { useGlisserStatut } from '../lib/useGlisserStatut';
 import type { Selection } from '../lib/selection';
 import { CaseCarte, CaseGroupe } from './Selection';
+import { useLivreurs } from '../lib/livreursContexte';
+import { lireTourneeDe, memoriserTourneeDe } from '../lib/livreurs';
 import { MEDICAMENTS_ACTIFS } from '../config/fonctionnalites';
 
 // « Récentes » (par défaut) : la dernière carte créée en tête (décision du 07/11).
@@ -28,6 +30,9 @@ interface Props {
   boutonSelection?: React.ReactNode; // à gauche de la barre d'outils, au-dessus des cartes
   // Écran d'arrivée : la Tournée pour le compte Livreurs, le tableau sinon.
   vueInitiale?: Vue;
+  // Logisticien (qui livre aussi) : nom de son compte, pour proposer d'abord
+  // sa propre tournée dans le sélecteur « Tournée de ».
+  tourneeLogisticien?: { nomCompte: string };
 }
 
 function MedicalCard({ demande, onClick, etatVu, selectionnee }: { demande: Demande; onClick: () => void; etatVu: EtatVu; selectionnee?: boolean }) {
@@ -136,7 +141,21 @@ function Colonne({ statut, items, onOpen, etats, visibleMobile, glisser, selecti
   );
 }
 
-export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, boutonSelection, vueInitiale = 'kanban' }: Props) {
+export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerStatut, etats, selection, boutonSelection, vueInitiale = 'kanban', tourneeLogisticien }: Props) {
+  const livreurs = useLivreurs();
+  // Tournée affichée pour le logisticien : la sienne par défaut (livreur portant
+  // le même prénom que son compte), sinon celle de tous.
+  // (Calculé à chaque affichage : la liste des livreurs arrive après le premier.)
+  const [choixTournee, setChoixTournee] = useState<string | null>(() => lireTourneeDe());
+  const moi = tourneeLogisticien && livreurs.find(l => l.nom.trim().toLowerCase() === tourneeLogisticien.nomCompte.trim().toLowerCase());
+  const tourneeDe = choixTournee ?? moi?.id ?? 'tous';
+  const choisirTournee = (v: string) => {
+    memoriserTourneeDe(v);
+    setChoixTournee(v);
+  };
+  const tourneeConnue = tourneeDe === 'tous' || livreurs.some(l => l.id === tourneeDe);
+  const demandesTournee =
+    tourneeLogisticien && tourneeDe !== 'tous' && tourneeConnue ? demandes.filter(d => d.livreur_id === tourneeDe) : demandes;
   const glisser = useGlisserStatut(selection.actif ? undefined : onDeposerStatut);
   const [tri, setTri] = useState<Tri>('recentes');
   const [vue, setVue] = useState<Vue>(vueInitiale);
@@ -230,8 +249,27 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
           </div>
         </div>
       ) : vue === 'tournee' ? (
-        <div className="flex-1 min-h-0">
-          <TourneeDuJour demandes={demandes} onOpen={onOpen} etats={etats} />
+        <div className="flex-1 min-h-0 flex flex-col">
+          {tourneeLogisticien && (
+            <label className="shrink-0 max-w-2xl w-full mx-auto mb-3 flex items-center gap-2 text-xs text-gray-500">
+              Tournée de
+              <select
+                value={tourneeConnue ? tourneeDe : 'tous'}
+                onChange={e => choisirTournee(e.target.value)}
+                className="text-xs font-600 text-gray-800 bg-white border border-gray-200 rounded-lg px-2 py-1.5"
+              >
+                {livreurs
+                  .filter(l => l.actif || l.id === tourneeDe)
+                  .map(l => (
+                    <option key={l.id} value={l.id}>{l.nom}</option>
+                  ))}
+                <option value="tous">Tous les livreurs</option>
+              </select>
+            </label>
+          )}
+          <div className="flex-1 min-h-0">
+            <TourneeDuJour demandes={demandesTournee} onOpen={onOpen} etats={etats} />
+          </div>
         </div>
       ) : (
         <div className="flex-1 min-h-0">

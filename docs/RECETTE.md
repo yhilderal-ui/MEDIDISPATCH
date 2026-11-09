@@ -147,6 +147,9 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] Le résumé du jour indique le nombre de passages par livreur ; « à classer » disparaît quand tout est classé.
 - [ ] Compte **Livreurs** (téléphone) : « Qui livre aujourd'hui ? » → choisir un prénom → la Tournée ne montre
       que ses livraisons ; **changer** permet de prendre un autre prénom ; le choix est gardé au rechargement.
+- [ ] Logisticien qui livre : s'attribuer des cartes ; dans **Tournée**, « Tournée de : » propose d'abord sa
+      propre tournée (livreur portant le même prénom que son compte) ; « Tous les livreurs » ou un autre prénom
+      pour suivre l'équipe ; le choix est gardé au rechargement.
 - [ ] Florence : étiquettes « Est · Karim », filtres Secteur et Livreur, Répartition disponible en secours.
 - [ ] Pharmacie : étiquettes et filtres visibles, pas de Répartition, pas de menus Secteur / Livreur dans la fiche.
 - [ ] La fiche d'une carte répartie montre « Répartition : Est · Karim » dans l'historique.
