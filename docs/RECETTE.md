@@ -153,6 +153,10 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 
 ## 8. Robustesse
 
+- [ ] Sur téléphone, une alerte (nouvelle demande, mise à jour, message) ou un bandeau de confirmation /
+      d'erreur se ferme en le **balayant du doigt** vers la gauche ou la droite ; un petit glissement le
+      laisse en place ; le bouton × marche toujours, et un appui sur l'alerte ouvre la demande.
+
 - [ ] Recharger la page (F5) : rien n'est perdu.
 - [ ] Couper le Wi-Fi du téléphone puis le rétablir : les nouveautés arrivent après
       reconnexion (sinon, recharger la page).

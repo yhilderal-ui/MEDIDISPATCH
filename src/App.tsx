@@ -41,6 +41,7 @@ import { useChat } from './lib/chat';
 import { useNotifications } from './lib/notifications';
 import Alertes from './components/Alertes';
 import BandeauEnvironnement from './components/BandeauEnvironnement';
+import Balayable from './components/Balayable';
 import { ajouterJours, aujourdhuiParis, formatJour, lundiDeLaSemaine, moisCourt } from './lib/dates';
 import RepartitionView from './components/RepartitionView';
 import ChoixLivreur from './components/ChoixLivreur';
@@ -682,17 +683,18 @@ export default function App() {
       </header>
 
       {/* Messages d'erreur et de confirmation */}
+      {/* Balayer du doigt vers la gauche ou la droite les ferme aussi (décision du 09/11). */}
       {erreur && (
-        <div role="alert" className="shrink-0 mx-4 sm:mx-6 mt-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-start gap-3 slide-in">
+        <Balayable key={erreur} onFermer={() => setErreur(null)} role="alert" className="shrink-0 mx-4 sm:mx-6 mt-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-start gap-3 slide-in">
           <TriangleAlert size={16} className="text-red-500 shrink-0 mt-0.5" aria-hidden />
           <p className="text-sm text-red-700 flex-1">{erreur}</p>
           <button type="button" onClick={() => setErreur(null)} aria-label="Fermer le message" className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
-        </div>
+        </Balayable>
       )}
       {info && !erreur && (
-        <div role="status" className="shrink-0 mx-4 sm:mx-6 mt-4 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm text-emerald-700 slide-in">
+        <Balayable key={info} onFermer={() => setInfo(null)} role="status" className="shrink-0 mx-4 sm:mx-6 mt-4 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm text-emerald-700 slide-in">
           <CircleCheck size={15} className="inline-block align-[-3px] mr-1.5" aria-hidden />{info}
-        </div>
+        </Balayable>
       )}
 
       {/* Contenu */}
