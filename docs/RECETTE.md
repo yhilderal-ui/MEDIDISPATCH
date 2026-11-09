@@ -148,6 +148,8 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] Livreurs et logisticien : sur une carte « Nouvelle », la fiche propose directement **Marquer comme livrée**
       (plus de « Passer en cours ») ; Faire signer et la photo sont disponibles dès « Nouvelle ». Florence et la
       Pharmacie gardent l'étape « En cours ».
+- [ ] Tournée : chaque carte a **Waze** et **Livrée** (ou **Récupéré**) ; une confirmation est demandée, puis la
+      carte passe dans « Terminées aujourd'hui ». Pharmacie : le bouton n'apparaît que sur les cartes en cours.
 - [ ] Compte **Livreurs** (téléphone) : « Qui livre aujourd'hui ? » → choisir un prénom → la Tournée ne montre
       que ses livraisons ; **changer** permet de prendre un autre prénom ; le choix est gardé au rechargement.
 - [ ] Logisticien qui livre : s'attribuer des cartes ; dans **Tournée**, « Tournée de : » propose d'abord sa

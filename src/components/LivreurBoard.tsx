@@ -269,7 +269,13 @@ export default function LivreurBoard({ demandes, onOpen, onDropCard, onDeposerSt
             </label>
           )}
           <div className="flex-1 min-h-0">
-            <TourneeDuJour demandes={demandesTournee} onOpen={onOpen} etats={etats} />
+            <TourneeDuJour
+              demandes={demandesTournee}
+              onOpen={onOpen}
+              etats={etats}
+              onLivrer={onDeposerStatut && (d => onDeposerStatut(d, 'livree'))}
+              livraisonDirecte={livraisonDirecte}
+            />
           </div>
         </div>
       ) : (
