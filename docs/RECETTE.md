@@ -183,6 +183,23 @@ Pharmacie) et un livreur (compte Livreurs) sur **un téléphone**, en même temp
 - [ ] Plus de 3 cartes modifiées en quelques secondes : **une seule** alerte « n demandes mises à jour »
       (en rouge s'il y a une urgence) ; 3 ou moins : une alerte par carte, comme avant.
 
+## 7 decies. Assistant d'aide (IA)
+
+Prérequis sur la base testée : migration `0021_ia.sql`, fonction **assistant** déployée et secret
+`ANTHROPIC_API_KEY` enregistré (voir `docs/ENVIRONNEMENTS.md`).
+
+- [ ] Sur les 4 comptes : bouton **?** en bas à gauche ; il ne chevauche ni le chat (en bas à droite) ni les alertes.
+- [ ] Il s'ouvre en plein écran sur téléphone, en panneau sur ordinateur ; **Échap** ou **✕** le ferme.
+- [ ] Le bandeau « N'écrivez jamais de nom ni d'information sur un patient » est toujours visible.
+- [ ] Les 3 questions proposées changent selon le compte ; en toucher une donne une réponse en quelques secondes.
+- [ ] Poser une question propre au compte (ex. Livreurs : « comment annuler une demande ? ») : l'assistant
+      répond que ce compte ne peut pas et indique lequel le peut.
+- [ ] Une question hors sujet (« quel temps fait-il ? ») : l'assistant dit qu'il ne répond que sur MediDispatch.
+- [ ] Une question de suite (« et sur téléphone ? ») tient compte de la précédente ; **Effacer** vide la conversation.
+- [ ] Le bouton disparaît pendant la **sélection** de cartes et revient après.
+- [ ] Supabase → **Table Editor → ia_utilisation** : une ligne par question (compte, date, tokens),
+      **sans le texte** des questions.
+
 ## 8. Robustesse
 
 - [ ] Sur téléphone, une alerte (nouvelle demande, mise à jour, message) ou un bandeau de confirmation /

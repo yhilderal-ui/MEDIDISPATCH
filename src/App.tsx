@@ -12,6 +12,7 @@ import DemandePanel from './components/DemandePanel';
 import BarreFiltres from './components/BarreFiltres';
 import ArchivesView from './components/ArchivesView';
 import StatistiquesView from './components/StatistiquesView';
+import Assistant from './components/Assistant';
 import { appliquerFiltres, FILTRES_VIDES, type Filtres } from './lib/filtres';
 import logo from './assets/logo.png';
 import { statutAffiche } from './data';
@@ -905,6 +906,9 @@ export default function App() {
       )}
 
       <Alertes alertes={notif.alertes} onActiver={notif.activer} onFermer={notif.fermer} />
+
+      {/* Assistant d'aide par IA (décision du 12/11), pour tous les comptes. */}
+      <Assistant role={role} masque={modeSelection} />
 
       {droits?.chat && (
       <Chat
