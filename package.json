@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "sql:installation": "node scripts/generer-installation.mjs",
-    "medicaments:maj": "node scripts/maj-medicaments.mjs"
+    "medicaments:maj": "node scripts/maj-medicaments.mjs",
+    "ia:fonctions": "node scripts/generer-fonctions-ia.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
